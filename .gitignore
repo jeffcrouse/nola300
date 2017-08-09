@@ -57,3 +57,9 @@ typings/
 # dotenv environment variables file
 .env
 
+# OSX
+.DS_Store
+*.swp
+*~.nib
+# Thumbnails
+._*

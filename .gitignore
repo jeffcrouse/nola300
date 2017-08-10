@@ -63,3 +63,5 @@ typings/
 *~.nib
 # Thumbnails
 ._*
+
+.env

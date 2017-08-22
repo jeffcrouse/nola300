@@ -1,0 +1,3 @@
+[submodule "canon-video-capture"]
+	path = canon-video-capture
+	url = https://jeffcrouse@github.com/jeffcrouse/canon-video-capture.git

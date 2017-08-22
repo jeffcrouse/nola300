@@ -5,14 +5,14 @@ var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
-var ExperienceManager = require("./ExperienceManager");
+//var ExperienceManager = require("./ExperienceManager");
 var mongoose = require("mongoose");
-var Story = require('./models/Story');
+//var Story = require('./models/Story');
 
 
-var promise = mongoose.connect('mongodb://localhost/nola300', {
-  useMongoClient: true
-});
+// var promise = mongoose.connect('mongodb://localhost/nola300', {
+// 	useMongoClient: true
+// });
 
 
 var app = express();
@@ -30,15 +30,12 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 
-
-
-
 app.use('/', function(req, res, next) {
 	res.render('index', { title: 'Express' });
 });
 
-app.use('/users', function(req, res, next) {
-	res.send('respond with a resource');
+app.use('/onboard', function(req, res, next) {
+	res.render('onboard', { title: 'Nola300 Onboarding' });
 });
 
 

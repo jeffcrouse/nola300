@@ -1,11 +1,10 @@
 const SerialPort = require('serialport');
 const util = require('util');
 var EventEmitter = require('events').EventEmitter;
-var async = require("async");
 
-SerialPort.list(function (err, ports) {
-	ports.forEach(function(_info) { console.log(util.inspect(_info)); });
-});
+// SerialPort.list(function (err, ports) {
+// 	ports.forEach(function(_info) { console.log(util.inspect(_info)); });
+// });
 
 
 var FootPedal = function(mfg) {
@@ -15,56 +14,50 @@ var FootPedal = function(mfg) {
 	var self = this;
 	var port = null;
 	var options = { baudRate: 9600 };
+	var closed = false;
 
-	var stay_connected = function(next) {
-		if(port==null) {
-			console.warn("port closed. attemping to open")
-			return open_port(next);
-		}	
-		else {
-			setTimeout(next, 500);
-		}
-	}
 
-	var find_port = function(callback) {
 
-		var re =  new RegExp(mfg);
-		var comName = null;
-		SerialPort.list(function (err, ports) {
-			if(err) return callback(err);
 
-			ports.forEach(function(_info) {
-				console.log(_info.manufacturer);
-				if(_info.manufacturer && _info.manufacturer.match(re)) 
-					comName = _info.comName
-			});
-			callback(null, comName);
+	var find_port = function() {
+		return new Promise(function(resolve, reject){
+			var re =  new RegExp(mfg);
+			
+			SerialPort.list().then((ports) => {
+				var comName = null;
+				ports.forEach(function(_info) {
+					if(_info.manufacturer && _info.manufacturer.match(re)) 
+						comName = _info.comName
+				});
+				if(comName==null) reject("no port found");
+				else resolve(comName);
+
+			}).catch(reject);
 		});
 	}
 
-	var open_port = function(callback) {
-		find_port(function(err, comName){
-			if(err || !comName) return setTimeout(callback, 1000);
+	var open_port = function() {
+		return new Promise(function(resolve, reject){
+			find_port().then((comName) => {
+				console.log("[FootPedal] opening", comName);
 
-			console.log("opening", comName);
+				port = new SerialPort(comName, options);
 
-			port = new SerialPort(comName, options);
+				port.on('open', on_open);
+				port.on('error', on_error);
+				port.on('data', on_data);
+				port.on('close', on_close);
 
-			port.on('open', on_open);
-			port.on('error', on_error);
-			port.on('data', on_data);
-			port.on('close', on_close);
-
-			callback();
+			}).catch(reject);
 		});
 	}
 
 	var on_open = function() {
-		console.log("on_open");
+		console.log("[FootPedal] on_open");
 	}
 
 	var on_error = function(err) {
-		console.error('Error: ', err.message);
+		console.error('[FootPedal] Error: ', err.message);
 	}
 
 	var on_data = function(buf) {
@@ -75,22 +68,35 @@ var FootPedal = function(mfg) {
 	}
 
 	var on_close = function(data) {
-		console.log("on_close");
+		console.log("[FootPedal] on_close");
 		port = null;
 	}
 
-	this.close = function(done) {
-		if(port) {
-			console.log("closing footpedal");
-			port.close(function(err){
-				if(err) console.error(err);
-				else console.log("closed");
-				done();
-			});
-		}
+	this.close = function() {
+		closed = true;
+		return new Promise((resolve, reject) => {
+			if(port) {
+				console.log("[FootPedal] closing footpedal");
+				port.close(function(err){
+					if(err) reject(err);
+					else resolve();
+				});
+			} else resolve();
+		});
 	}
 
-	async.forever(stay_connected);
+
+	var stay_connected = function() {
+		if(port==null)  {
+			console.warn("[FootPedal] port closed. attemping to open")
+			open_port();
+		}
+
+		if(!closed) 
+			setTimeout( stay_connected, 1000 );
+	};
+
+	stay_connected();
 }
 
 util.inherits(FootPedal, EventEmitter);

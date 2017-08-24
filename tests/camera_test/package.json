@@ -10,8 +10,12 @@
   "license": "ISC",
   "dependencies": {
     "async": "^2.5.0",
+    "dotenv": "^4.0.0",
     "install": "^0.10.1",
+    "line-in": "^0.1.2",
     "npm": "^5.3.0",
-    "serialport": "^5.0.0"
+    "serialport": "^5.0.0",
+    "watson-developer-cloud": "^2.39.0",
+    "wav": "^1.0.1"
   }
 }

@@ -6,30 +6,43 @@ var canon = path.join("/Users", "jeff", "Developer", "canon-video-capture", "bui
 var CanonCamera = function(id) {
 
 	var self = this;
-	const proc = spawn(canon, ['--id', id, '--delete-after-download'], {stdio: ["ipc"]});
+	var proc = spawn(canon, ['--id', id, '--delete-after-download'], {stdio: ["ipc"]});
+	
 	proc.stdout.on('data', (data) => {
-		console.log(`stdout: ${data}`);
+		console.log(`[CanonCamera] stdout: ${data}`);
 	});
 	proc.stderr.on('data', (data) => {
-		console.log(`stderr: ${data}`);
+		console.log(`[CanonCamera] stderr: ${data}`);
 	});
 
 	proc.on('close', (code) => {
-		console.log(`child process exited with code ${code}`);
+		console.log("[CanonCamera] child process exited with code ${code}");
 	});
 
 
 	this.record = function(){
-		proc.send("record");
+		return new Promise((resolve, reject) => {
+			proc.send("record", function(err){
+				if(err) reject(err);
+				else resolve();
+			});
+		});
 	}
 
 	this.stop = function(){
-		proc.send("stop");
+		return new Promise((resolve, reject) => {
+			proc.send("stop", function(err){
+				if(err) reject(err);
+				else resolve();
+			});
+		});
 	}
 
-	this.close = function(done) {
-		proc.kill('SIGINT');
-		setTimeout(done, 2000);
+	this.close = function() {
+		return new Promise((resolve, reject) => {
+			proc.kill('SIGINT');
+			resolve();
+		});
 	}
 }
 

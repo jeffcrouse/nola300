@@ -89,7 +89,7 @@ var FootPedal = function(mfg) {
 	var stay_connected = function() {
 		if(port==null)  {
 			console.warn("[FootPedal] port closed. attemping to open")
-			open_port();
+			open_port().catch();
 		}
 
 		if(!closed) 

@@ -25,14 +25,16 @@ var SpeechToText = function() {
 
 
 
-	this.start = function(callback) {
+	this.start = function() {
 		return new Promise((resolve, reject) => {
 			if(running) return reject("[SpeechToText] already running");
 
+			recognizeStream = speechToText.createRecognizeStream(rsOptions);
+			
 			lineIn = new LineIn();
 			wavStream = new wav.Writer({ sampleRate: 44100, channels: 2 });
+
 			lineIn.pipe(wavStream);
-			recognizeStream = speechToText.createRecognizeStream(rsOptions);
 			wavStream.pipe(recognizeStream);
 
 			recognizeStream.on('listening', on_listening);
@@ -45,37 +47,38 @@ var SpeechToText = function() {
 		})
 	}
 
-	this.stop = function(callback) {
+	this.stop = function() {
 		return new Promise((resolve, reject) => {
 			if(!running) return reject("[SpeechToText] not running");
 
 			console.log("[SpeechToText] closing");
 
-			wavStream.destroy();	// first stop the wav writer going into the recognizeStream
-			lineIn.destroy();		// Next stop the raw PCM data going into the wavwriter
-			recognizeStream.destroy();
-
+			recognizeStream.stop();
+			recognizeStream = null;
 			lineIn = null;
 			wavStream = null;
-			recognizeStream = null;
 
 			running = false;
 			resolve();
 		});
 	}
 
+	this.close = function() {
+		if(running) return this.stop();
 
+	}
 
 	var on_listening = function(data) {
 		console.log("[SpeechToText] listening")
 	}
 	
 	var on_data = function(data) {
-		console.log("[SpeechToText] data", arguments);
+		self.emit("sentence", data);
+		//console.log("[SpeechToText] data", data);
 	}
 	
 	var on_results = function(data) {
-		console.log("[SpeechToText] results ", util.inspect(data));
+		//console.log("[SpeechToText] results ", util.inspect(data));
 	}
 
 	var on_close = function() {

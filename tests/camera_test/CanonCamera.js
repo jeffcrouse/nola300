@@ -9,16 +9,18 @@ var CanonCamera = function(id) {
 	var proc = spawn(canon, ['--id', id, '--delete-after-download'], {stdio: ["ipc"]});
 	
 	proc.stdout.on('data', (data) => {
-		console.log(`[CanonCamera] stdout: ${data}`);
+		process.stdout.write("[CanonCamera stdout] "+data);
 	});
 	proc.stderr.on('data', (data) => {
-		console.log(`[CanonCamera] stderr: ${data}`);
+		process.stdout.write("[CanonCamera stderr] "+data);
 	});
 
 	proc.on('close', (code) => {
-		console.log("[CanonCamera] child process exited with code ${code}");
+		process.stdout.write("[CanonCamera] child process exited with code "+code);
 	});
 
+
+	proc.send("stop");
 
 	this.record = function(){
 		return new Promise((resolve, reject) => {
@@ -40,8 +42,12 @@ var CanonCamera = function(id) {
 
 	this.close = function() {
 		return new Promise((resolve, reject) => {
-			proc.kill('SIGINT');
-			resolve();
+			proc.send("exit", function(err){
+				if(err) reject(err);
+				else resolve();
+			});
+			//proc.kill('SIGINT');
+			//resolve();
 		});
 	}
 }

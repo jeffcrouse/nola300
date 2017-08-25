@@ -102,5 +102,5 @@ var FootPedal = function(mfg) {
 util.inherits(FootPedal, EventEmitter);
 
 
-module.exports = FootPedal;
+module.exports = new FootPedal("Teensyduino");
 

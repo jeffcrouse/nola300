@@ -1,11 +1,19 @@
 require('dotenv').config({ silent: true }); 
-const stt = require('watson-developer-cloud/speech-to-text/v1');
+const SpeechToTextV1 = require('watson-developer-cloud/speech-to-text/v1');
+var NaturalLanguageUnderstandingV1 = require('watson-developer-cloud/natural-language-understanding/v1');
 const LineIn = require('line-in');  // https://github.com/linusu/node-line-in
 const wav = require('wav');			// https://github.com/tootallnate/node-wav
 const util = require('util');
 var EventEmitter = require('events').EventEmitter;
 
-const speechToText = new stt();
+const speechToText = new SpeechToTextV1();
+var nlu = new NaturalLanguageUnderstandingV1({
+	version_date: NaturalLanguageUnderstandingV1.VERSION_DATE_2017_02_27
+});
+
+// features to fetch from Watson NLU
+// https://github.com/watson-developer-cloud/node-sdk/blob/master/natural-language-understanding/v1.js
+var features = { categories: {}, concepts: {}, emotion: {}, entities: {}, keywords: {}, sentiment: {} };
 
 
 var SpeechToText = function() {
@@ -25,6 +33,7 @@ var SpeechToText = function() {
 
 
 
+	// --------------------------------------------------------------------
 	this.start = function() {
 		return new Promise((resolve, reject) => {
 			if(running) return reject("[SpeechToText] already running");
@@ -47,6 +56,7 @@ var SpeechToText = function() {
 		})
 	}
 
+	// --------------------------------------------------------------------
 	this.stop = function() {
 		return new Promise((resolve, reject) => {
 			if(!running) return reject("[SpeechToText] not running");
@@ -63,24 +73,31 @@ var SpeechToText = function() {
 		});
 	}
 
+	// --------------------------------------------------------------------
 	this.close = function() {
 		if(running) return this.stop();
-
 	}
 
+	// --------------------------------------------------------------------
 	var on_listening = function(data) {
 		console.log("[SpeechToText] listening")
 	}
 	
+	// --------------------------------------------------------------------
 	var on_data = function(data) {
-		self.emit("sentence", data);
-		//console.log("[SpeechToText] data", data);
+		var options = { text: data, features: features };
+		nlu.analyze(options, function(err, res) {
+			var sentence = {text: data, nlu: res};
+			self.emit("sentence", sentence);
+		});
 	}
 	
+	// --------------------------------------------------------------------
 	var on_results = function(data) {
 		//console.log("[SpeechToText] results ", util.inspect(data));
 	}
 
+	// --------------------------------------------------------------------
 	var on_close = function() {
 		console.log("[SpeechToText] closing");
 	}
@@ -88,4 +105,4 @@ var SpeechToText = function() {
 
 
 util.inherits(SpeechToText, EventEmitter);
-module.exports = SpeechToText;
+module.exports = new SpeechToText();

@@ -37,6 +37,9 @@ app.use('/onboard', function(req, res, next) {
 	res.render('onboard', { title: 'Nola300 Onboarding' });
 });
 
+app.use('/booth', function(req, res, next) {
+	res.render('booth', { title: 'Nola300 Booth Interface' });
+});
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

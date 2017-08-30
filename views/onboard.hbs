@@ -23,19 +23,17 @@
 
 		<div class="container">
 
-
 			<div class="card" id="00-home">
 				<div class="card-header">One Time in New Orleans</div>
 				<div class="card-body">
 					<h4 class="card-title">Welcome to NOLA 300th anniversary storytelling experience.</h4>
 					<p class="card-text">This is a story gathering experiment...</p>
 
-					<button type="button" class="btn btn-primary nextbtn" data-this="#01-home" data-next="#02-what-to-expect">Next</button>
+					<button type="button" class="btn btn-primary nextbtn">Next</button>
 				</div>
 			</div>
 
-
-			<form role="form" class="onboard-form" id="onboard-form" action="javascript:void(0);">
+			<form role="form" class="onboard-form" id="onboard-form">
 
 
 
@@ -56,6 +54,7 @@
 						<h4 class="card-title">Step 4</h4>
 						<p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
 
+						<button type="button" class="btn btn-primary backbtn">Back</button>
 						<button type="button" class="btn btn-primary nextbtn">Next</button>
 					</div>
 				</div>
@@ -68,17 +67,18 @@
 					<div class="card-body">
 
 						<div class="form-group">
-							<input type="text" class="form-control" id="fname" name="fname" placeholder="First Name" required> 
+							<input type="text" class="form-control" id="fname" name="fname" placeholder="First Name"> 
 						</div>
 
 						<div class="form-group">
-							<input type="text" class="form-control" id="lname" name="lname" placeholder="Last Name" required>
+							<input type="text" class="form-control" id="lname" name="lname" placeholder="Last Name">
 						</div>
 
 						<div class="form-group">
-							<input type="email" class="form-control" id="email" name="email" placeholder="Email" required>
+							<input type="text" class="form-control" id="email" name="email" placeholder="Email">
 						</div>
 
+						<button type="button" class="btn btn-primary backbtn">Back</button>
 						<button type="button" class="btn btn-primary nextbtn">Next</button>
 					</div>
 				</div>
@@ -93,12 +93,13 @@
 						{{#each places}}
 						<div class="form-check">
 						  <label class="form-check-label">
-						    <input class="form-check-input" type="checkbox" name="{{@key}}">
+						    <input class="form-check-input" type="checkbox" name="places" value="{{ @key }}">
 							{{this}}
 						  </label>
 						</div>
 						{{/each}}
 
+						<button type="button" class="btn btn-primary backbtn">Back</button>
 						<button type="button" class="btn btn-primary nextbtn">Next</button>
 					</div>
 				</div>
@@ -113,11 +114,13 @@
 						{{#each items}}
 						<div class="form-check">
 						  <label class="form-check-label">
-						    <input class="form-check-input" type="checkbox" name="{{@key}}">
+						    <input class="form-check-input" type="checkbox" name="items" value="{{ @key }}">
 							{{this}}
 						  </label>
 						</div>
 						{{/each}}
+
+						<button type="button" class="btn btn-primary backbtn">Back</button>
 						<button type="button" class="btn btn-primary nextbtn">Next</button>
 					</div>
 				</div>
@@ -133,12 +136,13 @@
 						{{#each themes}}
 						<div class="form-check">
 						  <label class="form-check-label">
-						    <input class="form-check-input" type="checkbox" name="{{@key}}">
+						    <input class="form-check-input" type="checkbox" name="themes" value="{{ @key }}">
 							{{this}}
 						  </label>
 						</div>
 						{{/each}}
 
+						<button type="button" class="btn btn-primary backbtn">Back</button>
 						<button type="button" class="btn btn-primary nextbtn">Next</button>
 					</div>
 				</div>
@@ -154,38 +158,39 @@
 
 						<div class="form-check">
 						  <label class="form-check-label">
-						    <input class="form-check-input" type="checkbox" name="consent" value="yes" required />
+						    <input class="form-check-input" type="checkbox" name="consent" value="yes" />
 							I agree
 						  </label>
 						</div>
 
-						<button type="button" class="btn btn-primary nextbtn">Next</button>
-					</div>
-				</div>
-
-
-
-				<div class="card" id="07-instructions">
-					<div class="card-header">Instructions</div>
-
-					<div class="card-body">
-					<h4 class="card-title">instructions here</h4>
-
-						<h4 class="card-title">Thing 1</h4>
-						<p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
-
-						<h4 class="card-title">Thing 2</h4>
-						<p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
-
-						<h4 class="card-title">Thing 3</h4>
-						<p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
-
-						<button type="button" class="btn btn-primary nextbtn">Next</button>
+						<button type="button" class="btn btn-primary backbtn">Back</button>
+						<button type="submit" class="btn btn-primary">Done</button>
+						
 					</div>
 				</div>
 
 			</form>
 
+
+
+			<div class="card" id="07-instructions">
+				<div class="card-header">Instructions</div>
+
+				<div class="card-body">
+				<h4 class="card-title">instructions here</h4>
+
+					<h4 class="card-title">Thing 1</h4>
+					<p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+
+					<h4 class="card-title">Thing 2</h4>
+					<p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+
+					<h4 class="card-title">Thing 3</h4>
+					<p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+
+					<button type="button" class="btn btn-primary nextbtn">Next</button>
+				</div>
+			</div>
 
 			<div class="card" id="08-queue">
 				<div class="card-header">Get ready!</div>
@@ -203,7 +208,6 @@
 
 		<!-- Optional JavaScript -->
 		<!-- jQuery first, then Popper.js, then Bootstrap JS -->
-		<!-- <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>-->
 		<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
 		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
@@ -217,31 +221,57 @@
 			"#06-legal", "#07-instructions", "#08-queue"];
 		var p = 0;
 
+		// Fade in the first page
 		$(pages[p]).fadeIn("fast");
+
+		// Handle the "next" action on all pages
 		$("button.nextbtn").click(function() {
-		
 			var current = $(pages[p]);
-
-			if(p==6) {
-				var data = form.serialize();
-				
-			}
-
 			var next = $(pages[p+1]);
 			current.slideToggle("slow");
 			next.slideToggle("slow");
-
 			p++;
-	
 			return false;
 		})
+
+		$("button.backbtn").click(function() {
+			var current = $(pages[p]);
+			var prev = $(pages[p-1]);
+			current.slideToggle("slow");
+			prev.slideToggle("slow");
+			p--;
+		});
+
+		// Handle the form submit
+		$("#onboard-form").submit(function( event ) {
+			console.log("submit! "+form.serialize())
+			$.ajax({
+				type: "POST",
+				url: "/onboard",
+				dataType: 'json',
+				data: form.serialize()
+			}).done(function(data){
+				console.log(data);
+				if(data.status=="OK") {
+					$(pages[6]).fadeOut("fast");
+					$(pages[7]).fadeIn("fast");
+					p = 7;
+				} else {
+					alert(data.messages.join("\n"));
+					console.log(data.messages)
+				}
+
+			}).fail(function(xhr, status, error){
+				console.log("error submitting data: "+error);
+			});
+			event.preventDefault();
+		});
+
 
 		var socket = io.connect("/onboard");
 		socket.on('news', function (data) {
 			console.log( data );
 		});
-
-
 		</script>
 	</body>
 </html>

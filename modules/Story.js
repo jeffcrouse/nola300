@@ -7,19 +7,35 @@ var SentenceSchema = Schema({
 	nlu: 		{ type: Schema.Types.Mixed, default: null }
 });
 
+var EntitiesSchema = Schema({
+	places: 		[ { type: String } ],
+	items: 			[ { type: String } ],
+	themes: 		[ { type: String } ]
+});
+
 var StorySchema = Schema({
 	createdAt:  	{ type: Date, default: Date.now },
 
 	name: 			{ 
-						first: 	{ type: String, required: true },
-						last: 	{ type: String, required: true },
+						first: 	{ 
+							type: String,
+							minlength: [2, 'First name must be at least 2 characters.'],
+							maxlength: [20, 'FIrst name must be less than 20 characters.'],
+							required: [true, 'Your username cannot be blank.'],
+							trim: true,
+						},
+						last: 	{ 
+							type: String,
+							minlength: [2, 'First name must be at least 2 characters.'],
+							maxlength: [20, 'First name must be less than 20 characters.'],
+							required: [true, 'Your username cannot be blank.'],
+							trim: true,
+						},
 	},
 
-	email: 			{ type: String, required: true },
+	email: 			{ type: String },
 
-	locations: 		[ { type: String } ],			// TO DO: validate that at least 1 location, item, or theme is chosen
-	items: 			[ { type: String } ],
-	themes: 		[ { type: String } ],
+	entities: 		{ type: EntitiesSchema, default: EntitiesSchema },
 
 	recordStart:  	{ type: Date, default: null },
 	recordEnd:  	{ type: Date, default: null },
@@ -37,12 +53,24 @@ var lean = function(doc, ret, options) {
     return ret;
 }
 
-
 if (!StorySchema.options.toObject) StorySchema.options.toObject = {};
 StorySchema.options.toObject.transform = lean;
 
 if (!StorySchema.options.toJSON) StorySchema.options.toJSON = {};
 StorySchema.options.toJSON.transform = lean;
+
+
+// ----------------------------------------------------------
+StorySchema.path('entities').validate(function(entities){
+	var total = entities.places.length + entities.items.length + entities.themes.length;
+	return total > 1;
+}, 'Please provide a few places, items, or themes');
+
+// ----------------------------------------------------------
+StorySchema.path('email').validate(function (email) {
+   var emailRegex = /^([\w-\.]+@([\w-]+\.)+[\w-]{2,4})?$/;
+   return emailRegex.test(email); // Assuming email has a text attribute
+}, 'Please provide a valid email address');
 
 
 // ----------------------------------------------------------

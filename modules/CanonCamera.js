@@ -8,17 +8,25 @@ const path = require('path');
 //
 
 var canon = path.join("/Users", "jeff", "Developer", "canon-video-capture", "build", "Release", "canon-video-capture");
+String.prototype.trim = function() {
+  return this.replace(/^\s+|\s+$/g, "");
+};
+
 
 var CanonCamera = function(id) {
 
+	var debug = require('debug')('camera'+id);
 	var self = this;
 	var proc = spawn(canon, ['--id', id, '--delete-after-download', "--overwrite"], {stdio: ["ipc"]});
 	var download_callback = null;
 
 	proc.stdout.on('data', (data) => {
-		var words = data.toString().split(" ");
+		data = data.toString().trim();
+
+		var words = data.split(" ");
 		if(words[0]=="[status]") {
-			process.stdout.write("[CanonCamera] "+data);
+			debug(data);
+
 			if(words[1]=="downloaded") {
 				if(download_callback) {
 					download_callback(words[1]);
@@ -30,21 +38,23 @@ var CanonCamera = function(id) {
 	});
 
 	proc.stderr.on('data', (data) => {
-		if(data.toString().indexOf("[error]")==0) {
-			process.stdout.write("[CanonCamera] "+data);
+		data = data.toString().trim();
+
+		if(data.indexOf("[error]")==0) {
+			debug(data);
 			throw data;
 		}
 	});
 
 	proc.on('close', (code) => {
-		process.stdout.write("[CanonCamera] child process exited with code "+code);
+		debug("child process exited with code "+code);
 	});
 
 	proc.send("stop");
 
 	this.record = function(filename){
 		return new Promise((resolve, reject) => {
-			console.log("[CanonCamera] record");
+			debug("record");
 			proc.send("record", function(err){
 				if(err) reject(err);
 				else resolve();
@@ -55,7 +65,7 @@ var CanonCamera = function(id) {
 
 	this.stop = function(filename){
 		return new Promise((resolve, reject) => {
-			console.log("[CanonCamera] stop "+filename);
+			debug("stop "+filename);
 			proc.send("stop "+filename, function(err){
 				if(err) return reject(err);
 				download_callback = resolve;

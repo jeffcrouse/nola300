@@ -16,6 +16,7 @@
     "line-in": "^0.1.2",
     "mongoose": "^4.11.7",
     "morgan": "~1.8.1",
+    "serialport": "^5.0.0",
     "serve-favicon": "~2.4.2",
     "socket.io": "^2.0.3",
     "watson-developer-cloud": "^2.38.0",

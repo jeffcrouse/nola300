@@ -1,6 +1,7 @@
 const SerialPort = require('serialport');
 const util = require('util');
 var EventEmitter = require('events').EventEmitter;
+var debug = require('debug')('footpedal');
 
 // SerialPort.list(function (err, ports) {
 // 	ports.forEach(function(_info) { console.log(util.inspect(_info)); });
@@ -39,7 +40,7 @@ var FootPedal = function(mfg) {
 	var open_port = function() {
 		return new Promise(function(resolve, reject){
 			find_port().then((comName) => {
-				console.log("[FootPedal] opening", comName);
+				debug("opening", comName);
 
 				port = new SerialPort(comName, options);
 
@@ -53,11 +54,11 @@ var FootPedal = function(mfg) {
 	}
 
 	var on_open = function() {
-		console.log("[FootPedal] on_open");
+		debug("on_open");
 	}
 
 	var on_error = function(err) {
-		console.error('[FootPedal] Error: ', err.message);
+		debug('error opening port: ', err.message);
 	}
 
 	var on_data = function(buf) {
@@ -68,7 +69,7 @@ var FootPedal = function(mfg) {
 	}
 
 	var on_close = function(data) {
-		console.log("[FootPedal] on_close");
+		debug("on_close");
 		port = null;
 	}
 
@@ -76,7 +77,7 @@ var FootPedal = function(mfg) {
 		closed = true;
 		return new Promise((resolve, reject) => {
 			if(port) {
-				console.log("[FootPedal] closing footpedal");
+				debug("closing footpedal");
 				port.close(function(err){
 					if(err) reject(err);
 					else resolve();
@@ -88,7 +89,7 @@ var FootPedal = function(mfg) {
 
 	var stay_connected = function() {
 		if(port==null)  {
-			console.warn("[FootPedal] port closed. attemping to open")
+			debug("port closed. attemping to open")
 			open_port().catch();
 		}
 

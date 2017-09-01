@@ -8,8 +8,8 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var mongoose = require("mongoose");
 var socketio = require('socket.io')
-var Story = require('./modules/Story')
 var mongoose = require('mongoose');
+var storage = require('node-persist');
 
 /*
 ┌┬┐┌─┐┌┬┐┌─┐┌┐ ┌─┐┌─┐┌─┐
@@ -17,13 +17,13 @@ var mongoose = require('mongoose');
 ─┴┘┴ ┴ ┴ ┴ ┴└─┘┴ ┴└─┘└─┘
 */
 
-mongoose.Promise = global.Promise;
-var db_url = 'mongodb://localhost:27017/nola300';
-mongoose.connect(db_url, {useMongoClient: true}, function(err){
-	if(err) throw("couldn't connect to", db_url);
-	else debug("connected to", db_url);
-});
-
+// mongoose.Promise = global.Promise;
+// var db_url = 'mongodb://localhost:27017/nola300';
+// mongoose.connect(db_url, {useMongoClient: true}, function(err){
+// 	if(err) throw("couldn't connect to", db_url);
+// 	else debug("connected to", db_url);
+// });
+//var Story = require('./modules/Story')
 
 
 
@@ -74,17 +74,20 @@ app.get('/', function(req, res, next) {
  ▀▀▀▀▀▀▀▀▀▀▀  ▀        ▀▀  ▀▀▀▀▀▀▀▀▀▀   ▀▀▀▀▀▀▀▀▀▀▀  ▀         ▀  ▀         ▀  ▀▀▀▀▀▀▀▀▀▀  
 *****************************************************************************************/                                                                                        
 
-
-var GoogleSheet = require('./modules/GoogleSheet')
-var onboard = io.of('/onboard');
-onboard.emit("booth_status", "empty");
-
+var Story = require('modules/Story');
+var GoogleSheet = require('./modules/GoogleSheet');
+var onboard_socket = io.of('/onboard');
 var onboard_story = null;
 
+storage.init().then(() => {
+	storage.getItem("onboard_story").then((value) => {
+		onboard_story = new Story(value);
+	});
+});
+
+onboard_socket.emit("booth_status", "empty");
 
 app.get('/onboard', function(req, res, next) {
-
-
 	var data = {
 		layout: false,
 		places: GoogleSheet.places,
@@ -94,36 +97,22 @@ app.get('/onboard', function(req, res, next) {
 	res.render('onboard', data);
 });
 
-
 app.post('/onboard', function(req, res, next){
-
 	var story = new Story();
-	story.name.first = req.body.fname;
-	story.name.last = req.body.lname;
-	story.email = req.body.email;
-
-	if(req.body.places) 	story.entities.places = req.body.places;
-	if(req.body.items) 		story.entities.items = req.body.items;
-	if(req.body.themes) 	story.entities.themes = req.body.themes;
-
-	story.save(function(err, doc){
-		if(err) {
-			var errors = Object.keys(err.errors).map(function(key){
-				return err.errors[key].message;
-			});	
-			res.json({status: "ERROR", messages: errors});
-		} else {
-			res.json({status: "OK", shortID: doc.shortID});
-			
-
-		}
+	story.populate(req.body, true).then((story)=>{
+		onboard_story = story;
+		res.json( {status: "OK"} );
+	}).catch( (errors)=>{
+		res.json({status: "ERROR", messages: errors});
 	});
 });
 
-
-onboard.on( "connection", function( socket ) {
-   debug("onboard client joined")
+onboard_socket.on( "connection", function( socket ) {
+	debug("onboard socket client joined")
 });
+
+
+
 
 
 
@@ -148,18 +137,23 @@ var FootPedal = require('./modules/FootPedal')
 var CanonCamera = require('./modules/CanonCamera')
 var SpeechToText = require('./modules/SpeechToText');
 var OnAirSign = require('./modules/OnAirSign')
-var session = false;
-var session_story = null;
+
+var session_in_progress = false;
+var booth_story = null;
 var cam0 = new CanonCamera("0");
 var cam1 = new CanonCamera("1");
-
+var booth_socket = io.of('/booth');
 
 
 FootPedal.on("press", function(date){
 	debug("footpedal pressed")
-	if(session) {
+
+	if(session_in_progress) {
 		end_session();
 	} else {
+		if(booth_story==null) {
+			
+		}
 		start_session();
 	}
 });
@@ -172,15 +166,15 @@ app.get('/booth', function(req, res, next) {
 
                                      
 
-var booth = io.of('/booth');
-booth.on( "connection", function( socket ) {
-	debug("booth client joined")
+
+booth_socket.on( "connection", function( socket ) {
+	debug("booth socket client joined")
 	app.timer.begin();
 });
 
 
 setInterval(() => {
-	booth.emit('time', timer.get_time_str())
+	booth_socket.emit('time', timer.get_time_str())
 }, 100);
 
 

@@ -37,8 +37,10 @@ var StorySchema = Schema({
 
 	entities: 		{ type: EntitiesSchema, default: EntitiesSchema },
 
-	recordStart:  	{ type: Date, default: null },
-	recordEnd:  	{ type: Date, default: null },
+	record:  		{ 
+						start: 	{ type: Date, default: null },
+						end: 	{ type: Date, default: null }
+	},
 
 	shortID: 		{ type: String, default: null },
 	footage: 		[ { type: String } ],
@@ -133,6 +135,16 @@ StorySchema.methods.addSentence = function(sentence) {
   		// TODO: save model?
   	});
 };
+
+// ----------------------------------------------------------
+StorySchema.statics.getUnrecorded = function() {
+	return new Promise((resolve, reject) => {
+		mongoose.model('Story').find({record.start: null, record.end: null}).sort({createdAt: -1}).exec((err,docs) => {
+			if(err) return reject(err);
+			else resolve(docs);
+		});
+	});
+} 
 
 // ----------------------------------------------------------
 StorySchema.statics.list = function(cb) {

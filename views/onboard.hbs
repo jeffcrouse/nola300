@@ -4,7 +4,7 @@
 		<!-- Required meta tags -->
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-		<title>{{title}}</title>
+		<title>Nola300 Onboarding Interface</title>
 
 
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
@@ -197,7 +197,7 @@
 				<div class="card-body">
 					<h4 class="card-title">Wait for the light to turn green</h4>
 
-
+					<div id="booth_status"></div>
 
 				</div>
 			</div>
@@ -215,6 +215,8 @@
 		<script src="/socket.io/socket.io.js"></script>
 		<script>
 		var form = $("#onboard-form");
+		var booth_status = ("#booth_status");
+
 
 		var pages = ["#00-home", "#01-what-to-expect", "#02-guest-info", 
 			"#03-location", "#04-items", "#05-theme", 
@@ -269,9 +271,21 @@
 
 
 		var socket = io.connect("/onboard");
-		socket.on('news', function (data) {
-			console.log( data );
+		socket.on('booth_status', function (data) {
+			if(data=="empty") {
+				booth_status.text("Go ahead in!");
+			} 
+			else if(data=="occupied") {
+				booth_status.text("Please wait for the previous guest to finish.");
+			}
 		});
+
+		socket.on('reset_form', function() {
+			$(pages[p]).slideToggle("slow");
+			$(pages[0]).slideToggle("slow");
+			p = 0;
+		});
+
 		</script>
 	</body>
 </html>

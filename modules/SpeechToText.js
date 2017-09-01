@@ -5,6 +5,8 @@ const LineIn = require('line-in');  // https://github.com/linusu/node-line-in
 const wav = require('wav');			// https://github.com/tootallnate/node-wav
 const util = require('util');
 var EventEmitter = require('events').EventEmitter;
+// TODO: change console.logs to deug calls
+
 
 const speechToText = new SpeechToTextV1();
 var nlu = new NaturalLanguageUnderstandingV1({
@@ -59,7 +61,7 @@ var SpeechToText = function() {
 	// --------------------------------------------------------------------
 	this.stop = function() {
 		return new Promise((resolve, reject) => {
-			if(!running) return reject("[SpeechToText] not running");
+			if(!running) return reject("SpeechToText not running");
 
 			console.log("[SpeechToText] closing");
 

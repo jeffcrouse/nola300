@@ -5,10 +5,11 @@ var CountdownTimer = function() {
 	
 	var self = this;
 	var start_time = null;
-	var countdown_from = 120000;
+	var countdown_from;
 
 
-	this.begin = function() {
+	this.begin = function(time) {
+		countdown_from = time;
 		start_time = Date.now();
 		setTimeout(() => {
 			start_time = null;
@@ -16,7 +17,11 @@ var CountdownTimer = function() {
 		}, countdown_from);
 	}
 
-	this.get_time = function() {
+	this.stop = function() {
+		start_time = null;
+	}
+
+	this.get_time_str = function() {
 		if(start_time) {
 			var elapsed = Date.now() - start_time;
 			return msToTime(countdown_from - elapsed);

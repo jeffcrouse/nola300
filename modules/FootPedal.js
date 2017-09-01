@@ -11,50 +11,14 @@ var debug = require('debug')('footpedal');
 var FootPedal = function(mfg) {
 	EventEmitter.call(this);
 
-
 	var self = this;
 	var port = null;
 	var options = { baudRate: 9600 };
-	var closed = false;
-
-
-
-
-	var find_port = function() {
-		return new Promise(function(resolve, reject){
-			var re =  new RegExp(mfg);
-			
-			SerialPort.list().then((ports) => {
-				var comName = null;
-				ports.forEach(function(_info) {
-					if(_info.manufacturer && _info.manufacturer.match(re)) 
-						comName = _info.comName
-				});
-				if(comName==null) reject("no port found");
-				else resolve(comName);
-
-			}).catch(reject);
-		});
-	}
-
-	var open_port = function() {
-		return new Promise(function(resolve, reject){
-			find_port().then((comName) => {
-				debug("opening", comName);
-
-				port = new SerialPort(comName, options);
-
-				port.on('open', on_open);
-				port.on('error', on_error);
-				port.on('data', on_data);
-				port.on('close', on_close);
-
-			}).catch(reject);
-		});
-	}
+	var closed = false;					// this means INTENTIONALLY CLOSED by the user, not the default state of the port.
+	var re =  new RegExp(mfg);
 
 	var on_open = function() {
-		debug("on_open");
+		debug("opened");
 	}
 
 	var on_error = function(err) {
@@ -77,10 +41,11 @@ var FootPedal = function(mfg) {
 		closed = true;
 		return new Promise((resolve, reject) => {
 			if(port) {
-				debug("closing footpedal");
+				debug("closing");
 				port.close(function(err){
 					if(err) reject(err);
 					else resolve();
+					// port gets set to null in on_close
 				});
 			} else resolve();
 		});
@@ -90,11 +55,27 @@ var FootPedal = function(mfg) {
 	var stay_connected = function() {
 		if(port==null)  {
 			debug("port closed. attemping to open")
-			open_port().catch();
-		}
 
-		if(!closed) 
-			setTimeout( stay_connected, 1000 );
+			SerialPort.list().then((ports) => {
+				var comName = null;
+				ports.forEach(function(_info) {
+					if(_info.manufacturer && _info.manufacturer.match(re)) 
+						comName = _info.comName
+				});
+				if(comName==null) 
+					return debug("no port found");
+				
+				debug("opening", comName);
+
+				port = new SerialPort(comName, options);
+
+				port.on('open', on_open);
+				port.on('error', on_error);
+				port.on('data', on_data);
+				port.on('close', on_close);
+			})
+		}
+		if(!closed) setTimeout( stay_connected, 5000 );
 	};
 
 	stay_connected();

@@ -34,7 +34,6 @@ var CanonCamera = function(id) {
 				}
 			}
 		}
-
 	});
 
 	proc.stderr.on('data', (data) => {

@@ -38,7 +38,7 @@ var CanonCamera = function(id) {
 
 	proc.stderr.on('data', (data) => {
 		data = data.toString().trim();
-
+		
 		if(data.indexOf("[error]")==0) {
 			debug(data);
 			throw data;
@@ -73,6 +73,7 @@ var CanonCamera = function(id) {
 	}
 
 	this.close = function() {
+		debug("closing");
 		return new Promise((resolve, reject) => {
 			proc.send("exit", function(err){
 				if(err) reject(err);

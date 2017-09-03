@@ -65,3 +65,4 @@ typings/
 ._*
 *.sublime-project
 *.sublime-workspace
+/.node-persist

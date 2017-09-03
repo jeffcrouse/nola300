@@ -26,15 +26,15 @@ var _ = require('underscore');
 // 	else debug("connected to", db_url);
 // });
 
-
+var finished_stories = [];
 
 // Try to load onboard_story_id and then load the story itself
 storage.init().then(() => {
 	
-	storage.getItem("onboard_story_id").then((id) => {
+	storage.getItem("onboard_story_id").then(id => {
 		if(!id) return debug("no onboard_story_id found")
 
-		Story.load(id).then( story => {
+		Story.load(id).then(story => {
 			if(story) {
 				debug("onboard_story", story.id)
 				onboard_story = story;
@@ -46,7 +46,7 @@ storage.init().then(() => {
 		debug(err);
 	});
 
-	storage.getItem("booth_story_id").then((id) => {
+	storage.getItem("booth_story_id").then(id => {
 		if(!id) return debug("no booth_story_id found")
 
 		Story.load(id).then( story => {
@@ -60,7 +60,17 @@ storage.init().then(() => {
 	}).catch((err)=>{
 		debug(err);
 	});
+
+	storage.getItem("finished_stories").then(ids=>{
+		if(!ids) return debug("no finished_stories found");
+
+		// TO DO: load IDS.
+	});
+
 });
+
+
+// TO DO:  process stories
 
 
 
@@ -135,11 +145,7 @@ app.post('/onboard', function(req, res, next){
 
 	//console.log("post", req.body);
 
-	
-
-	var a = Story.create(req.body);
-	var b = a.then( story => { return story.save() });
-	Promise.all([a, b]).then( ([a, story]) => {
+	var a = Story.create(req.body).then(story => { return story.save() }).then(story => {
 		debug("created story", story);
 
 		res.json({status: "OK"});
@@ -152,7 +158,6 @@ app.post('/onboard', function(req, res, next){
 			storage.setItem("booth_story_id", booth_story.id);
 			booth_socket.emit("set_name", booth_story.name);
 		}
-
 	}).catch( errors => {
 		debug(errors);
 		res.json({status: "ERROR", messages: errors});
@@ -200,6 +205,69 @@ var booth_socket = io.of('/booth');
 
 
 
+// TO DO: Make this all async/promisified
+var end_session = function() {
+	
+	return OnAirSign.off().then(()=>{
+		var path = booth_story.getVideoPath(0);
+		return cam0.stop(path);
+	}).then(()=>{
+		var path = booth_story.getVideoPath(1);
+		return cam1.stop(path);
+	}).then(()=>{
+		return SpeechToText.stop();
+	}).then(()=>{
+		booth_story.session.end = Date.now();
+		return booth_story.save();
+	}).then(()=>{
+		booth_story = null;
+		return storage.setItem("booth_story_id", null);
+	}).then(()=>{
+		onboard_socket.emit("booth_status", "empty");
+		onboard_socket.emit("reset_form", true);
+		session_in_progress = false;
+		timer.stop();
+	});
+}
+
+
+
+	// TO DO: Make this all async/promisified
+var start_session = function() {
+
+	return OnAirSign.on().then(cam0.record).then(cam1.record);
+
+
+
+	onboard_socket.emit("booth_status", "occupied");
+
+	timer.begin(120000);
+
+
+	
+	
+
+	
+	if(onboard_story) {
+		booth_story = onboard_story;
+		onboard_story = null;
+		storage.setItem("onboard_story_id", null);
+		storage.setItem("booth_story_id", booth_story.id);
+		booth_socket.emit("set_name", booth_story.name);
+	}
+
+	
+	
+	
+	
+	SpeechToText.start();
+	booth_story.session.start = Date.now();
+	session_in_progress = true;
+}
+
+
+
+
 FootPedal.on("press", function(date){
 	debug("footpedal pressed")
 	if(!booth_story) {
@@ -207,52 +275,10 @@ FootPedal.on("press", function(date){
 		return;
 	}
 
-	// TO DO: Make this all async/promisified
 	if(session_in_progress) {
-
-		onboard_socket.emit("booth_status", "empty");
-
-		OnAirSign.off();
-
-		var path_cam0 = booth_story.getVideoPath(0);
-		var path_cam1 = booth_story.getVideoPath(1);
-
-		timer.stop();
-		cam0.stop(path_cam0);
-		cam1.stop(path_cam1);
-		SpeechToText.stop()
-		story.session.end = Date.now();
-
-		booth_story.finish();
-		booth_story = null;
-
-		if(onboard_story) {
-			booth_story = onboard_story;
-			onboard_story = null;
-			storage.setItem("onboard_story_id", null);
-			storage.setItem("booth_story_id", booth_story.id);
-			booth_socket.emit("set_name", booth_story.name);
-		}
-
-		session_in_progress = false;
-
+		end_session();
 	} else {
-
-		var path_cam0 = booth_story.getVideoPath(0);
-		var path_cam1 = booth_story.getVideoPath(1);
-
-		onboard_socket.emit("booth_status", "occupied");
-		onboard_socket.emit("reset_form", true);
-		
-
-
-		OnAirSign.on();
-		timer.begin(120000);
-		cam0.record(path_cam0);
-		cam1.record(path_cam1);
-		SpeechToText.start();
-		booth_story.session.start = Date.now();
-		session_in_progress = true;
+		start_session();
 	}
 });
 
@@ -269,9 +295,10 @@ booth_socket.on( "connection", function( socket ) {
 });
 
 
-// setInterval(() => {
-// 	booth_socket.emit('time', timer.get_time_str())
-// }, 100);
+setInterval(() => {
+	if(session_in_progress) 
+		booth_socket.emit('time', timer.get_time_str())
+}, 100);
 
 
 
@@ -279,7 +306,6 @@ booth_socket.on( "connection", function( socket ) {
 var timer = new CountdownTimer();
 timer.on("done", () => {
 	if(session_in_progress) {
-
 		debug("TODO: FORCEFULLY END SESSION HERE")
 	}
 });
@@ -328,8 +354,8 @@ app.use(function(err, req, res, next) {
 });
 
 // Close function to be called from the graceful shutdown procedure in app/www
-app.close = function(done) {
-	Promise.all([FootPedal.close(), cam0.close(), cam1.close()]).then(done).catch(console.error);
+app.close = function() {
+	return FootPedal.close().then(OnAirSign.close).then(cam0.close).then(cam1.close);
 }
 
 module.exports = app;

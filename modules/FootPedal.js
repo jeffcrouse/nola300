@@ -40,21 +40,21 @@ var FootPedal = function(mfg) {
 	this.close = function() {
 		closed = true;
 		return new Promise((resolve, reject) => {
-			if(port) {
-				debug("closing");
-				port.close(function(err){
-					if(err) reject(err);
-					else resolve();
-					// port gets set to null in on_close
-				});
-			} else resolve();
+			if(!port) return resolve()
+
+			debug("closing");
+			port.close(function(err){
+				if(err) reject(err);
+				else resolve();
+				// port gets set to null in on_close
+			});
 		});
 	}
 
 
 	var stay_connected = function() {
 		if(closed) return;
-		
+
 		if(port==null)  {
 			debug("port closed. attemping to open")
 

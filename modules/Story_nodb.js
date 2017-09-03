@@ -3,8 +3,12 @@ var debug = require('debug')('story');
 const mkdirp = require('mkdirp');
 const fs = require('fs');
 const path = require('path');
+const util = require('util');
+const exec = require('child_process').exec;
 var validator = require('validator');
 var _ = require('underscore');
+
+
 
 mkdirp(process.env.STORY_STORAGE_ROOT, debug);
 
@@ -39,7 +43,7 @@ Story.create = function(data) {
 	return new Promise((resolve, reject) => {
 		var story = new Story();
 
-		story.id = makeID(6);
+		story.id = makeID(8);
 		story.name.first = data.fname;
 		story.name.last = data.lname;
 		story.email = data.email;
@@ -99,7 +103,7 @@ Story.prototype.validate = function() {
 
 	var errors = [];
 
-	if(!this.id || this.id.length!=6) {
+	if(!this.id || this.id.length != 8) {
 		errors.push("Invalid story ID. Something went wrong.")
 	}
 	if(!validator.isLength(this.name.first, {min:2, max: 20})) {
@@ -164,19 +168,27 @@ Story.prototype.addSentence = function(sentence) {
 
 // ----------------------------------------------------------
 Story.prototype.zip = function() {
-
+	return new Promise((resolve, reject) => {
+		var cmd = util.format("tar -zcvf %s.tar.gz %s", this.path(), this.path());
+		debug(cmd);
+		exec(cmd, function(err){
+			if(err) return reject(err);
+			resolve();
+		})
+	});
 }
 
 // ----------------------------------------------------------
 Story.prototype.upload = function() {
-	
+	return new Promise((resolve, reject) => {
+		resolve();
+	});
 }
 
 // ----------------------------------------------------------
 // Mark this story as "ready to zip and upload"
 Story.prototype.finish = function() {
-	var a = this.save();
-	var b = a.then( () => { return this.zip() } )
+	return this.save().then(this.zip).then(this.upload);
 }
 
 

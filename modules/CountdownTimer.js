@@ -6,12 +6,12 @@ var CountdownTimer = function() {
 	var self = this;
 	var start_time = null;
 	var countdown_from;
-
+	var timeout = null;
 
 	this.begin = function(time) {
 		countdown_from = time;
 		start_time = Date.now();
-		setTimeout(() => {
+		timeout = setTimeout(() => {
 			start_time = null;
 			self.emit("done");
 		}, countdown_from);
@@ -19,6 +19,7 @@ var CountdownTimer = function() {
 
 	this.stop = function() {
 		start_time = null;
+		clearTimeout(timeout);
 	}
 
 	this.get_time_str = function() {
@@ -29,12 +30,6 @@ var CountdownTimer = function() {
 			return msToTime(0);
 		}
 	}
-
-	// var paddy = function(n, p, c) {
-	//     var pad_char = typeof c !== 'undefined' ? c : '0';
-	//     var pad = new Array(1 + p).join(pad_char);
-	//     return (pad + n).slice(-pad.length);
-	// }
 
 	var msToTime = function(duration) {
 	    var milliseconds = parseInt((duration%1000)/100)

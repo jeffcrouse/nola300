@@ -23,31 +23,37 @@ var OnAirSign = function(serial) {
 	}
 
 	// ---------------------------
-	this.on = function(callback) {
-		on = true;
-		debug("on")
-		if(port) port.write("1", "utf8", callback);
+	this.on = function() {
+		return new Promise((resolve, reject) => {
+			if(!port) return reject("no port");
+			on = true;
+			debug("on")
+			return port.write("1", "utf8");
+		});
 	}
 
 	// ---------------------------
-	this.off = function(callback) {
-		on = false;
-		debug("off")
-		if(port) port.write("0", "utf8", callback);
+	this.off = function() {
+		return new Promise((resolve, reject) => {
+			if(!port) return reject("no port");
+			debug("off")
+			on = false;
+			return port.write("0", "utf8");
+		});
 	}
 
 	// ---------------------------
 	this.close = function() {
 		closed = true;
 		return new Promise((resolve, reject) => {
-			if(port) {
-				debug("closing");
-				port.close(function(err){
-					if(err) reject(err);
-					else resolve();
-					// port gets set to null in on_close
-				});
-			} else resolve();
+			if(!port) return resolve()
+
+			debug("closing");
+			port.close(function(err){
+				if(err) reject(err);
+				else resolve();
+				// port gets set to null in on_close
+			});
 		});
 	}
 

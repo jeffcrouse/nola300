@@ -53,6 +53,8 @@ var FootPedal = function(mfg) {
 
 
 	var stay_connected = function() {
+		if(closed) return;
+		
 		if(port==null)  {
 			debug("port closed. attemping to open")
 
@@ -75,7 +77,7 @@ var FootPedal = function(mfg) {
 				port.on('close', on_close);
 			})
 		}
-		if(!closed) setTimeout( stay_connected, 5000 );
+		if(!closed) setTimeout( stay_connected, 1000 );
 	};
 
 	stay_connected();

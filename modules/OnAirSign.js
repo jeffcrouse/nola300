@@ -3,11 +3,9 @@ const util = require('util');
 //process.env['DEBUG']="onair";
 var debug = require('debug')('onair');
 
-
-
-SerialPort.list(function (err, ports) {
-	ports.forEach(function(_info) { console.log(util.inspect(_info)); });
-});
+// SerialPort.list(function (err, ports) {
+// 	ports.forEach(function(_info) { console.log(util.inspect(_info)); });
+// });
 
 var OnAirSign = function(serial) {
 
@@ -73,6 +71,8 @@ var OnAirSign = function(serial) {
 
 
 	var stay_connected = function() {
+		if(closed) return;
+
 		if(port==null)  {
 			debug("port closed. attemping to open")
 
@@ -95,11 +95,11 @@ var OnAirSign = function(serial) {
 				port.on('close', on_close);
 			})
 		}
-		if(!closed) setTimeout( stay_connected, 5000 );
+		if(!closed) setTimeout( stay_connected, 1000 );
 	};
 
 	stay_connected();
 }
 
 
-modules.export = new OnAirSign("85438333935351F071D2");
+module.exports = new OnAirSign("85438333935351F071D2");

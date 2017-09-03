@@ -1,6 +1,12 @@
+require('dotenv').config({ silent: true }); 
+var debug = require('debug')('story');
 var mongoose = require('mongoose');
 const path = require('path');
 var Schema = mongoose.Schema;
+const mkdirp = require('mkdirp');
+
+mkdirp(process.env.STORY_STORAGE_ROOT, debug);
+
 
 var SentenceSchema = Schema({
 	text: 		{ type: String, required: true },
@@ -90,8 +96,6 @@ StorySchema.pre('save', function(next) {
 	});
 });
 
-
-
 // ----------------------------------------------------------
 function makeID(len) {
 	var text = "";
@@ -102,49 +106,55 @@ function makeID(len) {
 }
 
 
-
-
 // ----------------------------------------------------------
-StorySchema.methods.assignShortID = function() {
-
+StorySchema.methods.saveDataFile = function() {
 	return new Promise((resolve, reject) => {
-		if(this.shortID) return resolve(this.shortID);
-
-		mongoose.model('Story').getUsedIDs().then((used_ids) => {
-			do {
-				this.shortID = makeID(6);
-			} while(used_ids.indexOf(this.shortID)!=-1);
-			resolve(this.shortID);
-		}).catch(reject);
+		mkdirp(this.dir, function(err){
+			var data_file = path.join(this.directory(), "data.json");
+			fs.writeFile(data_file, this.toJSON(), 'utf8', function(err){
+				if(err) return reject(err);
+				else resolve();
+			});
+		});
 	});
 }
 
 // ----------------------------------------------------------
-StorySchema.methods.getVideoPath = function(camID) {
+StorySchema.methods.directory = function() {
+	return path.join(process.env.STORY_STORAGE_ROOT, this.shortID); 
+}
 
-	var filename = ["vid", this.shortID, camID].join("_") + ".mp4";
-	var fullpath = path.join(process.env.VIDEO_STORAGE_ROOT, filename); 
-	return fullpath;
+// ----------------------------------------------------------
+StorySchema.methods.videoPath = function(camID) {
+	var filename = "vid_" + camID + ".mp4";
+	return path.join( this.directory(), filename);
+}
+
+// ----------------------------------------------------------
+StorySchema.methods.populateFromForm = function(data) {
+	this.name.first = data.fname;
+	this.name.last = data.lname;
+	this.email = data.email;
+
+	if(data.places) 	this.entities.places = data.places;
+	if(data.items) 		this.entities.items = data.items;
+	if(data.themes) 	this.entities.themes = data.themes;
 }
 
 // ----------------------------------------------------------
 StorySchema.methods.addSentence = function(sentence) {
-
-  	return new Promise((resolve, reject) => {
-  		this.sentences.push(sentence);
-  		// TODO: save model?
-  	});
+	this.sentences.push(sentence);
 };
 
 // ----------------------------------------------------------
-StorySchema.statics.getUnrecorded = function() {
-	return new Promise((resolve, reject) => {
-		mongoose.model('Story').find({record.start: null, record.end: null}).sort({createdAt: -1}).exec((err,docs) => {
-			if(err) return reject(err);
-			else resolve(docs);
-		});
-	});
-} 
+StorySchema.methods.zip = function() {
+
+}
+
+// ----------------------------------------------------------
+StorySchema.methods.upload = function() {
+	
+}
 
 // ----------------------------------------------------------
 StorySchema.statics.list = function(cb) {
@@ -154,6 +164,11 @@ StorySchema.statics.list = function(cb) {
     });
 };
 
+
+// ----------------------------------------------------------
+StorySchema.statics.loadFromShortID = function(shortID){
+
+}
 
 // ----------------------------------------------------------
 StorySchema.statics.getNewestStory = function() {

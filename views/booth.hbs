@@ -41,6 +41,10 @@
       socket.on('time', function (data) {
         container.text( data );
       });
+      socket.on('set_name', function(name){
+        console.log(name);
+        container.text( name.first + " " + name.last );
+      });
     </script>
   </body>
 </html>

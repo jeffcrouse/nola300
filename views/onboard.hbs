@@ -215,7 +215,7 @@
 		<script src="/socket.io/socket.io.js"></script>
 		<script>
 		var form = $("#onboard-form");
-		var booth_status = ("#booth_status");
+		var booth_status = $("#booth_status");
 
 
 		var pages = ["#00-home", "#01-what-to-expect", "#02-guest-info", 
@@ -254,7 +254,7 @@
 				data: form.serialize()
 			}).done(function(data){
 				console.log(data);
-				if(data.status=="OK") {
+				if(data.status == "OK") {
 					$(pages[6]).fadeOut("fast");
 					$(pages[7]).fadeIn("fast");
 					p = 7;

@@ -38,7 +38,7 @@ var SpeechToText = function() {
 	// --------------------------------------------------------------------
 	this.start = function() {
 		return new Promise((resolve, reject) => {
-			if(running) return reject("[SpeechToText] already running");
+			if(running) return reject("already running");
 
 			recognizeStream = speechToText.createRecognizeStream(rsOptions);
 			

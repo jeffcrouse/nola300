@@ -6,6 +6,7 @@
     "start": "node ./bin/www"
   },
   "dependencies": {
+    "aws-sdk": "^2.109.0",
     "body-parser": "~1.17.1",
     "cookie-parser": "~1.4.3",
     "debug": "~2.6.3",
@@ -25,9 +26,9 @@
     "promisify-node": "^0.4.0",
     "serialport": "^5.0.0",
     "serve-favicon": "~2.4.2",
+    "shortid": "^2.2.8",
     "socket.io": "^2.0.3",
     "underscore": "^1.8.3",
-    "validator": "^8.1.0",
     "watson-developer-cloud": "^2.38.0",
     "wav": "^1.0.1"
   }

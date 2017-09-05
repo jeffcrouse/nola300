@@ -26,6 +26,7 @@ var FootPedal = function(mfg) {
 	}
 
 	var on_data = function(buf) {
+		debug("on_data")
 		var data = buf.toString('utf8');
 		if(data=="d") {
 			self.emit("press", Date.now() );

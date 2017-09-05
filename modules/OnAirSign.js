@@ -28,7 +28,10 @@ var OnAirSign = function(serial) {
 			if(!port) return reject("no port");
 			on = true;
 			debug("on")
-			return port.write("1", "utf8");
+			port.write("1", "utf8", err => {
+				if(err) reject(err);
+				else resolve();
+			});
 		});
 	}
 
@@ -38,7 +41,10 @@ var OnAirSign = function(serial) {
 			if(!port) return reject("no port");
 			debug("off")
 			on = false;
-			return port.write("0", "utf8");
+			port.write("0", "utf8", err => {
+				if(err) reject(err);
+				else resolve();
+			});
 		});
 	}
 

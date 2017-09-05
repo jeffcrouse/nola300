@@ -1,3 +1,4 @@
+require('dotenv').config({ silent: true }); 
 const spawn = require('child_process').spawn;
 const path = require('path');
 
@@ -5,6 +6,7 @@ const path = require('path');
 //	TO DO
 //	Throw some kind of error when something comes from canon-video-capture stderr
 //	Timestamp sentences beginning and end
+// 	DO NOT ALLOW RECORDING WHILE A DOWNLOAD IS IN PROGRESS!!!!
 //
 
 var canon = path.join("/Users", "jeff", "Developer", "canon-video-capture", "build", "Release", "canon-video-capture");
@@ -17,14 +19,14 @@ var CanonCamera = function(id) {
 
 	var debug = require('debug')('camera'+id);
 	var self = this;
-	var proc = spawn(canon, ['--id', id, '--delete-after-download', "--overwrite"], {stdio: ["ipc"]});
+	var proc = spawn(canon, ['--id', id, '--delete-after-download', "--overwrite", "--default-dir", process.env.STORAGE_ROOT], {stdio: ["ipc"]});
 	var download_callback = null;
 
 	proc.stdout.on('data', (data) => {
 		data = data.toString().trim();
 
 		var words = data.split(" ");
-		if(words[0]=="[status]") {
+		if(words[0]=="[status]" || words[0]=="[warning]") {
 			debug(data);
 
 			if(words[1]=="downloaded") {
@@ -67,6 +69,7 @@ var CanonCamera = function(id) {
 			debug("stop "+filename);
 			proc.send("stop "+filename, function(err){
 				if(err) return reject(err);
+
 				download_callback = resolve;
 			});
 		});

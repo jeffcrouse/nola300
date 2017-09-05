@@ -5,7 +5,7 @@ const LineIn = require('line-in');  // https://github.com/linusu/node-line-in
 const wav = require('wav');			// https://github.com/tootallnate/node-wav
 const util = require('util');
 var EventEmitter = require('events').EventEmitter;
-// TODO: change console.logs to deug calls
+var debug = require('debug')('speechtotext');
 
 
 const speechToText = new SpeechToTextV1();
@@ -54,6 +54,8 @@ var SpeechToText = function() {
 			recognizeStream.on('close', on_close);
 
 			running = true;
+
+			debug("resolving start");
 			resolve();
 		})
 	}
@@ -61,9 +63,12 @@ var SpeechToText = function() {
 	// --------------------------------------------------------------------
 	this.stop = function() {
 		return new Promise((resolve, reject) => {
-			if(!running) return reject("SpeechToText not running");
+			if(!running) {
+				debug("[warning] SpeechToText not running");
+				return resolve();
+			}
 
-			console.log("[SpeechToText] closing");
+			debug("closing");
 
 			recognizeStream.stop();
 			recognizeStream = null;
@@ -71,6 +76,8 @@ var SpeechToText = function() {
 			wavStream = null;
 
 			running = false;
+
+			debug("resolving stop");
 			resolve();
 		});
 	}
@@ -82,7 +89,7 @@ var SpeechToText = function() {
 
 	// --------------------------------------------------------------------
 	var on_listening = function(data) {
-		console.log("[SpeechToText] listening")
+		debug("listening")
 	}
 	
 	// --------------------------------------------------------------------
@@ -101,7 +108,7 @@ var SpeechToText = function() {
 
 	// --------------------------------------------------------------------
 	var on_close = function() {
-		console.log("[SpeechToText] closing");
+		debug("closing");
 	}
 }
 

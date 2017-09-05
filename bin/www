@@ -110,16 +110,11 @@ function onListening() {
 var gracefulShutdown = function() {
 
   debug("Received kill signal, shutting down gracefully.");
-  app.close().then(()=>{
-
-    debug("closing server");
-    server.close(function() {
-      debug("Closed out remaining connections.");
-      process.exit()
-    });
-
-  }).catch((err)=>{
+  app.close().then(() => {
+    process.exit();
+  }).catch(err => {
     debug(err);
+    process.exit();
   });
 
    // if after 

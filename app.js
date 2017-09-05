@@ -9,9 +9,20 @@ const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 //var mongoose = require("mongoose");
 var socketio = require('socket.io')
-var mongoose = require('mongoose');
+// var mongoose = require('mongoose');
 var storage = require('node-persist');
 var _ = require('underscore');
+const { check, validationResult } = require('express-validator/check');
+const { matchedData } = require('express-validator/filter');
+var promisify = require("promisify-node");
+var fs = promisify("fs");
+const mkdirp = require('mkdirp');
+var glob = require("glob")
+
+mkdirp(process.env.STORAGE_ROOT, function(err){
+	if(err) debug(err);
+});
+
 
 /*
 ┌┬┐┌─┐┌┬┐┌─┐┌┐ ┌─┐┌─┐┌─┐
@@ -26,6 +37,7 @@ var _ = require('underscore');
 // 	else debug("connected to", db_url);
 // });
 
+/*
 var finished_stories = [];
 
 // Try to load onboard_story_id and then load the story itself
@@ -68,11 +80,10 @@ storage.init().then(() => {
 	});
 
 });
+*/
 
 
-// TO DO:  process stories
-
-
+storage.initSync({dir: "persist"});
 
 /*
 ┌─┐┌─┐┌─┐
@@ -81,7 +92,6 @@ storage.init().then(() => {
 */
 
 var app = express();
-
 var io = socketio();
 app.io = io;
 
@@ -121,10 +131,9 @@ app.get('/', function(req, res, next) {
  ▀▀▀▀▀▀▀▀▀▀▀  ▀        ▀▀  ▀▀▀▀▀▀▀▀▀▀   ▀▀▀▀▀▀▀▀▀▀▀  ▀         ▀  ▀         ▀  ▀▀▀▀▀▀▀▀▀▀  
 *****************************************************************************************/                                                                                        
 
-var Story = require('./modules/Story_nodb')
+//var Story = require('./modules/Story_nodb')
 var GoogleSheet = require('./modules/GoogleSheet');
 var onboard_socket = io.of('/onboard');
-var onboard_story = null;
 
 app.get('/onboard', function(req, res, next) {
 	var data = {
@@ -136,38 +145,53 @@ app.get('/onboard', function(req, res, next) {
 	res.render('onboard', data);
 });
 
-app.post('/onboard', function(req, res, next){
-	
+
+var valid = [
+	check('fname').exists().isLength({ min: 2, max: 20 }).withMessage('Please provide a valid first name'), 
+	check('lname').exists().isLength({ min: 2, max: 30 }).withMessage('Please provide a valid last name'), 
+	check('email').exists().isEmail().withMessage('Please provide a valid email address'),
+	check('entities.*').exists() // TODO: these are not being captured by matchedData (nor, presumably, being checked)
+];
+
+app.post('/onboard', valid, function(req, res, next) {
+
 	// If only 1 checkbox is selected, it comes in as a straing rather than an array, so we have to coerce it.
+	// TODO: Look at https://github.com/expressjs/body-parser and see if there is a better way
 	if(_.isString(req.body.places)) req.body.places = [req.body.places];
 	if(_.isString(req.body.items)) req.body.items = [req.body.items];
 	if(_.isString(req.body.themes)) req.body.themes = [req.body.themes];
 
-	//console.log("post", req.body);
+	storage.getItem("story").then(story => {
+		if(story) 
+			return res.json({status: "NOT_READY", messages: ["there is already a story on deck. please wait."]});
 
-	var a = Story.create(req.body).then(story => { return story.save() }).then(story => {
-		debug("created story", story);
+		const errors = validationResult(req);
+		if(!errors.isEmpty()) 
+			return res.status(422).json({ status: "ERROR", errors: err.array() });
 
-		res.json({status: "OK"});
+		var data = matchedData(req); 
 
-		if(session_in_progress) {
-			onboard_story = story;
-			storage.setItem("onboard_story_id", onboard_story.id);
-		} else {
-			booth_story = story;
-			storage.setItem("booth_story_id", booth_story.id);
-			booth_socket.emit("set_name", booth_story.name);
-		}
-	}).catch( errors => {
-		debug(errors);
-		res.json({status: "ERROR", messages: errors});
+		storage.setItem("story", data).then(() => {
+			booth_socket.emit("set_name", data.fname+" "+data.lname);
+			onboard_socket.emit("submit_status", "wait");
+			onboard_socket.emit("reset_form");
+			res.json({status: "OK"});
+		}).catch(err => {
+			return res.status(422).json({ status: "ERROR", errors: err });
+		});
+	}).catch(err => {
+		return res.status(422).json({ status: "ERROR", errors: err });
 	});
 });
 
-onboard_socket.on( "connection", function( socket ) {
-	var status = (session_in_progress) ? "occupied" : "empty";
-	onboard_socket.emit("booth_status", status);
+
+onboard_socket.on("connection", function( socket ) {
 	debug("onboard socket client joined")
+
+	storage.getItem("story").then(story => {
+		var status = (story) ? "wait" : "ready";
+		onboard_socket.emit("submit_status", status);
+	});
 });
 
 
@@ -197,88 +221,119 @@ var CanonCamera = require('./modules/CanonCamera')
 var SpeechToText = require('./modules/SpeechToText');
 var OnAirSign = require('./modules/OnAirSign')
 
-var session_in_progress = false;
-var booth_story = null;
 var cam0 = new CanonCamera("0");
 var cam1 = new CanonCamera("1");
 var booth_socket = io.of('/booth');
 
+function makeID(len) {
+	var text = "";
+	var possible = "abcdefghijklmnopqrstuvwxyz0123456789";
+	for(var i=0; i < len; i++)
+		text += possible.charAt(Math.floor(Math.random() * possible.length));
+	return text;
+}
 
 
-// TO DO: Make this all async/promisified
+
+var start_session = function() {
+	return new Promise(function(resolve, reject){
+		storage.getItem("story").then(story => {
+			if(!story) reject("no story present");
+			else {
+				debug("timer.begin(120000)")
+				timer.begin(120000);
+				story.start = Date.now();
+				story.sentences = [];
+				console.log(story);
+				debug("storage.setItem")
+				return storage.setItem("story", story);
+			}
+		}).then(() => {
+			debug("cam0.record()")
+			return cam0.record();
+		}).then(() => {
+			debug("cam1.record()")
+			return cam1.record();
+		}).then(() => {
+			debug("OnAirSign.on()")
+			return OnAirSign.on();
+		}).then(() => {
+			debug("SpeechToText.start()")
+			return SpeechToText.start();
+		}).then(resolve).catch( err => {
+			debug(err);
+			cam0.stop().then(cam1.stop()).then(OnAirSign.off()).then(() => {
+				timer.stop();
+				reject(err);
+			});
+		});
+	});
+}
+
+
 var end_session = function() {
-	
-	return OnAirSign.off().then(()=>{
-		var path = booth_story.getVideoPath(0);
-		return cam0.stop(path);
-	}).then(()=>{
-		var path = booth_story.getVideoPath(1);
-		return cam1.stop(path);
-	}).then(()=>{
-		return SpeechToText.stop();
-	}).then(()=>{
-		booth_story.session.end = Date.now();
-		return booth_story.save();
-	}).then(()=>{
-		booth_story = null;
-		return storage.setItem("booth_story_id", null);
-	}).then(()=>{
-		onboard_socket.emit("booth_status", "empty");
-		onboard_socket.emit("reset_form", true);
-		session_in_progress = false;
-		timer.stop();
+	return new Promise(function(resolve, reject){
+		storage.getItem("story").then(story => {
+			if(!story) return reject("no story present");
+
+			story.id = makeID(8);
+			story.end = Date.now();
+			story.cam0 = util.format("%s/%s_0.mp4", process.env.STORAGE_ROOT, story.id);
+			story.cam1 = util.format("%s/%s_1.mp4", process.env.STORAGE_ROOT, story.id);
+			timer.stop();
+			booth_socket.emit("set_message", "thank you");
+			return story;
+
+		}).then(story => {
+			debug("stopping cameras ");
+			return Promise.all([cam0.stop(story.cam0), cam1.stop(story.cam1)]).then(() => {
+				return story;
+			});
+		}).then(story => {
+			debug("SpeechToText.stop()")
+			return SpeechToText.stop().then(() => { return story;} ); 
+		}).then(story => {
+			debug("saving data to text file.");
+			var data = JSON.stringify(story, null, 4);
+			var data_file = path.join(process.env.STORAGE_ROOT, story.id)+".json";
+			return fs.writeFile(data_file, data, 'utf8');
+		}).then(() => {
+			debug("wait 5 seconds and then reset everything.");
+			return new Promise(function(resolve, reject){
+				setTimeout(() => {
+					storage.removeItem("story").then(() => {
+						onboard_socket.emit("submit_status", "ready");
+						booth_socket.emit("reset");
+						resolve();
+					}).catch(reject);
+				}, 5000);
+			});
+		}).then(resolve).catch(reject);
 	});
 }
 
 
 
-	// TO DO: Make this all async/promisified
-var start_session = function() {
-
-	return OnAirSign.on().then(cam0.record).then(cam1.record);
-
-
-
-	onboard_socket.emit("booth_status", "occupied");
-
-	timer.begin(120000);
-
-
-	
-	
-
-	
-	if(onboard_story) {
-		booth_story = onboard_story;
-		onboard_story = null;
-		storage.setItem("onboard_story_id", null);
-		storage.setItem("booth_story_id", booth_story.id);
-		booth_socket.emit("set_name", booth_story.name);
-	}
-
-	
-	
-	
-	
-	SpeechToText.start();
-	booth_story.session.start = Date.now();
-	session_in_progress = true;
-}
-
-
-
-
+var recording = false;
 FootPedal.on("press", function(date){
 	debug("footpedal pressed")
-	if(!booth_story) {
-		debug("!! no story set in booth");
-		return;
-	}
 
-	if(session_in_progress) {
-		end_session();
+	if(recording) {
+		debug("end_session()")
+		end_session().then(() => { 
+			debug("RECORDING ENDED!")
+			recording = false; 
+		}).catch(err => {
+			debug("!!! COULD NOT STOP RECORDING")
+		});
 	} else {
-		start_session();
+		debug("start_session()")
+		start_session().then(() => {
+			debug("RECORDING BEGUN!")
+			recording = true;
+		}).catch(err => {
+			debug("!!! COULD NOT START RECORDING")
+		});
 	}
 });
 
@@ -291,32 +346,61 @@ app.get('/booth', function(req, res, next) {
                                      
 booth_socket.on( "connection", function( socket ) {
 	debug("booth socket client joined")
-	if(booth_story) booth_socket.emit("set_name", booth_story.name);
+	storage.getItem("story").then(story => {
+		if(story) booth_socket.emit("set_name", story.fname+" "+story.lname);
+	})		
 });
-
-
-setInterval(() => {
-	if(session_in_progress) 
-		booth_socket.emit('time', timer.get_time_str())
-}, 100);
-
 
 
 
 var timer = new CountdownTimer();
-timer.on("done", () => {
-	if(session_in_progress) {
-		debug("TODO: FORCEFULLY END SESSION HERE")
-	}
+timer.on("done", function() {
+	debug("TIMER DONE!");
+	if(recording) end_session();
+});
+timer.on("tick", (str) => {
+	booth_socket.emit('time', str);
 });
 
 
 SpeechToText.on("sentence", function(sentence){
 	console.log(util.inspect(sentence, {depth: 10}));
-	if(booth_story) 
-		booth_story.addSentence( sentence );
+	storage.getItem("story").then(story => {
+		if(!story) return debug("!! SpeechToText result with no story to add to.")
+
+		story.sentences.push( sentence );
+		storage.setItem("story", story).catch(err => {
+			debug("!! error saving story after adding sentence.")
+		});
+	});
 });
 
+
+	
+
+
+
+/********************************************************************************************
+██████╗  ██████╗ ███████╗████████╗   ██████╗ ██████╗  ██████╗  ██████╗███████╗███████╗███████╗
+██╔══██╗██╔═══██╗██╔════╝╚══██╔══╝   ██╔══██╗██╔══██╗██╔═══██╗██╔════╝██╔════╝██╔════╝██╔════╝
+██████╔╝██║   ██║███████╗   ██║█████╗██████╔╝██████╔╝██║   ██║██║     █████╗  ███████╗███████╗
+██╔═══╝ ██║   ██║╚════██║   ██║╚════╝██╔═══╝ ██╔══██╗██║   ██║██║     ██╔══╝  ╚════██║╚════██║
+██║     ╚██████╔╝███████║   ██║      ██║     ██║  ██║╚██████╔╝╚██████╗███████╗███████║███████║
+╚═╝      ╚═════╝ ╚══════╝   ╚═╝      ╚═╝     ╚═╝  ╚═╝ ╚═════╝  ╚═════╝╚══════╝╚══════╝╚══════╝
+**********************************************************************************************/
+
+
+
+var loop = function() {
+	var pattern = util.format("%s/.json", process.env.STORAGE_ROOT);
+	glob("**/*.js", options, function (er, files) {
+		console.log(files);
+
+		setTimeout(loop, 1000);
+	})
+}
+
+loop();
 
 
 
@@ -355,7 +439,7 @@ app.use(function(err, req, res, next) {
 
 // Close function to be called from the graceful shutdown procedure in app/www
 app.close = function() {
-	return FootPedal.close().then(OnAirSign.close).then(cam0.close).then(cam1.close);
+	return FootPedal.close().then(OnAirSign.close()).then(cam0.close()).then(cam1.close());
 }
 
 module.exports = app;

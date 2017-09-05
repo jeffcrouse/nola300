@@ -31,6 +31,14 @@ var CountdownTimer = function() {
 		}
 	}
 
+	var tick = () => {
+		if(start_time)
+			this.emit("tick", this.get_time_str());
+	}
+
+	setInterval(tick, 100);
+
+
 	var msToTime = function(duration) {
 	    var milliseconds = parseInt((duration%1000)/100)
 	        , seconds = parseInt((duration/1000)%60)

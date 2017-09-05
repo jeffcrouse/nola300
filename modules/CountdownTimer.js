@@ -31,12 +31,12 @@ var CountdownTimer = function() {
 		}
 	}
 
-	var tick = () => {
-		if(start_time)
-			this.emit("tick", this.get_time_str());
+	var tick = function() {
+		if(start_time) self.emit("tick", self.get_time_str());
+		setTimeout(tick, 100);
 	}
-
-	setInterval(tick, 100);
+	tick();
+	
 
 
 	var msToTime = function(duration) {

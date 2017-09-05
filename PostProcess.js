@@ -23,23 +23,22 @@ var s3bucket = new AWS.S3({params: {Bucket: 'nola300'}});
 **********************************************************************************************/
 
 
-
 var loop = function() {
 
 	var pattern = util.format("%s/*.json", process.env.STORAGE_ROOT);
 	glob(pattern, {cwd: process.env.STORAGE_ROOT}, function (err, files) {
-		if(err) debug(err);
+		
+		if(err) return debug(err);
 
 		debug(files);
 		var p = Promise.resolve();
-
 
 		files.forEach(function(file){
 
 			p = p.then(() => {
 				debug("OPENING", file);
 				return fs.readFile(file, "utf8");
-			})
+			});
 
 			p = p.then(str => {
 				var obj = JSON.parse(str);
@@ -111,4 +110,4 @@ var loop = function() {
 	})
 }
 
-loop();
+module.exports = loop;

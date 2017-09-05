@@ -69,6 +69,7 @@ var OnAirSign = function(serial) {
 
 	var on_error = function(err) {
 		debug('error opening port: ', err.message);
+		port = null;
 	}
 
 	var on_data = function(buf) {

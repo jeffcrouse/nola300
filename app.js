@@ -18,7 +18,7 @@ var promisify = require("promisify-node");
 var fs = promisify("fs");
 const mkdirp = require('mkdirp');
 var shortid = require('shortid');
-
+var postprocess = require("./PostProcess");
 
 
 mkdirp(process.env.STORAGE_ROOT, function(err){
@@ -26,7 +26,7 @@ mkdirp(process.env.STORAGE_ROOT, function(err){
 });
 
 
-
+postprocess();
 
 /*
 ┌┬┐┌─┐┌┬┐┌─┐┌┐ ┌─┐┌─┐┌─┐
@@ -235,7 +235,6 @@ var end_session = function() {
 		story.end = Date.now();
 		story.cam0 = util.format("%s/%s_0.mp4", process.env.STORAGE_ROOT, story.id);
 		story.cam1 = util.format("%s/%s_1.mp4", process.env.STORAGE_ROOT, story.id);
-		
 		return story;
 	}).then(story => {
 		debug("stopping cameras, STT, and OnAirSign");
@@ -244,25 +243,23 @@ var end_session = function() {
 		});
 	}).then(story => {
 		debug("saving data to text file.");
+
 		var data = JSON.stringify(story, null, 4);
 		var data_file = path.join(process.env.STORAGE_ROOT, story.id)+".json";
 		return fs.writeFile(data_file, data, 'utf8');
+
 	}).then(() => {
 		debug("waiting 5 seconds");
-		return new Promise(function(){ setTimeout(resolve, 5000); })
+		return new Promise(function(resolve, reject){ setTimeout(resolve, 5000); })
 	}).then(() => {	
-		return storage.removeItem("story").then(() => {
-			recording = false;
-			onboard_socket.emit("submit_status", "ready");
-			booth_socket.emit("reset");
-			return;
-		});
+		recording = false;
+		onboard_socket.emit("submit_status", "ready");
+		booth_socket.emit("reset");
+		return storage.removeItem("story");
 	}).catch(err => {
 		debug("!!! COULD NOT STOP RECORDING:", err)
 	});
 }
-
-
 
 
 FootPedal.on("press", function(date){

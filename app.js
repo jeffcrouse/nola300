@@ -62,7 +62,7 @@ app.set('view options', { layout: 'layout' });
 app.use(favicon(path.join(__dirname, 'public', 'images', 'favicon.png')));
 app.use(logger('dev'));
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -108,16 +108,11 @@ var valid = [
 	check('fname').exists().isLength({ min: 2, max: 20 }).withMessage('Please provide a valid first name'), 
 	check('lname').exists().isLength({ min: 2, max: 30 }).withMessage('Please provide a valid last name'), 
 	check('email').exists().isEmail().withMessage('Please provide a valid email address'),
-	check('entities.*').exists() // TODO: these are not being captured by matchedData (nor, presumably, being checked)
+	check('entities.*').exists() // TODO: make sure there are at least 2 entities selected.
 ];
 
 app.post('/onboard', valid, function(req, res, next) {
-
-	// If only 1 checkbox is selected, it comes in as a straing rather than an array, so we have to coerce it.
-	// TODO: Look at https://github.com/expressjs/body-parser and see if there is a better way
-	if(_.isString(req.body.places)) req.body.places = [req.body.places];
-	if(_.isString(req.body.items)) req.body.items = [req.body.items];
-	if(_.isString(req.body.themes)) req.body.themes = [req.body.themes];
+	debug("req.body", req.body);
 
 	storage.getItem("story").then(story => {
 		if(story) 
@@ -186,17 +181,14 @@ var recording = false;
 
 
 
-
-
 var start_session = function() {
+	var p = Promise.resolve();
 
-	var p = new Promise(function(resolve, reject){
-		storage.getItem("story").then(story => {
-			if(!story) 
-				reject("no story present");
-
-			else resolve(story);
-		})
+	p = p.then(()=>{
+		return storage.getItem("story").then(story => {
+			if(!story) throw new Error("no story present");
+			else return story;
+		});
 	}).then(story => {
 		debug("timer.begin(120000)")
 		timer.begin(120000);
@@ -220,12 +212,12 @@ var start_session = function() {
 
 
 var end_session = function() {
+	var p = Promise.resolve();
 
-	var p = new Promise(function(resolve, reject){
-		storage.getItem("story").then(story => {
-			if(!story) 
-				reject("no story present");
-			else resolve(story);
+	var p = p.then(()=>{
+		return storage.getItem("story").then(story => {
+			if(!story) throw new Error("no story present");
+			else return story;
 		});
 	}).then(story => {
 		timer.stop();
@@ -352,9 +344,10 @@ app.use(function(err, req, res, next) {
 	res.render('error');
 });
 
+
 // Close function to be called from the graceful shutdown procedure in app/www
 app.close = function() {
-	return FootPedal.close().then(OnAirSign.close()).then(cam0.close()).then(cam1.close());
+	return Promise.all([FootPedal.close(), OnAirSign.close(), cam0.close(), cam1.close()]);
 }
 
 module.exports = app;

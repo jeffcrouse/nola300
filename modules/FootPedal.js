@@ -38,18 +38,12 @@ var FootPedal = function(mfg) {
 		port = null;
 	}
 
-	this.close = function() {
+	this.close = function(callback) {
 		closed = true;
-		return new Promise((resolve, reject) => {
-			if(!port) return resolve()
-
-			debug("closing");
-			port.close(function(err){
-				if(err) reject(err);
-				else resolve();
-				// port gets set to null in on_close
-			});
-		});
+		if(!port) return callback(null);
+	
+		debug("closing");
+		port.close(callback);
 	}
 
 

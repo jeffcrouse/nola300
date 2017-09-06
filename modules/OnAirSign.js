@@ -23,44 +23,28 @@ var OnAirSign = function(serial) {
 	}
 
 	// ---------------------------
-	this.on = function() {
-		return new Promise((resolve, reject) => {
-			if(!port) return reject("no port");
-			on = true;
-			debug("on")
-			port.write("1", "utf8", err => {
-				if(err) reject(err);
-				else resolve();
-			});
-		});
+	this.on = function(callback) {
+		if(!port) return callback("no port");
+		on = true;
+		debug("on")
+		port.write("1", "utf8", callback);
 	}
 
 	// ---------------------------
 	this.off = function() {
-		return new Promise((resolve, reject) => {
-			if(!port) return reject("no port");
-			debug("off")
-			on = false;
-			port.write("0", "utf8", err => {
-				if(err) reject(err);
-				else resolve();
-			});
-		});
+		if(!port) return callback("no port");
+		on = true;
+		debug("off")
+		port.write("0", "utf8", callback);
 	}
 
 	// ---------------------------
 	this.close = function() {
+		if(!port) return callback("no port");
 		closed = true;
-		return new Promise((resolve, reject) => {
-			if(!port) return resolve()
 
-			debug("closing");
-			port.close(function(err){
-				if(err) reject(err);
-				else resolve();
-				// port gets set to null in on_close
-			});
-		});
+		debug("closing");
+		port.close(callback);
 	}
 
 	var on_open = function() {

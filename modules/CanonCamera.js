@@ -53,37 +53,26 @@ var CanonCamera = function(id) {
 
 	proc.send("stop");
 
-	this.record = function(filename){
-		return new Promise((resolve, reject) => {
-			debug("record");
-			proc.send("record", function(err){
-				if(err) reject(err);
-				else resolve();
-			});
-		});
+
+	this.record = function(filename, callback){
+		var command = "record";
+		if(filename) command += " "+filename;
+		debug(command);
+		proc.send(command, callback);
 	}
 
 
-	this.stop = function(filename){
-		return new Promise((resolve, reject) => {
-			debug("stop "+filename);
-			proc.send("stop "+filename, function(err){
-				if(err) return reject(err);
-
-				download_callback = resolve;
-			});
-		});
+	this.stop = function(filename, callback){
+		var command = "stop";
+		if(filename) command += " "+filename;
+		debug(command);
+		proc.send(command, callback);
 	}
 
-	this.close = function() {
-		debug("closing");
-		return new Promise((resolve, reject) => {
-			proc.send("exit", function(err){
-				if(err) reject(err);
-				else resolve();
-			});
-			//proc.kill('SIGINT');
-		});
+	this.close = function(callback) {
+		var command = "exit";
+		debug(command);
+		proc.send(command, callback);
 	}
 }
 

@@ -7,9 +7,8 @@ const favicon = require('serve-favicon');
 var logger = require('morgan');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
-//var mongoose = require("mongoose");
 var socketio = require('socket.io')
-// var mongoose = require('mongoose');
+var mongoose = require('mongoose');
 var storage = require('node-persist');
 var _ = require('underscore');
 const { check, validationResult } = require('express-validator/check');
@@ -19,14 +18,26 @@ var fs = promisify("fs");
 const mkdirp = require('mkdirp');
 var shortid = require('shortid');
 var postprocess = require("./PostProcess");
+var Video = require('./Video')
+const async = require('async');
+var hbs = require('hbs');
 
 
 mkdirp(process.env.STORAGE_ROOT, function(err){
 	if(err) debug(err);
 });
+mkdirp(process.env.VIDEO_ROOT, function(err){
+	if(err) debug(err);
+});
 
 
-postprocess();
+
+async.forever(postprocess, err => {
+	debug("postprocess returned an error:", err);
+});
+
+
+
 
 /*
 ┌┬┐┌─┐┌┬┐┌─┐┌┐ ┌─┐┌─┐┌─┐
@@ -34,12 +45,13 @@ postprocess();
 ─┴┘┴ ┴ ┴ ┴ ┴└─┘┴ ┴└─┘└─┘
 */
 
-// mongoose.Promise = global.Promise;
-// var db_url = 'mongodb://localhost:27017/nola300';
-// mongoose.connect(db_url, {useMongoClient: true}, function(err){
-// 	if(err) throw("couldn't connect to", db_url);
-// 	else debug("connected to", db_url);
-// });
+mongoose.Promise = global.Promise;
+var db_url = 'mongodb://localhost:27017/nola300';
+mongoose.connect(db_url, {useMongoClient: true}, function(err){
+	if(err) throw("couldn't connect to", db_url);
+	else debug("connected to", db_url);
+});
+
 
 storage.initSync({dir: "persist"});
 
@@ -72,7 +84,9 @@ app.get('/', function(req, res, next) {
 	res.render('index', { title: 'Express' });
 });
 
-
+hbs.registerHelper( "join", function( array, sep ) {
+    return array.join( sep );
+});
 
 
 /*****************************************************************************************
@@ -182,8 +196,28 @@ var recording = false;
 
 
 var start_session = function() {
-	var p = Promise.resolve();
 
+	storage.getItem("story", (err, story) => {
+		if(err) throw new Error(err);
+		if(!story) throw new Error("no story present");
+		
+		timer.begin(120000);
+		story.start = Date.now();
+		story.sentences = [];
+		debug("storage.setItem")
+		storage.setItem("story", story, function(err){
+			if(err) throw new Error("couldn't save story");
+
+			async.parallel([cam0.record, cam1.record, OnAirSign.on, SpeechToText.start], err => {
+				if(err) throw new Error("error communicating with devices");
+
+				recording = true;
+			});
+		});
+	});
+
+	/*
+	var p = Promise.resolve();
 	p = p.then(()=>{
 		return storage.getItem("story").then(story => {
 			if(!story) throw new Error("no story present");
@@ -208,10 +242,53 @@ var start_session = function() {
 		debug("!!! COULD NOT START RECORDING", err);
 		return Promise.all([cam0.stop(), cam1.stop(), OnAirSign.off(), SpeechToText.stop()]);
 	});
+	*/
 }
 
 
 var end_session = function() {
+	storage.getItem("story", (err, story) => {
+		if(err) throw new Error(err);
+		if(!story) throw new Error("no story present");
+		
+		timer.stop();
+		booth_socket.emit("set_message", "thank you");
+
+		story.id = shortid.generate();
+		story.end = Date.now();
+
+		debug("stopping cameras, STT, and OnAirSign");
+		
+		var stop_devices = function(done) {
+			var cam0path = util.format("%s/%s_0.mp4", process.env.STORAGE_ROOT, story.id);
+			var cam1path = util.format("%s/%s_1.mp4", process.env.STORAGE_ROOT, story.id);
+			async.parallel([
+				(callback) => { cam0.stop(cam0path, callback); }, 
+				(callback) => {	cam1.stop(cam1path, callback); }, 
+				SpeechToText.stop, 
+				OnAirSign.off
+			], done);
+		}
+
+		var save_to_disk = function(done) {
+			var data = JSON.stringify(story, null, 4);
+			var data_file = path.join(process.env.STORAGE_ROOT, story.id)+".json";
+			return fs.writeFile(data_file, data, 'utf8', done);
+		}
+
+		var remove_from_storage = function(done) {
+			storage.removeItem("story", done);
+		}
+		
+		async.series([stop_devices, save_to_disk, remove_from_storage], (err) => {
+			if(err) throw new Error(err);
+
+			booth_socket.emit("reset");
+			onboard_socket.emit("submit_status", "ready");
+			recording = false;
+		})
+	});
+	/*
 	var p = Promise.resolve();
 
 	var p = p.then(()=>{
@@ -251,6 +328,7 @@ var end_session = function() {
 	}).catch(err => {
 		debug("!!! COULD NOT STOP RECORDING:", err)
 	});
+	*/
 }
 
 
@@ -275,7 +353,9 @@ app.get('/booth', function(req, res, next) {
                                      
 booth_socket.on( "connection", function( socket ) {
 	debug("booth socket client joined")
-	storage.getItem("story").then(story => {
+	storage.getItem("story", (err, story) => {
+		if(err) throw new Error(err);
+
 		if(story) booth_socket.emit("set_name", story.fname+" "+story.lname);
 	})		
 });
@@ -294,7 +374,8 @@ timer.on("tick", (str) => {
 
 SpeechToText.on("sentence", function(sentence){
 	debug(util.inspect(sentence, {depth: 5}));
-	storage.getItem("story").then(story => {
+	storage.getItem("story", (err, story) => {
+		if(err) throw new Error(err);
 		if(!story) return debug("!! SpeechToText result with no story to add to.")
 
 		story.sentences.push( sentence );
@@ -305,7 +386,55 @@ SpeechToText.on("sentence", function(sentence){
 });
 
 
-	
+
+
+
+
+/**********************************************************************************
+ ▄               ▄  ▄▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄   ▄▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄▄ 
+▐░▌             ▐░▌▐░░░░░░░░░░░▌▐░░░░░░░░░░▌ ▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌
+ ▐░▌           ▐░▌  ▀▀▀▀█░█▀▀▀▀ ▐░█▀▀▀▀▀▀▀█░▌▐░█▀▀▀▀▀▀▀▀▀ ▐░█▀▀▀▀▀▀▀█░▌▐░█▀▀▀▀▀▀▀▀▀ 
+  ▐░▌         ▐░▌       ▐░▌     ▐░▌       ▐░▌▐░▌          ▐░▌       ▐░▌▐░▌          
+   ▐░▌       ▐░▌        ▐░▌     ▐░▌       ▐░▌▐░█▄▄▄▄▄▄▄▄▄ ▐░▌       ▐░▌▐░█▄▄▄▄▄▄▄▄▄ 
+    ▐░▌     ▐░▌         ▐░▌     ▐░▌       ▐░▌▐░░░░░░░░░░░▌▐░▌       ▐░▌▐░░░░░░░░░░░▌
+     ▐░▌   ▐░▌          ▐░▌     ▐░▌       ▐░▌▐░█▀▀▀▀▀▀▀▀▀ ▐░▌       ▐░▌ ▀▀▀▀▀▀▀▀▀█░▌
+      ▐░▌ ▐░▌           ▐░▌     ▐░▌       ▐░▌▐░▌          ▐░▌       ▐░▌          ▐░▌
+       ▐░▐░▌        ▄▄▄▄█░█▄▄▄▄ ▐░█▄▄▄▄▄▄▄█░▌▐░█▄▄▄▄▄▄▄▄▄ ▐░█▄▄▄▄▄▄▄█░▌ ▄▄▄▄▄▄▄▄▄█░▌
+        ▐░▌        ▐░░░░░░░░░░░▌▐░░░░░░░░░░▌ ▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌
+         ▀          ▀▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀   ▀▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀▀ 
+***********************************************************************************/                                                                                    
+
+
+app.get('/videos', function(req, res, next) {
+	Video.scan(function(err) {
+		if(err) debug(err);
+
+		Video.list(function(err, docs){
+			if(err) throw new Error("!! error loading videos")
+
+			res.render('videos', { "layout": false, "videos": docs });
+		});
+	});
+});
+
+
+app.post('/videos', valid, function(req, res, next){
+	console.log(req.body);
+
+	if(["places", "items", "themes"].indexOf(req.body.entity) == -1) {
+		return res.status(422).json({ status: "ERROR", errors: "invalid entity name" });
+	}
+
+	Video.findById(req.body.video, (err, video) => {
+		if(err) return res.status(422).json({ status: "ERROR", errors: err });	
+		video[req.body.entity] = req.body.values;
+		video.save(function(err, doc){
+			if(err) return res.status(422).json({ status: "ERROR", errors: err });
+			else res.json({status: "OK"});
+		});
+	});
+});
+
 
 
 

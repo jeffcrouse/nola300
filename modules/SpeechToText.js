@@ -36,50 +36,44 @@ var SpeechToText = function() {
 
 
 	// --------------------------------------------------------------------
-	this.start = function() {
-		return new Promise((resolve, reject) => {
-			if(running) return reject("already running");
+	this.start = function(callback) {
+		if(running) return callback("already running");
 
-			recognizeStream = speechToText.createRecognizeStream(rsOptions);
-			
-			lineIn = new LineIn();
-			wavStream = new wav.Writer({ sampleRate: 44100, channels: 2 });
+		recognizeStream = speechToText.createRecognizeStream(rsOptions);
+		
+		lineIn = new LineIn();
+		wavStream = new wav.Writer({ sampleRate: 44100, channels: 2 });
 
-			lineIn.pipe(wavStream);
-			wavStream.pipe(recognizeStream);
+		lineIn.pipe(wavStream);
+		wavStream.pipe(recognizeStream);
 
-			recognizeStream.on('listening', on_listening);
-			recognizeStream.on('data', on_data);
-			recognizeStream.on('results', on_results);
-			recognizeStream.on('close', on_close);
+		recognizeStream.on('listening', on_listening);
+		recognizeStream.on('data', on_data);
+		recognizeStream.on('results', on_results);
+		recognizeStream.on('close', on_close);
 
-			running = true;
+		running = true;
 
-			debug("resolving start");
-			resolve();
-		})
+		callback();
 	}
 
 	// --------------------------------------------------------------------
-	this.stop = function() {
-		return new Promise((resolve, reject) => {
-			if(!running) {
-				debug("[warning] SpeechToText not running");
-				return resolve();
-			}
+	this.stop = function(callback) {	
+		if(!running) {
+			debug("[warning] SpeechToText not running");
+			return callback();
+		}
 
-			debug("closing");
+		debug("closing");
 
-			recognizeStream.stop();
-			recognizeStream = null;
-			lineIn = null;
-			wavStream = null;
+		recognizeStream.stop();
+		recognizeStream = null;
+		lineIn = null;
+		wavStream = null;
 
-			running = false;
+		running = false;
 
-			debug("resolving stop");
-			resolve();
-		});
+		callback();
 	}
 
 	// --------------------------------------------------------------------

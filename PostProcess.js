@@ -76,8 +76,6 @@ var loop = function(done) {
 
 		async.eachSeries(files, process_story, (err) => {
 			if(err) return debug(err);
-
-			debug("complete")
 			setTimeout(done, 10000);
 		});
 	});

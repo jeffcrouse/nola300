@@ -39,9 +39,9 @@ var FootPedal = function(mfg) {
 	}
 
 	this.close = function(callback) {
-		closed = true;
 		if(!port) return callback(null);
-	
+		closed = true;
+		
 		debug("closing");
 		port.close(callback);
 	}

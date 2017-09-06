@@ -31,7 +31,7 @@ var OnAirSign = function(serial) {
 	}
 
 	// ---------------------------
-	this.off = function() {
+	this.off = function(callback) {
 		if(!port) return callback("no port");
 		on = true;
 		debug("off")
@@ -39,7 +39,7 @@ var OnAirSign = function(serial) {
 	}
 
 	// ---------------------------
-	this.close = function() {
+	this.close = function(callback) {
 		if(!port) return callback("no port");
 		closed = true;
 

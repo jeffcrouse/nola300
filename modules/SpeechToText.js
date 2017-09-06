@@ -76,10 +76,6 @@ var SpeechToText = function() {
 		callback();
 	}
 
-	// --------------------------------------------------------------------
-	this.close = function() {
-		if(running) return this.stop();
-	}
 
 	// --------------------------------------------------------------------
 	var on_listening = function(data) {

@@ -31,7 +31,7 @@ var CanonCamera = function(id) {
 
 			if(words[1]=="downloaded") {
 				if(download_callback) {
-					download_callback(words[1]);
+					download_callback(null, words[2]);
 					download_callback = null;
 				}
 			}
@@ -62,11 +62,15 @@ var CanonCamera = function(id) {
 	}
 
 
+	// This shouldn't return until the resulting video is completely done downloading.
 	this.stop = function(filename, callback){
 		var command = "stop";
 		if(filename) command += " "+filename;
 		debug(command);
-		proc.send(command, callback);
+		proc.send(command, err => {
+			if(err) callback(err);
+			else download_callback = callback;
+		});
 	}
 
 	this.close = function(callback) {

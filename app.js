@@ -87,6 +87,11 @@ app.get('/', function(req, res, next) {
 hbs.registerHelper( "join", function( array, sep ) {
     return array.join( sep );
 });
+hbs.registerHelper('json', function(obj) {
+	debug(JSON.stringify(obj));
+	return JSON.stringify(obj);
+});
+
 
 
 /*****************************************************************************************
@@ -196,7 +201,6 @@ var recording = false;
 
 
 var start_session = function() {
-
 	storage.getItem("story", (err, story) => {
 		if(err) throw new Error(err);
 		if(!story) throw new Error("no story present");
@@ -205,44 +209,18 @@ var start_session = function() {
 		story.start = Date.now();
 		story.sentences = [];
 		debug("storage.setItem")
-		storage.setItem("story", story, function(err){
+
+		storage.setItem("story", story, err => {
 			if(err) throw new Error("couldn't save story");
 
-			async.parallel([cam0.record, cam1.record, OnAirSign.on, SpeechToText.start], err => {
+			async.parallel([cam0.record.bind(cam0, null), cam1.record.bind(cam0, null), OnAirSign.on, SpeechToText.start], err => {
 				if(err) throw new Error("error communicating with devices");
 
+				debug("recording!");
 				recording = true;
 			});
 		});
 	});
-
-	/*
-	var p = Promise.resolve();
-	p = p.then(()=>{
-		return storage.getItem("story").then(story => {
-			if(!story) throw new Error("no story present");
-			else return story;
-		});
-	}).then(story => {
-		debug("timer.begin(120000)")
-		timer.begin(120000);
-		story.start = Date.now();
-		story.sentences = [];
-		debug("story", story);
-		debug("storage.setItem")
-		return storage.setItem("story", story);
-	}).then(() => {
-		debug("starting cameras, turning on sign, starting STT");
-		return Promise.all([cam0.record(), cam1.record(), OnAirSign.on(), SpeechToText.start()]);
-	}).then(() => {
-		debug("RECORDING BEGUN!");
-		recording = true;
-		return;
-	}).catch(err => {
-		debug("!!! COULD NOT START RECORDING", err);
-		return Promise.all([cam0.stop(), cam1.stop(), OnAirSign.off(), SpeechToText.stop()]);
-	});
-	*/
 }
 
 
@@ -260,19 +238,15 @@ var end_session = function() {
 		debug("stopping cameras, STT, and OnAirSign");
 		
 		var stop_devices = function(done) {
-			var cam0path = util.format("%s/%s_0.mp4", process.env.STORAGE_ROOT, story.id);
-			var cam1path = util.format("%s/%s_1.mp4", process.env.STORAGE_ROOT, story.id);
-			async.parallel([
-				(callback) => { cam0.stop(cam0path, callback); }, 
-				(callback) => {	cam1.stop(cam1path, callback); }, 
-				SpeechToText.stop, 
-				OnAirSign.off
-			], done);
+			var stop_0 = (cb) => { cam0.stop(util.format("%s/%s_0.mp4", process.env.STORAGE_ROOT, story.id), cb); }
+			var stop_1 = (cb) => { cam1.stop(util.format("%s/%s_1.mp4", process.env.STORAGE_ROOT, story.id), cb); }
+			async.parallel([stop_0, stop_1, SpeechToText.stop, OnAirSign.off], done);
 		}
 
 		var save_to_disk = function(done) {
-			var data = JSON.stringify(story, null, 4);
 			var data_file = path.join(process.env.STORAGE_ROOT, story.id)+".json";
+			debug("saving to disk", data_file);
+			var data = JSON.stringify(story, null, 4);
 			return fs.writeFile(data_file, data, 'utf8', done);
 		}
 
@@ -280,55 +254,20 @@ var end_session = function() {
 			storage.removeItem("story", done);
 		}
 		
-		async.series([stop_devices, save_to_disk, remove_from_storage], (err) => {
+		var wait_5 = function(done) {
+			setTimeout(done, 5000);
+		}
+
+		async.series([stop_devices, save_to_disk, remove_from_storage, wait_5], (err) => {
 			if(err) throw new Error(err);
 
 			booth_socket.emit("reset");
 			onboard_socket.emit("submit_status", "ready");
+
+			debug("not recording!");
 			recording = false;
 		})
 	});
-	/*
-	var p = Promise.resolve();
-
-	var p = p.then(()=>{
-		return storage.getItem("story").then(story => {
-			if(!story) throw new Error("no story present");
-			else return story;
-		});
-	}).then(story => {
-		timer.stop();
-		booth_socket.emit("set_message", "thank you");
-
-		story.id = shortid.generate();
-		story.end = Date.now();
-		story.cam0 = util.format("%s/%s_0.mp4", process.env.STORAGE_ROOT, story.id);
-		story.cam1 = util.format("%s/%s_1.mp4", process.env.STORAGE_ROOT, story.id);
-		return story;
-	}).then(story => {
-		debug("stopping cameras, STT, and OnAirSign");
-		return Promise.all([cam0.stop(story.cam0), cam1.stop(story.cam1), SpeechToText.stop(), OnAirSign.off()]).then(() => {
-			return story;
-		});
-	}).then(story => {
-		debug("saving data to text file.");
-
-		var data = JSON.stringify(story, null, 4);
-		var data_file = path.join(process.env.STORAGE_ROOT, story.id)+".json";
-		return fs.writeFile(data_file, data, 'utf8');
-
-	}).then(() => {
-		debug("waiting 5 seconds");
-		return new Promise(function(resolve, reject){ setTimeout(resolve, 5000); })
-	}).then(() => {	
-		recording = false;
-		onboard_socket.emit("submit_status", "ready");
-		booth_socket.emit("reset");
-		return storage.removeItem("story");
-	}).catch(err => {
-		debug("!!! COULD NOT STOP RECORDING:", err)
-	});
-	*/
 }
 
 
@@ -406,13 +345,21 @@ SpeechToText.on("sentence", function(sentence){
 
 
 app.get('/videos', function(req, res, next) {
+
+	var data = {
+		layout: false,
+		places: GoogleSheet.places,
+		items: GoogleSheet.items,
+		themes: GoogleSheet.themes
+	}
+
 	Video.scan(function(err) {
 		if(err) debug(err);
 
 		Video.list(function(err, docs){
 			if(err) throw new Error("!! error loading videos")
-
-			res.render('videos', { "layout": false, "videos": docs });
+			data.videos = docs;
+			res.render('videos', data);
 		});
 	});
 });
@@ -475,8 +422,8 @@ app.use(function(err, req, res, next) {
 
 
 // Close function to be called from the graceful shutdown procedure in app/www
-app.close = function() {
-	return Promise.all([FootPedal.close(), OnAirSign.close(), cam0.close(), cam1.close()]);
+app.close = function(done) {
+	async.parallel([FootPedal.close, OnAirSign.close, cam0.close, cam1.close], done);
 }
 
 module.exports = app;

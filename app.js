@@ -23,18 +23,22 @@ const async = require('async');
 var hbs = require('hbs');
 
 
-mkdirp(process.env.STORAGE_ROOT, function(err){
-	if(err) debug(err);
-});
-mkdirp(process.env.VIDEO_ROOT, function(err){
-	if(err) debug(err);
-});
 
 
+/*
+┬┌┐┌┬┌┬┐┬┌─┐┬  ┬┌─┐┌─┐
+│││││ │ │├─┤│  │┌─┘├┤ 
+┴┘└┘┴ ┴ ┴┴ ┴┴─┘┴└─┘└─┘
+*/
+async.each([process.env.STORAGE_ROOT, process.env.VIDEO_ROOT], mkdirp, function(err){
+	if(err) debug(err);
+})
 
 async.forever(postprocess, err => {
 	debug("postprocess returned an error:", err);
 });
+
+storage.initSync({dir: "persist"});
 
 
 
@@ -53,7 +57,8 @@ mongoose.connect(db_url, {useMongoClient: true}, function(err){
 });
 
 
-storage.initSync({dir: "persist"});
+
+
 
 /*
 ┌─┐┌─┐┌─┐
@@ -84,9 +89,10 @@ app.get('/', function(req, res, next) {
 	res.render('index', { title: 'Express' });
 });
 
-hbs.registerHelper( "join", function( array, sep ) {
+hbs.registerHelper("join", function( array, sep ) {
     return array.join( sep );
 });
+
 hbs.registerHelper('json', function(obj) {
 	debug(JSON.stringify(obj));
 	return JSON.stringify(obj);
@@ -197,10 +203,12 @@ var cam0 = new CanonCamera("0");
 var cam1 = new CanonCamera("1");
 var booth_socket = io.of('/booth');
 var recording = false;
-
+var starting = false;
+var ending = false;
 
 
 var start_session = function() {
+	starting = true;
 	storage.getItem("story", (err, story) => {
 		if(err) throw new Error(err);
 		if(!story) throw new Error("no story present");
@@ -217,6 +225,7 @@ var start_session = function() {
 				if(err) throw new Error("error communicating with devices");
 
 				debug("recording!");
+				starting = false;
 				recording = true;
 			});
 		});
@@ -225,6 +234,7 @@ var start_session = function() {
 
 
 var end_session = function() {
+	ending = true;
 	storage.getItem("story", (err, story) => {
 		if(err) throw new Error(err);
 		if(!story) throw new Error("no story present");
@@ -265,6 +275,7 @@ var end_session = function() {
 			onboard_socket.emit("submit_status", "ready");
 
 			debug("not recording!");
+			ending = false;
 			recording = false;
 		})
 	});
@@ -273,6 +284,11 @@ var end_session = function() {
 
 FootPedal.on("press", function(date){
 	debug("footpedal pressed")
+	if(starting || ending) {
+		debug("ignoring pedal press while events are in progress")
+		return;
+	}
+
 
 	if(recording) {
 		debug("end_session()")
@@ -372,8 +388,12 @@ app.post('/videos', valid, function(req, res, next){
 		return res.status(422).json({ status: "ERROR", errors: "invalid entity name" });
 	}
 
+
 	Video.findById(req.body.video, (err, video) => {
 		if(err) return res.status(422).json({ status: "ERROR", errors: err });	
+		if(!req.body.video || !mongoose.Types.ObjectId.isValid(req.body.video)) 
+			return res.status(422).json({ status: "ERROR", errors: "invalid or missing video ID" });
+
 		video[req.body.entity] = req.body.values;
 		video.save(function(err, doc){
 			if(err) return res.status(422).json({ status: "ERROR", errors: err });

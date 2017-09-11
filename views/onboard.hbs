@@ -91,7 +91,7 @@
 						{{#each places}}
 						<div class="form-check">
 						  <label class="form-check-label">
-						    <input class="form-check-input" type="checkbox" name="entities[places][]" value="{{ @key }}">
+						    <input class="form-check-input" type="checkbox" name="entities[places][]" value="{{ @this }}">
 							{{this}}
 						  </label>
 						</div>
@@ -112,7 +112,7 @@
 						{{#each items}}
 						<div class="form-check">
 						  <label class="form-check-label">
-						    <input class="form-check-input" type="checkbox" name="entities[items][]" value="{{ @key }}">
+						    <input class="form-check-input" type="checkbox" name="entities[items][]" value="{{ @this }}">
 							{{this}}
 						  </label>
 						</div>
@@ -134,7 +134,7 @@
 						{{#each themes}}
 						<div class="form-check">
 						  <label class="form-check-label">
-						    <input class="form-check-input" type="checkbox" name="entities[themes][]" value="{{ @key }}">
+						    <input class="form-check-input" type="checkbox" name="entities[themes][]" value="{{ @this }}">
 							{{this}}
 						  </label>
 						</div>

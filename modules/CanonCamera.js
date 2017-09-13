@@ -1,6 +1,7 @@
 require('dotenv').config({ silent: true }); 
 const spawn = require('child_process').spawn;
 const path = require('path');
+const async = require('async');
 
 //
 //	TO DO
@@ -19,15 +20,20 @@ var CanonCamera = function(id) {
 
 	var debug = require('debug')('camera'+id);
 	var self = this;
-	var proc = spawn(canon, ['--id', id, '--delete-after-download', "--overwrite", "--default-dir", process.env.STORAGE_ROOT], {stdio: ["ipc"]});
+	var proc = null;
+	var args = ['--id', id, "--debug", '--delete-after-download', "--overwrite", "--default-dir", process.env.STORAGE_ROOT];
 	var download_callback = null;
+	var exit_callback = null;
 
-	proc.stdout.on('data', (data) => {
+
+
+	var on_stdout_data = function(data) {
 		data = data.toString().trim();
+		debug(data);
 
 		var words = data.split(" ");
 		if(words[0]=="[status]" || words[0]=="[warning]") {
-			debug(data);
+			//debug(data);
 
 			if(words[1]=="downloaded") {
 				if(download_callback) {
@@ -35,24 +41,29 @@ var CanonCamera = function(id) {
 					download_callback = null;
 				}
 			}
-		}
-	});
 
-	proc.stderr.on('data', (data) => {
+			if(words[1]=="done") {
+				exit_callback();
+				exit_callback = null;
+			}
+		}
+	}
+
+	var on_stderr_data = function(data) {
 		data = data.toString().trim();
 		
+		// TODO: what do we do on error?  Close the process, no?
+
 		if(data.indexOf("[error]")==0) {
 			debug(data);
-			throw data;
 		}
-	});
+	}
 
-	proc.on('close', (code) => {
+	var on_close = function(code) {
 		debug("child process exited with code "+code);
-	});
-
-	proc.send("stop");
-
+		proc = null;
+	}
+	
 
 	this.record = function(filename, callback){
 		var command = "record";
@@ -74,10 +85,34 @@ var CanonCamera = function(id) {
 	}
 
 	this.close = function(callback) {
+		if(!proc || !proc.connected) return callback();
+
 		var command = "exit";
 		debug(command);
-		proc.send(command, callback);
+		proc.send(command, err => {
+			if(err) debug(err);
+			debug("exit command sent");
+			exit_callback = callback;
+		});
 	}
+
+
+	var stay_connected = function(done) {
+		if(!proc || !proc.connected) {
+			debug("canon-video-capture "+args.join(" "));
+			proc = spawn(canon, args, {stdio: ["ipc"]});
+
+			proc.stdout.on('data', on_stdout_data);
+			proc.stderr.on('data', on_stderr_data);
+			proc.on('close', on_close);
+			proc.send("stop");
+		}
+		setTimeout(done, 2000);
+	}
+
+	async.forever(stay_connected, err => {
+		debug("camera stay_connected exited", err);
+	});
 }
 
 module.exports = CanonCamera;

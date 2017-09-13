@@ -62,7 +62,12 @@ var process_story = function(filename, callback) {
 			});
 		}
 
-		async.series([make_archive, upload, remove_files], callback);
+		var announce_done = function(done) {
+			debug("done with", obj.id);
+			done(null);
+		}
+
+		async.series([make_archive, upload, remove_files, announce_done], callback);
 	});
 }
 

@@ -29,21 +29,23 @@ var FootPedal = function(mfg) {
 		debug("on_data")
 		var data = buf.toString('utf8');
 		if(data=="d") {
+			debug("press");
 			self.emit("press", Date.now() );
 		}
 	}
 
 	var on_close = function(data) {
 		debug("on_close");
+		closed = true;
 		port = null;
 	}
 
 	this.close = function(callback) {
 		if(!port) return callback(null);
-		closed = true;
 		
 		debug("closing");
-		port.close(callback);
+		callback();
+		//port.close(callback);
 	}
 
 
@@ -65,6 +67,8 @@ var FootPedal = function(mfg) {
 				debug("opening", comName);
 
 				port = new SerialPort(comName, options);
+				//port.open();
+
 
 				port.on('open', on_open);
 				port.on('error', on_error);

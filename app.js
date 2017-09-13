@@ -13,8 +13,7 @@ var storage = require('node-persist');
 var _ = require('underscore');
 const { check, validationResult } = require('express-validator/check');
 const { matchedData } = require('express-validator/filter');
-var promisify = require("promisify-node");
-var fs = promisify("fs");
+var fs = require("fs");
 const mkdirp = require('mkdirp');
 var shortid = require('shortid');
 var postprocess = require("./PostProcess");
@@ -248,6 +247,7 @@ var end_session = function() {
 		debug("stopping cameras, STT, and OnAirSign");
 		
 		var stop_devices = function(done) {
+			debug("stop_devices");
 			var stop_0 = (cb) => { cam0.stop(util.format("%s/%s_0.mp4", process.env.STORAGE_ROOT, story.id), cb); }
 			var stop_1 = (cb) => { cam1.stop(util.format("%s/%s_1.mp4", process.env.STORAGE_ROOT, story.id), cb); }
 			async.parallel([stop_0, stop_1, SpeechToText.stop, OnAirSign.off], done);
@@ -255,16 +255,18 @@ var end_session = function() {
 
 		var save_to_disk = function(done) {
 			var data_file = path.join(process.env.STORAGE_ROOT, story.id)+".json";
-			debug("saving to disk", data_file);
+			debug("save_to_disk", data_file);
 			var data = JSON.stringify(story, null, 4);
 			return fs.writeFile(data_file, data, 'utf8', done);
 		}
 
 		var remove_from_storage = function(done) {
+			debug("remove_from_storage");
 			storage.removeItem("story", done);
 		}
 		
 		var wait_5 = function(done) {
+			debug("wait_5");
 			setTimeout(done, 5000);
 		}
 
@@ -274,7 +276,7 @@ var end_session = function() {
 			booth_socket.emit("reset");
 			onboard_socket.emit("submit_status", "ready");
 
-			debug("not recording!");
+			debug("done recording");
 			ending = false;
 			recording = false;
 		})

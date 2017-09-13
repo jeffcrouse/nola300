@@ -44,7 +44,8 @@ var OnAirSign = function(serial) {
 		closed = true;
 
 		debug("closing");
-		port.close(callback);
+		callback();
+		//port.close(callback);
 	}
 
 	var on_open = function() {
@@ -85,6 +86,8 @@ var OnAirSign = function(serial) {
 				debug("opening", comName);
 
 				port = new SerialPort(comName, options);
+				//port.open();
+
 
 				port.on('open', on_open);
 				port.on('error', on_error);

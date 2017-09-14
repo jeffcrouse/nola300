@@ -30,13 +30,18 @@ if (!VideoSchema.options.toJSON) VideoSchema.options.toJSON = {};
 VideoSchema.options.toJSON.transform = lean;
 
 // ----------------------------------------------------------
+VideoSchema.methods.full_path = function() {
+    return path.join(process.env.VIDEO_ROOT, this.name);
+}
+
+
+// ----------------------------------------------------------
 VideoSchema.statics.list = function(cb) {
     return this.find().exec( function( err, videos ) {
         if( err ) return cb( err );
         cb(null, videos);
     });
 };
-
 
 // ----------------------------------------------------------
 VideoSchema.statics.scanFiles = function(done) {
@@ -95,7 +100,7 @@ VideoSchema.statics.scanDatabase = function(done) {
 
 // ----------------------------------------------------------
 VideoSchema.statics.scan = function(callback) {
-   return async.series([this.scanFiles.bind(this), this.scanDatabase.bind(this)], callback);
+    return async.series([this.scanFiles.bind(this), this.scanDatabase.bind(this)], callback);
 }
 
 module.exports = mongoose.model( 'Video', VideoSchema, 'videos' );

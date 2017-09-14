@@ -16,7 +16,6 @@ const { matchedData } = require('express-validator/filter');
 var fs = require("fs");
 const mkdirp = require('mkdirp');
 var shortid = require('shortid');
-var postprocess = require("./PostProcess");
 var Video = require('./Video')
 const async = require('async');
 var hbs = require('hbs');
@@ -33,9 +32,12 @@ async.each([process.env.STORAGE_ROOT, process.env.VIDEO_ROOT], mkdirp, function(
 	if(err) debug(err);
 })
 
+
+var postprocess = require("./modules/PostProcess");
 async.forever(postprocess, err => {
 	debug("postprocess returned an error:", err);
 });
+
 
 storage.initSync({dir: "persist"});
 
@@ -149,9 +151,13 @@ app.post('/onboard', valid, function(req, res, next) {
 		var data = matchedData(req); 
 
 		storage.setItem("story", data).then(() => {
+
 			booth_socket.emit("set_name", data.fname+" "+data.lname);
 			onboard_socket.emit("submit_status", "wait");
 			onboard_socket.emit("reset_form");
+
+			prepopulate_playlist( data );
+
 			res.json({status: "OK"});
 		}).catch(err => {
 			return res.status(422).json({ status: "ERROR", errors: err });
@@ -273,6 +279,7 @@ var end_session = function() {
 		async.series([stop_devices, save_to_disk, remove_from_storage, wait_5], (err) => {
 			if(err) throw new Error(err);
 
+			clear_playlist();
 			booth_socket.emit("reset");
 			onboard_socket.emit("submit_status", "ready");
 
@@ -290,7 +297,6 @@ FootPedal.on("press", function(date){
 		debug("ignoring pedal press while events are in progress")
 		return;
 	}
-
 
 	if(recording) {
 		debug("end_session()")
@@ -329,11 +335,57 @@ timer.on("tick", (str) => {
 });
 
 
+
+
+/********************************************************************************************************
+ ▄▄▄▄▄▄▄▄▄▄▄  ▄            ▄▄▄▄▄▄▄▄▄▄▄  ▄         ▄  ▄            ▄▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄▄ 
+▐░░░░░░░░░░░▌▐░▌          ▐░░░░░░░░░░░▌▐░▌       ▐░▌▐░▌          ▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌
+▐░█▀▀▀▀▀▀▀█░▌▐░▌          ▐░█▀▀▀▀▀▀▀█░▌▐░▌       ▐░▌▐░▌           ▀▀▀▀█░█▀▀▀▀ ▐░█▀▀▀▀▀▀▀▀▀  ▀▀▀▀█░█▀▀▀▀ 
+▐░▌       ▐░▌▐░▌          ▐░▌       ▐░▌▐░▌       ▐░▌▐░▌               ▐░▌     ▐░▌               ▐░▌     
+▐░█▄▄▄▄▄▄▄█░▌▐░▌          ▐░█▄▄▄▄▄▄▄█░▌▐░█▄▄▄▄▄▄▄█░▌▐░▌               ▐░▌     ▐░█▄▄▄▄▄▄▄▄▄      ▐░▌     
+▐░░░░░░░░░░░▌▐░▌          ▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░▌               ▐░▌     ▐░░░░░░░░░░░▌     ▐░▌     
+▐░█▀▀▀▀▀▀▀▀▀ ▐░▌          ▐░█▀▀▀▀▀▀▀█░▌ ▀▀▀▀█░█▀▀▀▀ ▐░▌               ▐░▌      ▀▀▀▀▀▀▀▀▀█░▌     ▐░▌     
+▐░▌          ▐░▌          ▐░▌       ▐░▌     ▐░▌     ▐░▌               ▐░▌               ▐░▌     ▐░▌     
+▐░▌          ▐░█▄▄▄▄▄▄▄▄▄ ▐░▌       ▐░▌     ▐░▌     ▐░█▄▄▄▄▄▄▄▄▄  ▄▄▄▄█░█▄▄▄▄  ▄▄▄▄▄▄▄▄▄█░▌     ▐░▌     
+▐░▌          ▐░░░░░░░░░░░▌▐░▌       ▐░▌     ▐░▌     ▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌     ▐░▌     
+ ▀            ▀▀▀▀▀▀▀▀▀▀▀  ▀         ▀       ▀       ▀▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀▀       ▀      
+********************************************************************************************************/
+
+
+// This will contain all of the videos ranked by order 
+var playlist = [];
+Video.find().exec( function( err, videos ) {
+	if( err ) return debug(err);
+
+	
+	
+	cb(null, videos);
+});
+
+
+// This gets called immediately when a 
+var prepopulate_playlist = function(data) {
+	// look at data.entities.places, data.entities.items and data.entities.themes
+	// try to find a match. Give each video a score.
+	// and sort
+}
+
+
+var clear_playlist = function() {
+	playlist = []
+}
+
+
 SpeechToText.on("sentence", function(sentence){
 	debug(util.inspect(sentence, {depth: 5}));
 	storage.getItem("story", (err, story) => {
 		if(err) throw new Error(err);
 		if(!story) return debug("!! SpeechToText result with no story to add to.")
+
+
+		// Find the videos based on previous speech and put them into playlist
+
+
 
 		story.sentences.push( sentence );
 		storage.setItem("story", story).catch(err => {
@@ -343,7 +395,31 @@ SpeechToText.on("sentence", function(sentence){
 });
 
 
+app.get('/playlist', function(req, res, next) {
+	var data = {};
+	data.playlist = playlist.map(vid => {
+		return vid.full_path();
+	});
+	
+	res.json({ "playlist": playlist });
+});
 
+
+
+
+
+/*
+var player_socket = io.of('/player');
+player_socket.on("connection", function(socket){
+	debug("player socket client joined");
+
+	socket.emit("newsFromServer", "there");
+
+	socket.on('newsFromClient', function (data) {
+		debug(data);
+	});
+});
+*/
 
 
 
@@ -390,9 +466,9 @@ app.post('/videos', valid, function(req, res, next){
 		return res.status(422).json({ status: "ERROR", errors: "invalid entity name" });
 	}
 
-
 	Video.findById(req.body.video, (err, video) => {
 		if(err) return res.status(422).json({ status: "ERROR", errors: err });	
+
 		if(!req.body.video || !mongoose.Types.ObjectId.isValid(req.body.video)) 
 			return res.status(422).json({ status: "ERROR", errors: "invalid or missing video ID" });
 

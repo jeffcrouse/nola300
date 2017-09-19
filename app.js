@@ -19,7 +19,7 @@ var shortid = require('shortid');
 var Video = require('./Video')
 const async = require('async');
 var hbs = require('hbs');
-
+var SpeechToText = require('./modules/SpeechToText');
 
 
 
@@ -201,7 +201,6 @@ onboard_socket.on("connection", function( socket ) {
 var CountdownTimer = require('./modules/CountdownTimer')
 var FootPedal = require('./modules/FootPedal')
 var CanonCamera = require('./modules/CanonCamera')
-var SpeechToText = require('./modules/SpeechToText');
 var OnAirSign = require('./modules/OnAirSign')
 
 var cam0 = new CanonCamera("0");
@@ -221,6 +220,8 @@ var start_session = function() {
 		timer.begin(120000);
 		story.start = Date.now();
 		story.sentences = [];
+		story.location = process.env.NOLA_LOCATION;
+		
 		debug("storage.setItem")
 
 		storage.setItem("story", story, err => {
@@ -249,18 +250,25 @@ var end_session = function() {
 
 		story.id = shortid.generate();
 		story.end = Date.now();
+		story.duration = story.end - story.start;
+
+		var directory = path.join(process.env.STORAGE_ROOT, story.id);
 
 		debug("stopping cameras, STT, and OnAirSign");
 		
+		var mkdir = function(done) {
+			mkdirp(directory, done);
+		}
+
 		var stop_devices = function(done) {
 			debug("stop_devices");
-			var stop_0 = (cb) => { cam0.stop(util.format("%s/%s_0.mp4", process.env.STORAGE_ROOT, story.id), cb); }
-			var stop_1 = (cb) => { cam1.stop(util.format("%s/%s_1.mp4", process.env.STORAGE_ROOT, story.id), cb); }
+			var stop_0 = (cb) => { cam0.stop(util.format("%s/vid_00.mp4", directory, story.id), cb); }
+			var stop_1 = (cb) => { cam1.stop(util.format("%s/vid_01.mp4", directory, story.id), cb); }
 			async.parallel([stop_0, stop_1, SpeechToText.stop, OnAirSign.off], done);
 		}
 
 		var save_to_disk = function(done) {
-			var data_file = path.join(process.env.STORAGE_ROOT, story.id)+".json";
+			var data_file = path.join(directory, "info.json");
 			debug("save_to_disk", data_file);
 			var data = JSON.stringify(story, null, 4);
 			return fs.writeFile(data_file, data, 'utf8', done);
@@ -276,7 +284,7 @@ var end_session = function() {
 			setTimeout(done, 5000);
 		}
 
-		async.series([stop_devices, save_to_disk, remove_from_storage, wait_5], (err) => {
+		async.series([mkdir, stop_devices, save_to_disk, remove_from_storage, wait_5], (err) => {
 			if(err) throw new Error(err);
 
 			clear_playlist();
@@ -289,7 +297,6 @@ var end_session = function() {
 		})
 	});
 }
-
 
 FootPedal.on("press", function(date){
 	debug("footpedal pressed")
@@ -357,14 +364,22 @@ var playlist = [];
 Video.find().exec( function( err, videos ) {
 	if( err ) return debug(err);
 
-	
-	
-	cb(null, videos);
+	videos.forEach(vid => {
+
+		
+		
+	});
 });
 
 
-// This gets called immediately when a 
+// This gets called immediately when a story is submitted/save
 var prepopulate_playlist = function(data) {
+	storage.getItem("story", (err, story) => {
+		if(err) throw new Error(err);
+
+
+	});
+
 	// look at data.entities.places, data.entities.items and data.entities.themes
 	// try to find a match. Give each video a score.
 	// and sort
@@ -376,23 +391,6 @@ var clear_playlist = function() {
 }
 
 
-SpeechToText.on("sentence", function(sentence){
-	debug(util.inspect(sentence, {depth: 5}));
-	storage.getItem("story", (err, story) => {
-		if(err) throw new Error(err);
-		if(!story) return debug("!! SpeechToText result with no story to add to.")
-
-
-		// Find the videos based on previous speech and put them into playlist
-
-
-
-		story.sentences.push( sentence );
-		storage.setItem("story", story).catch(err => {
-			debug("!! error saving story after adding sentence.")
-		});
-	});
-});
 
 
 app.get('/playlist', function(req, res, next) {
@@ -400,7 +398,7 @@ app.get('/playlist', function(req, res, next) {
 	data.playlist = playlist.map(vid => {
 		return vid.full_path();
 	});
-	
+
 	res.json({ "playlist": playlist });
 });
 
@@ -420,6 +418,49 @@ player_socket.on("connection", function(socket){
 	});
 });
 */
+
+
+
+/*****************************************************************************
+ ▄▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄▄  ▄         ▄ 
+▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░▌       ▐░▌
+▐░█▀▀▀▀▀▀▀▀▀ ▐░█▀▀▀▀▀▀▀█░▌▐░█▀▀▀▀▀▀▀▀▀ ▐░█▀▀▀▀▀▀▀▀▀ ▐░█▀▀▀▀▀▀▀▀▀ ▐░▌       ▐░▌
+▐░▌          ▐░▌       ▐░▌▐░▌          ▐░▌          ▐░▌          ▐░▌       ▐░▌
+▐░█▄▄▄▄▄▄▄▄▄ ▐░█▄▄▄▄▄▄▄█░▌▐░█▄▄▄▄▄▄▄▄▄ ▐░█▄▄▄▄▄▄▄▄▄ ▐░▌          ▐░█▄▄▄▄▄▄▄█░▌
+▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░▌          ▐░░░░░░░░░░░▌
+ ▀▀▀▀▀▀▀▀▀█░▌▐░█▀▀▀▀▀▀▀▀▀ ▐░█▀▀▀▀▀▀▀▀▀ ▐░█▀▀▀▀▀▀▀▀▀ ▐░▌          ▐░█▀▀▀▀▀▀▀█░▌
+          ▐░▌▐░▌          ▐░▌          ▐░▌          ▐░▌          ▐░▌       ▐░▌
+ ▄▄▄▄▄▄▄▄▄█░▌▐░▌          ▐░█▄▄▄▄▄▄▄▄▄ ▐░█▄▄▄▄▄▄▄▄▄ ▐░█▄▄▄▄▄▄▄▄▄ ▐░▌       ▐░▌
+▐░░░░░░░░░░░▌▐░▌          ▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░▌       ▐░▌
+ ▀▀▀▀▀▀▀▀▀▀▀  ▀            ▀▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀▀  ▀         ▀ 
+*****************************************************************************/                                                                            
+                                                                              
+                                                                              
+                                                                              
+                                                                              
+     
+SpeechToText.on("sentence", function(sentence){
+	debug(util.inspect(sentence, {depth: 5}));
+	storage.getItem("story", (err, story) => {
+		if(err) throw new Error(err);
+		if(!story) return debug("!! SpeechToText result with no story to add to.")
+
+
+		// Find the videos based on previous speech and put them into playlist
+
+
+		story.sentences.push( sentence );
+		storage.setItem("story", story).catch(err => {
+			debug("!! error saving story after adding sentence.")
+		});
+	});
+});                                                                         
+                                                                              
+                                                                              
+                                                                              
+                                                                              
+                                                                              
+
 
 
 

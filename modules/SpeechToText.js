@@ -1,12 +1,11 @@
 require('dotenv').config({ silent: true }); 
+var debug = require('debug')('stt');
 const SpeechToTextV1 = require('watson-developer-cloud/speech-to-text/v1');
 var NaturalLanguageUnderstandingV1 = require('watson-developer-cloud/natural-language-understanding/v1');
 const LineIn = require('line-in');  // https://github.com/linusu/node-line-in
 const wav = require('wav');			// https://github.com/tootallnate/node-wav
 const util = require('util');
 var EventEmitter = require('events').EventEmitter;
-var debug = require('debug')('speechtotext');
-
 
 const speechToText = new SpeechToTextV1();
 var nlu = new NaturalLanguageUnderstandingV1({
@@ -15,7 +14,7 @@ var nlu = new NaturalLanguageUnderstandingV1({
 
 // features to fetch from Watson NLU
 // https://github.com/watson-developer-cloud/node-sdk/blob/master/natural-language-understanding/v1.js
-var features = { categories: {}, concepts: {}, emotion: {}, entities: {}, keywords: {}, sentiment: {} };
+var features = { concepts: {}, emotion: {}, entities: {}, keywords: {}, sentiment: {} };
 
 
 var SpeechToText = function() {
@@ -28,15 +27,15 @@ var SpeechToText = function() {
 	var recognizeStream = null;
 	var rsOptions = {
 		content_type: 'audio/wav',
-		timestamps: true,
 		"interim_results": true,
 		"readableObjectMode": true };
 	var running = false;
-
+	var startTime = null;
 
 
 	// --------------------------------------------------------------------
 	this.start = function(callback) {
+		callback = callback || function(){}
 		if(running) return callback("already running");
 
 		recognizeStream = speechToText.createRecognizeStream(rsOptions);
@@ -52,6 +51,8 @@ var SpeechToText = function() {
 		recognizeStream.on('results', on_results);
 		recognizeStream.on('close', on_close);
 
+		startTime = Date.now();
+		
 		running = true;
 
 		callback();
@@ -59,6 +60,8 @@ var SpeechToText = function() {
 
 	// --------------------------------------------------------------------
 	this.stop = function(callback) {	
+		callback = callback || function(){}
+
 		if(!running) {
 			debug("[warning] SpeechToText not running");
 			return callback();
@@ -70,6 +73,8 @@ var SpeechToText = function() {
 		recognizeStream = null;
 		lineIn = null;
 		wavStream = null;
+
+		startTime = null;
 
 		running = false;
 
@@ -84,9 +89,20 @@ var SpeechToText = function() {
 	
 	// --------------------------------------------------------------------
 	var on_data = function(data) {
+		var now = Date.now();
+		var elapsed = now - startTime;
+		var sentence = {
+			text: data, 
+			elapsed: elapsed,
+			time: now,
+			nlu: null
+		};
+
 		var options = { text: data, features: features };
 		nlu.analyze(options, function(err, res) {
-			var sentence = {text: data, nlu: res};
+			if(err) return debug(err);
+
+			sentence.nlu = res;
 			self.emit("sentence", sentence);
 		});
 	}

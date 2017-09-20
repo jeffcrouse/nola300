@@ -24,7 +24,7 @@ var CanonCamera = function(id) {
 	var args = ['--id', id, "--debug", '--delete-after-download', "--overwrite", "--default-dir", process.env.STORAGE_ROOT];
 	var download_callback = null;
 	var exit_callback = null;
-
+	var probablyRecording = false;
 
 
 	var on_stdout_data = function(data) {
@@ -66,15 +66,22 @@ var CanonCamera = function(id) {
 	
 
 	this.record = function(filename, callback){
+		callback = callback || function(){};
+		
 		var command = "record";
 		if(filename) command += " "+filename;
 		debug(command);
-		proc.send(command, callback);
+		proc.send(command, err => {
+			probablyRecording = true;
+			callback(err)
+		});
 	}
 
 
 	// This shouldn't return until the resulting video is completely done downloading.
 	this.stop = function(filename, callback){
+		callback = callback || function(){};
+
 		var command = "stop";
 		if(filename) command += " "+filename;
 		debug(command);
@@ -86,6 +93,8 @@ var CanonCamera = function(id) {
 
 	this.close = function(callback) {
 		if(!proc || !proc.connected) return callback();
+
+		if(probablyRecording) this.stop();
 
 		var command = "exit";
 		debug(command);

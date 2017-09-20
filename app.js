@@ -206,95 +206,110 @@ var OnAirSign = require('./modules/OnAirSign')
 var cam0 = new CanonCamera("0");
 var cam1 = new CanonCamera("1");
 var booth_socket = io.of('/booth');
-var recording = false;
+var session_in_progress = false;
 var starting = false;
 var ending = false;
 
 
 var start_session = function() {
-	starting = true;
-	storage.getItem("story", (err, story) => {
-		if(err) throw new Error(err);
-		if(!story) throw new Error("no story present");
-		
-		timer.begin(120000);
+	debug("start_session");
+	var story = null;
+
+	var get_story = done => {
+		storage.getItem("story", (err, item) => {
+			if(err) return done(err);
+			if(!item) return done("no story present. ignoring.");
+			story = item;
+			done(null);
+		});
+	}
+
+	var update_story = done => {
 		story.start = Date.now();
 		story.sentences = [];
 		story.location = process.env.NOLA_LOCATION;
-		
-		debug("storage.setItem")
+		storage.setItem("story", story, done);;
+	}
 
-		storage.setItem("story", story, err => {
-			if(err) throw new Error("couldn't save story");
+	var start_devices = done => {
+		async.parallel([cam0.record.bind(cam0, null), cam1.record.bind(cam0, null), OnAirSign.on, SpeechToText.start], done);
+	}
 
-			async.parallel([cam0.record.bind(cam0, null), cam1.record.bind(cam0, null), OnAirSign.on, SpeechToText.start], err => {
-				if(err) throw new Error("error communicating with devices");
+	starting = true;
+	async.series([get_story, update_story, start_devices], err => {
+		starting = false;
+		if(err) return debug(err);
 
-				debug("recording!");
-				starting = false;
-				recording = true;
-			});
-		});
+		timer.begin(120000);
+		debug("session_in_progress=true");
+		session_in_progress = true;
 	});
 }
 
 
 var end_session = function() {
+	debug("end_session");
+	timer.stop();
+
+	var story = null;
+	var directory = null;
+
+	var get_story = done => {
+		debug("get_story");
+		storage.getItem("story", (err, item) => {
+			if(err) return done(err);
+			if(!item) return done("no story present. ignoring.");
+
+			story = item;
+			story.id = shortid.generate();
+			story.end = Date.now();
+			story.duration = story.end - story.start;
+
+			directory = path.join(process.env.STORAGE_ROOT, story.id);
+			done(null);
+		});
+	}
+		
+	var mkdir = done => {
+		debug("mkdir", directory);
+		mkdirp(directory, done);
+	}
+
+	var stop_devices = done => {
+		debug("stop_devices");
+		var stop_0 = (cb) => { cam0.stop(`${directory}/vid_00.mp4`, cb); }
+		var stop_1 = (cb) => { cam1.stop(`${directory}/vid_01.mp4`, cb); }
+		async.parallel([stop_0, stop_1, SpeechToText.stop, OnAirSign.off], done);
+	}
+
+	var save_to_file = done => {
+		debug("save_to_file");
+		var data_file = path.join(directory, "info.json");
+		var data = JSON.stringify(story, null, 4);
+		return fs.writeFile(data_file, data, 'utf8', done);
+	}
+
+	var remove_from_storage = done => {
+		debug("remove_from_storage");
+		storage.removeItem("story", done);
+	}
+	
+	var wait_5 = done => {
+		debug("wait_5");
+		setTimeout(done, 5000);
+	}
+
 	ending = true;
-	storage.getItem("story", (err, story) => {
-		if(err) throw new Error(err);
-		if(!story) throw new Error("no story present");
-		
-		timer.stop();
+	async.series([get_story, mkdir, stop_devices, save_to_file, remove_from_storage, wait_5], (err) => {
+		ending = false;
+		if(err) return debug(err);
+
+		clear_playlist();
 		booth_socket.emit("set_message", "thank you");
-
-		story.id = shortid.generate();
-		story.end = Date.now();
-		story.duration = story.end - story.start;
-
-		var directory = path.join(process.env.STORAGE_ROOT, story.id);
-
-		debug("stopping cameras, STT, and OnAirSign");
-		
-		var mkdir = function(done) {
-			mkdirp(directory, done);
-		}
-
-		var stop_devices = function(done) {
-			debug("stop_devices");
-			var stop_0 = (cb) => { cam0.stop(util.format("%s/vid_00.mp4", directory, story.id), cb); }
-			var stop_1 = (cb) => { cam1.stop(util.format("%s/vid_01.mp4", directory, story.id), cb); }
-			async.parallel([stop_0, stop_1, SpeechToText.stop, OnAirSign.off], done);
-		}
-
-		var save_to_disk = function(done) {
-			var data_file = path.join(directory, "info.json");
-			debug("save_to_disk", data_file);
-			var data = JSON.stringify(story, null, 4);
-			return fs.writeFile(data_file, data, 'utf8', done);
-		}
-
-		var remove_from_storage = function(done) {
-			debug("remove_from_storage");
-			storage.removeItem("story", done);
-		}
-		
-		var wait_5 = function(done) {
-			debug("wait_5");
-			setTimeout(done, 5000);
-		}
-
-		async.series([mkdir, stop_devices, save_to_disk, remove_from_storage, wait_5], (err) => {
-			if(err) throw new Error(err);
-
-			clear_playlist();
-			booth_socket.emit("reset");
-			onboard_socket.emit("submit_status", "ready");
-
-			debug("done recording");
-			ending = false;
-			recording = false;
-		})
+		booth_socket.emit("reset");
+		onboard_socket.emit("submit_status", "ready");
+		debug("session_in_progress=false");
+		session_in_progress = false;
 	});
 }
 
@@ -305,11 +320,9 @@ FootPedal.on("press", function(date){
 		return;
 	}
 
-	if(recording) {
-		debug("end_session()")
+	if(session_in_progress) {
 		end_session();
 	} else {
-		debug("start_session()")
 		start_session();
 	}
 });
@@ -335,7 +348,7 @@ booth_socket.on( "connection", function( socket ) {
 var timer = new CountdownTimer();
 timer.on("done", function() {
 	debug("TIMER DONE!");
-	if(recording) end_session();
+	if(session_in_progress) end_session();
 });
 timer.on("tick", (str) => {
 	booth_socket.emit('time', str);

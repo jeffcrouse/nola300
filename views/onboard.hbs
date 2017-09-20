@@ -22,7 +22,7 @@
 
 		<div class="container">
 
-			<form role="form" class="onboard-form" id="onboard-form" onkeypress="return event.keyCode != 13;">
+			<form role="form" class="onboard-form" id="onboard-form">
 
 				<div class="card" id="00-home">
 					<div class="card-header">One Time in New Orleans</div>
@@ -227,23 +227,25 @@
 		// Fade in the first page
 		$(pages[p]).fadeIn("fast");
 
-		// Handle the "next" action on all pages
-		$("button.nextbtn").click(function() {
+		var next = function() {
 			var current = $(pages[p]);
 			var next = $(pages[p+1]);
 			current.slideToggle("slow");
 			next.slideToggle("slow");
 			p++;
 			return false;
-		})
-
-		$("button.backbtn").click(function() {
+		}
+		var back = function() {
 			var current = $(pages[p]);
 			var prev = $(pages[p-1]);
 			current.slideToggle("slow");
 			prev.slideToggle("slow");
 			p--;
-		});
+		}
+
+		// Handle the "next" action on all pages
+		$("button.nextbtn").click(next)
+		$("button.backbtn").click(back);
 
 		// Handle the form submit
 		$("#onboard-form").submit(function( event ) {
@@ -266,6 +268,13 @@
 			});
 			event.preventDefault();
 		});
+
+		$("#onboard-form").keypress(function(){
+			if ( event.which == 13 ) {
+     			event.preventDefault();
+     			next();
+  			}
+		})
 
 		// messages received: submit_status, reset_form
 		var socket = io.connect("/onboard");

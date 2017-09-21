@@ -21,7 +21,7 @@ var CanonCamera = function(id) {
 	var debug = require('debug')('camera'+id);
 	var self = this;
 	var proc = null;
-	var args = ['--id', id, "--debug", '--delete-after-download', "--overwrite", "--default-dir", process.env.STORAGE_ROOT];
+	var args = ['--id', id, '--delete-after-download', "--overwrite", "--default-dir", process.env.STORAGE_ROOT]; // "--debug"
 	var download_callback = null;
 	var exit_callback = null;
 	var probablyRecording = false;
@@ -85,7 +85,9 @@ var CanonCamera = function(id) {
 		var command = "stop";
 		if(filename) command += " "+filename;
 		debug(command);
+
 		proc.send(command, err => {
+			probablyRecording = false;
 			if(err) callback(err);
 			else download_callback = callback;
 		});
@@ -94,7 +96,7 @@ var CanonCamera = function(id) {
 	this.close = function(callback) {
 		if(!proc || !proc.connected) return callback();
 
-		if(probablyRecording) this.stop();
+		if(probablyRecording) self.stop();
 
 		var command = "exit";
 		debug(command);

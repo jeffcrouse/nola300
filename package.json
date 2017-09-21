@@ -18,7 +18,6 @@
     "glob": "^7.1.2",
     "google-spreadsheet": "^2.0.4",
     "hbs": "^4.0.1",
-    "line-in": "^0.1.2",
     "mongoose": "^4.11.11",
     "morgan": "^1.8.2",
     "node-persist": "^2.1.0",

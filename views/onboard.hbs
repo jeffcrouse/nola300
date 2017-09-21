@@ -197,6 +197,7 @@
 
 						<div id="submit-status"></div>
 
+						<button type="button" class="btn btn-primary backbtn">Back</button>
 						<button type="submit" id="btn-submit" class="btn btn-primary">Go!</button>
 					</div>
 				</div>
@@ -261,10 +262,10 @@
 				if(data.status != "OK") {
 					alert(data.messages.join("\n"));
 					console.log(data.messages)
-				}
-
+				} 
 			}).fail(function(xhr, status, error){
-				console.log("error submitting data: "+error);
+				alert(xhr.responseText);
+				console.log("error submitting data: "+xhr.responseText);
 			});
 			event.preventDefault();
 		});

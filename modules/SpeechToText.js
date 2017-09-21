@@ -2,12 +2,11 @@ require('dotenv').config({ silent: true });
 var debug = require('debug')('stt');
 const SpeechToTextV1 = require('watson-developer-cloud/speech-to-text/v1');
 var NaturalLanguageUnderstandingV1 = require('watson-developer-cloud/natural-language-understanding/v1');
-const LineIn = require('line-in');  // https://github.com/linusu/node-line-in
-const wav = require('wav');			// https://github.com/tootallnate/node-wav
 const util = require('util');
 var EventEmitter = require('events').EventEmitter;
+const spawn = require('child_process').spawn;
 
-const speechToText = new SpeechToTextV1();
+const stt = new SpeechToTextV1();
 var nlu = new NaturalLanguageUnderstandingV1({
 	version_date: NaturalLanguageUnderstandingV1.VERSION_DATE_2017_02_27
 });
@@ -22,15 +21,10 @@ var SpeechToText = function() {
 
 	var self = this;
 
-	var lineIn = null; // 2-channel 16-bit little-endian signed integer pcm encoded audio @ 44100 Hz
-	var wavStream = null;
 	var recognizeStream = null;
-	var rsOptions = {
-		content_type: 'audio/wav',
-		"interim_results": true,
-		"readableObjectMode": true };
 	var running = false;
 	var startTime = null;
+	var recProc = null;
 
 
 	// --------------------------------------------------------------------
@@ -38,23 +32,32 @@ var SpeechToText = function() {
 		callback = callback || function(){}
 		if(running) return callback("already running");
 
-		recognizeStream = speechToText.createRecognizeStream(rsOptions);
-		
-		lineIn = new LineIn();
-		wavStream = new wav.Writer({ sampleRate: 44100, channels: 2 });
-
-		lineIn.pipe(wavStream);
-		wavStream.pipe(recognizeStream);
-
+		recognizeStream = stt.createRecognizeStream({content_type: 'audio/wav'});
+		recognizeStream.setEncoding('utf8');
 		recognizeStream.on('listening', on_listening);
 		recognizeStream.on('data', on_data);
 		recognizeStream.on('results', on_results);
 		recognizeStream.on('close', on_close);
 
+		debug("spawning rec");
+		recProc = spawn('rec', ['-b', 16, '--endian', 'little', '-c', 1, '-r', 16000, '-e', 'signed-integer', '-t', 'wav', '-']);
+		recProc.on('exit', (code, sig) => {
+			debug(`recProc has exited with code = ${code}`);
+		});
+
+		recProc.stderr.on('data', (data) => { 
+			debug(data.toString());
+		});
+		recProc.stdout.pipe(recognizeStream);
+
+		recProc.on('close', (code) => {
+			debug(`recProc exited with code ${code}`);
+		});
+
 		startTime = Date.now();
-		
 		running = true;
 
+		debug("started");
 		callback();
 	}
 
@@ -69,13 +72,12 @@ var SpeechToText = function() {
 
 		debug("closing");
 
+		recProc.kill('SIGTERM');
+		recProc = null;
 		recognizeStream.stop();
 		recognizeStream = null;
-		lineIn = null;
-		wavStream = null;
 
 		startTime = null;
-
 		running = false;
 
 		callback();
@@ -87,6 +89,7 @@ var SpeechToText = function() {
 		debug("listening")
 	}
 	
+
 	// --------------------------------------------------------------------
 	var on_data = function(data) {
 		var now = Date.now();
@@ -100,12 +103,15 @@ var SpeechToText = function() {
 
 		var options = { text: data, features: features };
 		nlu.analyze(options, function(err, res) {
-			if(err) return debug(err);
-
-			sentence.nlu = res;
+			if(err) {
+				debug(err);
+			} else {
+				sentence.nlu = res;
+			}
 			self.emit("sentence", sentence);
 		});
 	}
+
 	
 	// --------------------------------------------------------------------
 	var on_results = function(data) {
@@ -114,7 +120,7 @@ var SpeechToText = function() {
 
 	// --------------------------------------------------------------------
 	var on_close = function() {
-		debug("closing");
+		debug("on_close");
 	}
 }
 

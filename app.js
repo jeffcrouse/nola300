@@ -140,17 +140,17 @@ var valid = [
 app.post('/onboard', valid, function(req, res, next) {
 	debug("req.body", req.body);
 
-	storage.getItem("story").then(story => {
-		if(story) 
-			return res.json({status: "NOT_READY", messages: ["there is already a story on deck. please wait."]});
+	try {
+		storage.getItem("story", (err, item) => {
+			if(item) throw "story still in progress.";
 
-		const errors = validationResult(req);
-		if(!errors.isEmpty()) 
-			return res.status(422).json({ status: "ERROR", errors: err.array() });
+			// Validate post request
+			const errors = validationResult(req);
+			if(!errors.isEmpty()) {
+				throw errors.array().map(item => { return item.msg; }).join(",");
+			}
 
-		var data = matchedData(req); 
-
-		storage.setItem("story", data).then(() => {
+			var data = matchedData(req); 
 
 			booth_socket.emit("set_name", data.fname+" "+data.lname);
 			onboard_socket.emit("submit_status", "wait");
@@ -158,13 +158,15 @@ app.post('/onboard', valid, function(req, res, next) {
 
 			prepopulate_playlist( data );
 
-			res.json({status: "OK"});
-		}).catch(err => {
-			return res.status(422).json({ status: "ERROR", errors: err });
+			storage.setItem("story", data, err => {
+				if(err) throw err;
+				res.json({status: "OK"});
+			});
 		});
-	}).catch(err => {
-		return res.status(422).json({ status: "ERROR", errors: err });
-	});
+	} catch(e) {
+		debug("catch", e);
+		return res.status(422).send(e);
+	}	
 });
 
 
@@ -232,7 +234,7 @@ var start_session = function() {
 	}
 
 	var start_devices = done => {
-		async.parallel([cam0.record.bind(cam0, null), cam1.record.bind(cam0, null), OnAirSign.on, SpeechToText.start], done);
+		async.parallel([cam0.record.bind(cam0, null), cam1.record.bind(cam0, null), SpeechToText.start, OnAirSign.on], done); 
 	}
 
 	starting = true;
@@ -250,7 +252,8 @@ var start_session = function() {
 var end_session = function() {
 	debug("end_session");
 	timer.stop();
-
+	booth_socket.emit("set_message", "thank you");
+	
 	var story = null;
 	var directory = null;
 
@@ -305,7 +308,6 @@ var end_session = function() {
 		if(err) return debug(err);
 
 		clear_playlist();
-		booth_socket.emit("set_message", "thank you");
 		booth_socket.emit("reset");
 		onboard_socket.emit("submit_status", "ready");
 		debug("session_in_progress=false");
@@ -339,7 +341,11 @@ booth_socket.on( "connection", function( socket ) {
 	storage.getItem("story", (err, story) => {
 		if(err) throw new Error(err);
 
-		if(story) booth_socket.emit("set_name", story.fname+" "+story.lname);
+		if(story) {
+			booth_socket.emit("set_name", story.fname+" "+story.lname);
+		} else {
+			booth_socket.emit("set_name", "?");
+		}
 	})		
 });
 
@@ -353,6 +359,9 @@ timer.on("done", function() {
 timer.on("tick", (str) => {
 	booth_socket.emit('time', str);
 });
+
+
+
 
 
 
@@ -447,11 +456,8 @@ player_socket.on("connection", function(socket){
 ▐░░░░░░░░░░░▌▐░▌          ▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░▌       ▐░▌
  ▀▀▀▀▀▀▀▀▀▀▀  ▀            ▀▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀▀  ▀         ▀ 
 *****************************************************************************/                                                                            
-                                                                              
-                                                                              
-                                                                              
-                                                                              
-     
+
+
 SpeechToText.on("sentence", function(sentence){
 	debug(util.inspect(sentence, {depth: 5}));
 	storage.getItem("story", (err, story) => {
@@ -467,12 +473,8 @@ SpeechToText.on("sentence", function(sentence){
 			debug("!! error saving story after adding sentence.")
 		});
 	});
-});                                                                         
-                                                                              
-                                                                              
-                                                                              
-                                                                              
-                                                                              
+});
+
 
 
 

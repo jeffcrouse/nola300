@@ -46,13 +46,9 @@ var SpeechToText = function() {
 		});
 
 		recProc.stderr.on('data', (data) => { 
-			debug(data.toString());
+			//debug(data.toString());
 		});
 		recProc.stdout.pipe(recognizeStream);
-
-		recProc.on('close', (code) => {
-			debug(`recProc exited with code ${code}`);
-		});
 
 		startTime = Date.now();
 		running = true;
@@ -66,20 +62,20 @@ var SpeechToText = function() {
 		callback = callback || function(){}
 
 		if(!running) {
-			debug("[warning] SpeechToText not running");
+			debug("[warning] not running");
 			return callback();
 		}
 
 		debug("closing");
 
 		recProc.kill('SIGTERM');
-		recProc = null;
+
 		recognizeStream.stop();
-		recognizeStream = null;
 
 		startTime = null;
 		running = false;
 
+		debug("done");
 		callback();
 	}
 

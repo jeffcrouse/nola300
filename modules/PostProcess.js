@@ -69,11 +69,13 @@ var process_story = function(filename, callback) {
 
 	var remove_folder = function(done) {
 		var cmd = util.format('rm -rf %s', obj.id);
+		debug(cmd);
 		exec(cmd, {cwd: process.env.STORAGE_ROOT}, done);
 	}
 
 	var remove_archive = function(done) {
 		var cmd = util.format('rm -rf %s.tar.gz', obj.id);
+		debug(cmd);
 		exec(cmd, {cwd: process.env.STORAGE_ROOT}, done);
 	}
 

@@ -21,11 +21,10 @@ var CanonCamera = function(id) {
 	var debug = require('debug')('camera'+id);
 	var self = this;
 	var proc = null;
-	var args = ['--id', id, '--delete-after-download', "--overwrite", "--default-dir", process.env.STORAGE_ROOT]; // "--debug"
+	var args = ['--id', id, '--delete-after-download', "--debug", "--overwrite", "--default-dir", process.env.STORAGE_ROOT];
 	var download_callback = null;
 	var exit_callback = null;
-	var probablyRecording = false;
-
+	var closed = false;
 
 	var on_stdout_data = function(data) {
 		data = data.toString().trim();
@@ -43,8 +42,10 @@ var CanonCamera = function(id) {
 			}
 
 			if(words[1]=="done") {
-				exit_callback();
-				exit_callback = null;
+				if(exit_callback) {
+					exit_callback();
+					exit_callback = null;
+				}
 			}
 		}
 	}
@@ -72,7 +73,6 @@ var CanonCamera = function(id) {
 		if(filename) command += " "+filename;
 		debug(command);
 		proc.send(command, err => {
-			probablyRecording = true;
 			callback(err)
 		});
 	}
@@ -87,7 +87,6 @@ var CanonCamera = function(id) {
 		debug(command);
 
 		proc.send(command, err => {
-			probablyRecording = false;
 			if(err) callback(err);
 			else download_callback = callback;
 		});
@@ -96,8 +95,7 @@ var CanonCamera = function(id) {
 	this.close = function(callback) {
 		if(!proc || !proc.connected) return callback();
 
-		if(probablyRecording) self.stop();
-
+		closed = true;
 		var command = "exit";
 		debug(command);
 		proc.send(command, err => {
@@ -109,6 +107,8 @@ var CanonCamera = function(id) {
 
 
 	var stay_connected = function(done) {
+		if(closed) return;
+
 		if(!proc || !proc.connected) {
 			debug("canon-video-capture "+args.join(" "));
 			proc = spawn(canon, args, {stdio: ["ipc"]});
@@ -118,7 +118,7 @@ var CanonCamera = function(id) {
 			proc.on('close', on_close);
 			proc.send("stop");
 		}
-		setTimeout(done, 2000);
+		if(!closed) setTimeout(done, 2000);
 	}
 
 	async.forever(stay_connected, err => {

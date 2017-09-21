@@ -112,8 +112,8 @@ var gracefulShutdown = function() {
 
   debug("Received kill signal, shutting down gracefully.");
   app.close(err => {
-    debug("app closed successfully")
-    debug(err);
+    if(err) debug(err);
+    else debug("app closed successfully")
     process.exit();
   });
 

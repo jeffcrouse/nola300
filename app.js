@@ -51,7 +51,7 @@ storage.initSync({dir: "persist"});
 */
 
 mongoose.Promise = global.Promise;
-var db_url = 'mongodb://localhost:27017/nola300';
+var db_url = 'mongodb://localhost:27017/nola300-client';
 mongoose.connect(db_url, {useMongoClient: true}, function(err){
 	if(err) throw("couldn't connect to", db_url);
 	else debug("connected to", db_url);
@@ -577,6 +577,7 @@ app.use(function(err, req, res, next) {
 
 // Close function to be called from the graceful shutdown procedure in app/www
 app.close = function(done) {
+	debug("closing");
 	async.parallel([FootPedal.close, OnAirSign.close, cam0.close, cam1.close], done);
 }
 

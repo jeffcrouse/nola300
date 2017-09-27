@@ -6,13 +6,16 @@ var Schema = mongoose.Schema;
 const glob = require('glob');
 const async = require('async');
 const fs = require('fs');
+const exec = require("child_process").exec;
+
 
 var VideoSchema = Schema({
 	name: 			{ type: String, required: true },
     file_present:   { type: Boolean, default: false },
+    duration:       { type: Number, default: null },
 	places: 		[ { type: String } ],
 	items: 			[ { type: String } ],
-	themes: 		[ { type: String } ],
+	themes: 		[ { type: String } ]
 });
 
 
@@ -30,16 +33,53 @@ if (!VideoSchema.options.toJSON) VideoSchema.options.toJSON = {};
 VideoSchema.options.toJSON.transform = lean;
 
 // ----------------------------------------------------------
-VideoSchema.methods.full_path = function() {
+VideoSchema.virtual('full_path').get(function(){
     return path.join(process.env.VIDEO_ROOT, this.name);
+});
+
+
+// ----------------------------------------------------------
+VideoSchema.methods.as_playlist = function() {
+    return {
+        path: this.full_path,
+        id: this._id
+    };
 }
 
 
 // ----------------------------------------------------------
-VideoSchema.statics.list = function(cb) {
+VideoSchema.methods.set_duration = function(callback) {
+    var cmd = `ffprobe -i "${this.full_path}"`;
+    debug(cmd);
+    exec(cmd, (err, stdout, stderr) => {
+        var matches = stderr.match(/Duration:\s{1}(\d+?):(\d+?):(\d+\.\d+?),/);
+        if(err) {
+            callback(err);
+        } else if(!matches || matches.length < 4) {
+            callback("Couldn't determine video duration");
+        } else {
+            var hours = parseInt(matches[1], 10);
+            var minutes = parseInt(matches[2], 10);
+            var seconds = parseFloat(matches[3], 10);
+            var duration = (hours*3600) + (minutes*60) + seconds;
+
+            this.duration = duration;
+            callback();
+        }
+    });
+}
+
+// ----------------------------------------------------------
+VideoSchema.pre('save', function(next) {
+    if(this.duration) next(null);
+    else this.set_duration(next);
+});
+
+// ----------------------------------------------------------
+VideoSchema.statics.list = function(callback) {
     return this.find().exec( function( err, videos ) {
-        if( err ) return cb( err );
-        cb(null, videos);
+        if( err ) return callback( err );
+        callback(null, videos);
     });
 };
 

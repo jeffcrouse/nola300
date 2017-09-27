@@ -7,7 +7,7 @@ const favicon = require('serve-favicon');
 var logger = require('morgan');
 const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
-var socketio = require('socket.io')
+var socketio = require('socket.io');
 var mongoose = require('mongoose');
 var storage = require('node-persist');
 var _ = require('underscore');
@@ -20,7 +20,7 @@ var Video = require('./Video')
 const async = require('async');
 var hbs = require('hbs');
 var SpeechToText = require('./modules/SpeechToText');
-
+var EntitiesList = require('./modules/EntitiesList');
 
 
 /*
@@ -116,15 +116,15 @@ hbs.registerHelper('json', function(obj) {
 *****************************************************************************************/                                                                                        
 
 //var Story = require('./modules/Story_nodb')
-var GoogleSheet = require('./modules/GoogleSheet');
+
 var onboard_socket = io.of('/onboard');
 
 app.get('/onboard', function(req, res, next) {
 	var data = {
 		layout: false,
-		places: GoogleSheet.places,
-		items: GoogleSheet.items,
-		themes: GoogleSheet.themes
+		places: EntitiesList.places,
+		items: EntitiesList.items,
+		themes: EntitiesList.themes
 	}
 	res.render('onboard', data);
 });
@@ -201,9 +201,9 @@ onboard_socket.on("connection", function( socket ) {
 ****************************************************************/
 
 var CountdownTimer = require('./modules/CountdownTimer')
-var FootPedal = require('./modules/FootPedal')
-var CanonCamera = require('./modules/CanonCamera')
-var OnAirSign = require('./modules/OnAirSign')
+var CanonCamera = require('./modules/CanonCamera')	
+var FootPedal = require('./modules/FootPedal')				// Singleton
+var OnAirSign = require('./modules/OnAirSign')				// Singleton
 
 var cam0 = new CanonCamera("0");
 var cam1 = new CanonCamera("1");
@@ -230,7 +230,7 @@ var start_session = function() {
 		story.start = Date.now();
 		story.sentences = [];
 		story.location = process.env.NOLA_LOCATION;
-		storage.setItem("story", story, done);;
+		storage.setItem("story", story, done);
 	}
 
 	var start_devices = done => {
@@ -385,11 +385,8 @@ timer.on("tick", (str) => {
 var playlist = [];
 Video.find().exec( function( err, videos ) {
 	if( err ) return debug(err);
-
 	videos.forEach(vid => {
 
-		
-		
 	});
 });
 
@@ -426,20 +423,6 @@ app.get('/playlist', function(req, res, next) {
 
 
 
-
-
-/*
-var player_socket = io.of('/player');
-player_socket.on("connection", function(socket){
-	debug("player socket client joined");
-
-	socket.emit("newsFromServer", "there");
-
-	socket.on('newsFromClient', function (data) {
-		debug(data);
-	});
-});
-*/
 
 
 
@@ -498,9 +481,9 @@ app.get('/videos', function(req, res, next) {
 
 	var data = {
 		layout: false,
-		places: GoogleSheet.places,
-		items: GoogleSheet.items,
-		themes: GoogleSheet.themes
+		places: EntitiesList.places,
+		items: EntitiesList.items,
+		themes: EntitiesList.themes
 	}
 
 	Video.scan(function(err) {

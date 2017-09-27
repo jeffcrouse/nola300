@@ -39,8 +39,10 @@ var SpeechToText = function() {
 		recognizeStream.on('results', on_results);
 		recognizeStream.on('close', on_close);
 
+		// TODO: Can I make this lower quality?
 		debug("spawning rec");
-		recProc = spawn('rec', ['-b', 16, '--endian', 'little', '-c', 1, '-r', 16000, '-e', 'signed-integer', '-t', 'wav', '-']);
+		var args = ['-b', 16, '--endian', 'little', '-c', 1, '-r', 16000, '-e', 'signed-integer', '-t', 'wav', '-'];
+		recProc = spawn('rec', args);
 		recProc.on('exit', (code, sig) => {
 			debug(`recProc has exited with code = ${code}`);
 		});
@@ -96,6 +98,12 @@ var SpeechToText = function() {
 			time: now,
 			nlu: null
 		};
+
+		if(data.split(" ").length < 3) {
+			debug("less than 3 words");
+			self.emit("sentence", sentence);
+			return;
+		}
 
 		var options = { text: data, features: features };
 		nlu.analyze(options, function(err, res) {

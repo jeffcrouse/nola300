@@ -28,7 +28,7 @@
 
 	<body>
   
-		<div class="container" >
+		<div class="container-fluid" >
 
 
 			<table class="table">
@@ -46,7 +46,7 @@
 					{{#each videos}}
 					<tr>
 						<th scope="row">{{@index}}</th>
-						<td>{{this.name}}</td>
+						<td>{{this.name}} ({{this.duration}})</td>
 						<td><textarea id="places.{{this.id}}" data-video="{{this.id}}" data-entity="places" class="entities">{{join this.places ", "}}</textarea></td>
 						<td><textarea id="items.{{this.id}}" data-video="{{this.id}}" data-entity="items" class="entities">{{join this.items ", "}}</textarea></td>
 						<td><textarea id="themes.{{this.id}}" data-video="{{this.id}}" data-entity="themes" class="entities">{{join this.themes ", "}}</textarea></td>
@@ -117,8 +117,6 @@
 					if(e.keyCode == 13) return false;
 				});
     		})
-
-
 
 			/*
 			$.ajax({

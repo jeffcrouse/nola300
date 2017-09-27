@@ -21,6 +21,8 @@
     "mongoose": "^4.11.11",
     "morgan": "^1.8.2",
     "node-persist": "^2.1.0",
+    "random-word": "^2.0.0",
+    "random-words": "0.0.1",
     "request": "^2.81.0",
     "serialport": "^5.0.0",
     "serve-favicon": "^2.4.4",

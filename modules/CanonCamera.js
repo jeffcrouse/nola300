@@ -10,7 +10,7 @@ const async = require('async');
 // 	DO NOT ALLOW RECORDING WHILE A DOWNLOAD IS IN PROGRESS!!!!
 //
 
-var canon = path.join("/Users", "jeff", "Developer", "canon-video-capture", "build", "Release", "canon-video-capture");
+var canon = path.join(__dirname, "canon-cli");
 String.prototype.trim = function() {
   return this.replace(/^\s+|\s+$/g, "");
 };

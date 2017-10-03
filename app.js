@@ -19,6 +19,7 @@ var shortid = require('shortid');
 var Video = require('./Video')
 const async = require('async');
 var hbs = require('hbs');
+const randomWord = require('random-word');
 var SpeechToText = require('./modules/SpeechToText');
 var EntitiesList = require('./modules/EntitiesList');
 
@@ -41,6 +42,12 @@ async.forever(postprocess, err => {
 
 storage.initSync({dir: "persist"});
 
+Video.scan(function(err) {
+	if(err) debug(err);
+	Video.list(function(err, docs){
+		if(err) return debug("error loading videos");
+	});
+});
 
 
 
@@ -100,24 +107,9 @@ hbs.registerHelper('json', function(obj) {
 });
 
 
-
-/*****************************************************************************************
- ▄▄▄▄▄▄▄▄▄▄▄  ▄▄        ▄  ▄▄▄▄▄▄▄▄▄▄   ▄▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄  
-▐░░░░░░░░░░░▌▐░░▌      ▐░▌▐░░░░░░░░░░▌ ▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░░░░░░░░░░▌ 
-▐░█▀▀▀▀▀▀▀█░▌▐░▌░▌     ▐░▌▐░█▀▀▀▀▀▀▀█░▌▐░█▀▀▀▀▀▀▀█░▌▐░█▀▀▀▀▀▀▀█░▌▐░█▀▀▀▀▀▀▀█░▌▐░█▀▀▀▀▀▀▀█░▌
-▐░▌       ▐░▌▐░▌▐░▌    ▐░▌▐░▌       ▐░▌▐░▌       ▐░▌▐░▌       ▐░▌▐░▌       ▐░▌▐░▌       ▐░▌
-▐░▌       ▐░▌▐░▌ ▐░▌   ▐░▌▐░█▄▄▄▄▄▄▄█░▌▐░▌       ▐░▌▐░█▄▄▄▄▄▄▄█░▌▐░█▄▄▄▄▄▄▄█░▌▐░▌       ▐░▌
-▐░▌       ▐░▌▐░▌  ▐░▌  ▐░▌▐░░░░░░░░░░▌ ▐░▌       ▐░▌▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░▌       ▐░▌
-▐░▌       ▐░▌▐░▌   ▐░▌ ▐░▌▐░█▀▀▀▀▀▀▀█░▌▐░▌       ▐░▌▐░█▀▀▀▀▀▀▀█░▌▐░█▀▀▀▀█░█▀▀ ▐░▌       ▐░▌
-▐░▌       ▐░▌▐░▌    ▐░▌▐░▌▐░▌       ▐░▌▐░▌       ▐░▌▐░▌       ▐░▌▐░▌     ▐░▌  ▐░▌       ▐░▌
-▐░█▄▄▄▄▄▄▄█░▌▐░▌     ▐░▐░▌▐░█▄▄▄▄▄▄▄█░▌▐░█▄▄▄▄▄▄▄█░▌▐░▌       ▐░▌▐░▌      ▐░▌ ▐░█▄▄▄▄▄▄▄█░▌
-▐░░░░░░░░░░░▌▐░▌      ▐░░▌▐░░░░░░░░░░▌ ▐░░░░░░░░░░░▌▐░▌       ▐░▌▐░▌       ▐░▌▐░░░░░░░░░░▌ 
- ▀▀▀▀▀▀▀▀▀▀▀  ▀        ▀▀  ▀▀▀▀▀▀▀▀▀▀   ▀▀▀▀▀▀▀▀▀▀▀  ▀         ▀  ▀         ▀  ▀▀▀▀▀▀▀▀▀▀  
-*****************************************************************************************/                                                                                        
-
-//var Story = require('./modules/Story_nodb')
-
-var onboard_socket = io.of('/onboard');
+app.get('/booth', function(req, res, next) {
+	res.render('booth', { layout: false });
+});
 
 app.get('/onboard', function(req, res, next) {
 	var data = {
@@ -128,7 +120,6 @@ app.get('/onboard', function(req, res, next) {
 	}
 	res.render('onboard', data);
 });
-
 
 var valid = [
 	check('fname').exists().isLength({ min: 2, max: 20 }).withMessage('Please provide a valid first name'), 
@@ -156,7 +147,7 @@ app.post('/onboard', valid, function(req, res, next) {
 			onboard_socket.emit("submit_status", "wait");
 			onboard_socket.emit("reset_form");
 
-			prepopulate_playlist( data );
+			begin_videos( data );
 
 			storage.setItem("story", data, err => {
 				if(err) throw err;
@@ -169,7 +160,7 @@ app.post('/onboard', valid, function(req, res, next) {
 	}	
 });
 
-
+var onboard_socket = io.of('/onboard');
 onboard_socket.on("connection", function( socket ) {
 	debug("onboard socket client joined")
 
@@ -211,6 +202,29 @@ var booth_socket = io.of('/booth');
 var session_in_progress = false;
 var starting = false;
 var ending = false;
+
+var timer = new CountdownTimer();
+timer.on("done", function() {
+	debug("TIMER DONE!");
+	if(session_in_progress) end_session();
+});
+timer.on("tick", (str) => {
+	booth_socket.emit('time', str);
+});
+
+booth_socket.on( "connection", function( socket ) {
+	debug("booth socket client joined")
+	storage.getItem("story", (err, story) => {
+		if(err) throw new Error(err);
+
+		if(story) {
+			booth_socket.emit("set_name", story.fname+" "+story.lname);
+		} else {
+			booth_socket.emit("set_name", "?");
+		}
+	})		
+});
+
 
 
 var start_session = function() {
@@ -307,7 +321,6 @@ var end_session = function() {
 		ending = false;
 		if(err) return debug(err);
 
-		clear_playlist();
 		booth_socket.emit("reset");
 		onboard_socket.emit("submit_status", "ready");
 		debug("session_in_progress=false");
@@ -330,98 +343,80 @@ FootPedal.on("press", function(date){
 });
 
 
-// MAIN ROUTE
-app.get('/booth', function(req, res, next) {
-	res.render('booth', { layout: false });
-});
-
-                                     
-booth_socket.on( "connection", function( socket ) {
-	debug("booth socket client joined")
-	storage.getItem("story", (err, story) => {
-		if(err) throw new Error(err);
-
-		if(story) {
-			booth_socket.emit("set_name", story.fname+" "+story.lname);
-		} else {
-			booth_socket.emit("set_name", "?");
-		}
-	})		
-});
-
-
-
-var timer = new CountdownTimer();
-timer.on("done", function() {
-	debug("TIMER DONE!");
-	if(session_in_progress) end_session();
-});
-timer.on("tick", (str) => {
-	booth_socket.emit('time', str);
-});
 
 
 
 
 
+/*****************************************************************************
+ ▄▄▄▄▄▄▄▄▄▄▄  ▄            ▄▄▄▄▄▄▄▄▄▄▄  ▄         ▄  ▄▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄▄ 
+▐░░░░░░░░░░░▌▐░▌          ▐░░░░░░░░░░░▌▐░▌       ▐░▌▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌
+▐░█▀▀▀▀▀▀▀█░▌▐░▌          ▐░█▀▀▀▀▀▀▀█░▌▐░▌       ▐░▌▐░█▀▀▀▀▀▀▀▀▀ ▐░█▀▀▀▀▀▀▀█░▌
+▐░▌       ▐░▌▐░▌          ▐░▌       ▐░▌▐░▌       ▐░▌▐░▌          ▐░▌       ▐░▌
+▐░█▄▄▄▄▄▄▄█░▌▐░▌          ▐░█▄▄▄▄▄▄▄█░▌▐░█▄▄▄▄▄▄▄█░▌▐░█▄▄▄▄▄▄▄▄▄ ▐░█▄▄▄▄▄▄▄█░▌
+▐░░░░░░░░░░░▌▐░▌          ▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌
+▐░█▀▀▀▀▀▀▀▀▀ ▐░▌          ▐░█▀▀▀▀▀▀▀█░▌ ▀▀▀▀█░█▀▀▀▀ ▐░█▀▀▀▀▀▀▀▀▀ ▐░█▀▀▀▀█░█▀▀ 
+▐░▌          ▐░▌          ▐░▌       ▐░▌     ▐░▌     ▐░▌          ▐░▌     ▐░▌  
+▐░▌          ▐░█▄▄▄▄▄▄▄▄▄ ▐░▌       ▐░▌     ▐░▌     ▐░█▄▄▄▄▄▄▄▄▄ ▐░▌      ▐░▌ 
+▐░▌          ▐░░░░░░░░░░░▌▐░▌       ▐░▌     ▐░▌     ▐░░░░░░░░░░░▌▐░▌       ▐░▌
+ ▀            ▀▀▀▀▀▀▀▀▀▀▀  ▀         ▀       ▀       ▀▀▀▀▀▀▀▀▀▀▀  ▀         ▀ 
+                                                                              
+******************************************************************************/
 
-
-/********************************************************************************************************
- ▄▄▄▄▄▄▄▄▄▄▄  ▄            ▄▄▄▄▄▄▄▄▄▄▄  ▄         ▄  ▄            ▄▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄▄▄ 
-▐░░░░░░░░░░░▌▐░▌          ▐░░░░░░░░░░░▌▐░▌       ▐░▌▐░▌          ▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌
-▐░█▀▀▀▀▀▀▀█░▌▐░▌          ▐░█▀▀▀▀▀▀▀█░▌▐░▌       ▐░▌▐░▌           ▀▀▀▀█░█▀▀▀▀ ▐░█▀▀▀▀▀▀▀▀▀  ▀▀▀▀█░█▀▀▀▀ 
-▐░▌       ▐░▌▐░▌          ▐░▌       ▐░▌▐░▌       ▐░▌▐░▌               ▐░▌     ▐░▌               ▐░▌     
-▐░█▄▄▄▄▄▄▄█░▌▐░▌          ▐░█▄▄▄▄▄▄▄█░▌▐░█▄▄▄▄▄▄▄█░▌▐░▌               ▐░▌     ▐░█▄▄▄▄▄▄▄▄▄      ▐░▌     
-▐░░░░░░░░░░░▌▐░▌          ▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░▌               ▐░▌     ▐░░░░░░░░░░░▌     ▐░▌     
-▐░█▀▀▀▀▀▀▀▀▀ ▐░▌          ▐░█▀▀▀▀▀▀▀█░▌ ▀▀▀▀█░█▀▀▀▀ ▐░▌               ▐░▌      ▀▀▀▀▀▀▀▀▀█░▌     ▐░▌     
-▐░▌          ▐░▌          ▐░▌       ▐░▌     ▐░▌     ▐░▌               ▐░▌               ▐░▌     ▐░▌     
-▐░▌          ▐░█▄▄▄▄▄▄▄▄▄ ▐░▌       ▐░▌     ▐░▌     ▐░█▄▄▄▄▄▄▄▄▄  ▄▄▄▄█░█▄▄▄▄  ▄▄▄▄▄▄▄▄▄█░▌     ▐░▌     
-▐░▌          ▐░░░░░░░░░░░▌▐░▌       ▐░▌     ▐░▌     ▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌▐░░░░░░░░░░░▌     ▐░▌     
- ▀            ▀▀▀▀▀▀▀▀▀▀▀  ▀         ▀       ▀       ▀▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀▀       ▀      
-********************************************************************************************************/
-
-
-// This will contain all of the videos ranked by order 
-var playlist = [];
-Video.find().exec( function( err, videos ) {
-	if( err ) return debug(err);
-	videos.forEach(vid => {
-
-	});
-});
-
+var player_socket = io.of('/player');
+var blacklist = [];
 
 // This gets called immediately when a story is submitted/save
-var prepopulate_playlist = function(data) {
+var begin_videos = function(data) {
+	/*
 	storage.getItem("story", (err, story) => {
 		if(err) throw new Error(err);
 
-
+		// look at data.entities.places, data.entities.items and data.entities.themes
+		// try to find a match. Give each video a score.
+		// and sort
 	});
+	*/
+	Video.findRandom({file_present: true}, {}, {limit: 50}, function(err, docs) {
+		if (err) {
+			debug(results); // 5 elements
+		} else {
+			var playlist = docs.map(d => { return d.as_playlist(); })
 
-	// look at data.entities.places, data.entities.items and data.entities.themes
-	// try to find a match. Give each video a score.
-	// and sort
+		}
+	});
 }
 
 
-var clear_playlist = function() {
-	playlist = []
-}
+player_socket.on("connection", function( client ) {
+	debug("player_socket client joined")
 
+	var query = { file_present: true,  _id: { $nin: blacklist } };
+	Video.findRandom(query, {}, {limit: 50}, function(err, docs) {
+		if (err) return debug(results); // 5 elements
 
-
-
-app.get('/playlist', function(req, res, next) {
-	var data = {};
-	data.playlist = playlist.map(vid => {
-		return vid.full_path();
+		var playlist = docs.map(d => { return d.as_playlist(); })
+		client.emit("playlist", playlist);
 	});
 
-	res.json({ "playlist": playlist });
+    client.on('tock', function(data) { });
+
+	client.on("blacklist", function(msg) {
+		debug("blacklist", msg)
+		if(blacklist.indexOf(msg) > -1) {
+			debug("warning: video is already blacklisted.")
+        } else {
+			blacklist.push(msg);
+			debug(blacklist); 
+        }
+	});
+
+	var loop = function() {
+		client.emit("tick", Date.now());
+		setTimeout(loop, 1000);
+	}
+	loop();
 });
-
-
 
 
 
@@ -440,16 +435,39 @@ app.get('/playlist', function(req, res, next) {
  ▀▀▀▀▀▀▀▀▀▀▀  ▀            ▀▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀▀  ▀         ▀ 
 *****************************************************************************/                                                                            
 
-
 SpeechToText.on("sentence", function(sentence){
-	debug(util.inspect(sentence, {depth: 5}));
+	debug(util.inspect(sentence, {depth: 10}));
+
+	if(sentence.nlu) {
+
+		var e = [];
+		e = e.concat( sentence.nlu.entities );
+		e = e.concat( sentence.nlu.concepts );
+		e = e.concat( sentence.nlu.keywords );
+		e = e.map( i => { return i.text; } );
+		debug(e);
+
+		async.forEachSeries(e, (e, done) => {
+			var message = { text: e.text };
+			debug("!!!!! text", message);
+
+			player_socket.emit("text", message);
+			var t = 2000 + Math.random() * 1000;
+			setTimeout(done, t);
+		});
+
+		if(sentence.nlu.emotion) {
+			var emotion = sentence.nlu.emotion.document.emotion;
+			player_socket.emit("emotion", emotion);
+		}
+
+	}
+
 	storage.getItem("story", (err, story) => {
 		if(err) throw new Error(err);
 		if(!story) return debug("!! SpeechToText result with no story to add to.")
 
-
 		// Find the videos based on previous speech and put them into playlist
-
 
 		story.sentences.push( sentence );
 		storage.setItem("story", story).catch(err => {
@@ -457,6 +475,7 @@ SpeechToText.on("sentence", function(sentence){
 		});
 	});
 });
+
 
 
 
@@ -476,7 +495,7 @@ SpeechToText.on("sentence", function(sentence){
          ▀          ▀▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀   ▀▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀▀ 
 ***********************************************************************************/                                                                                    
 
-
+/*
 app.get('/videos', function(req, res, next) {
 
 	var data = {
@@ -518,7 +537,7 @@ app.post('/videos', valid, function(req, res, next){
 		});
 	});
 });
-
+*/
 
 
 

@@ -7,7 +7,7 @@ const glob = require('glob');
 const async = require('async');
 const fs = require('fs');
 const exec = require("child_process").exec;
-
+var random = require('mongoose-simple-random');
 
 var VideoSchema = Schema({
 	name: 			{ type: String, required: true },
@@ -18,6 +18,7 @@ var VideoSchema = Schema({
 	themes: 		[ { type: String } ]
 });
 
+VideoSchema.plugin(random);
 
 var lean = function(doc, ret, options) {
     ret.id = ret._id;
@@ -37,6 +38,11 @@ VideoSchema.virtual('full_path').get(function(){
     return path.join(process.env.VIDEO_ROOT, this.name);
 });
 
+// ----------------------------------------------------------
+VideoSchema.pre('save', function(next) {
+    if(this.duration) next(null);
+    else this.set_duration(next);
+});
 
 // ----------------------------------------------------------
 VideoSchema.methods.as_playlist = function() {
@@ -45,7 +51,6 @@ VideoSchema.methods.as_playlist = function() {
         id: this._id
     };
 }
-
 
 // ----------------------------------------------------------
 VideoSchema.methods.set_duration = function(callback) {
@@ -70,12 +75,6 @@ VideoSchema.methods.set_duration = function(callback) {
 }
 
 // ----------------------------------------------------------
-VideoSchema.pre('save', function(next) {
-    if(this.duration) next(null);
-    else this.set_duration(next);
-});
-
-// ----------------------------------------------------------
 VideoSchema.statics.list = function(callback) {
     return this.find().exec( function( err, videos ) {
         if( err ) return callback( err );
@@ -91,10 +90,10 @@ VideoSchema.statics.scanFiles = function(done) {
     glob("*.mp4", {cwd: process.env.VIDEO_ROOT}, function(err, files){
         if( err ) return done( err );
 
-        debug("looping through mp4s", files)
+        //debug("looping through mp4s", files)
         async.eachSeries(files, function(item, callback){
             var _root = path.basename(item);
-            debug("searching for", _root, "in database");
+            //debug("searching for", _root, "in database");
 
             self.find({name: _root}).exec(function(err, docs) {
                 if(err) return callback(err);
@@ -118,12 +117,12 @@ VideoSchema.statics.scanDatabase = function(done) {
     var self = this;
     self.find().exec( function( err, docs ) {
         if( err ) return done( err );
-        debug("looping through db documents")
+        //debug("looping through db documents")
 
         async.eachSeries(docs, function(item, callback) {
             var _path = path.join(process.env.VIDEO_ROOT, item.name)
 
-            debug("looking for", _path, "in filesystem");
+            //debug("looking for", _path, "in filesystem");
             fs.stat(_path, function(err, stat) {
                 if(err == null) {
                     item.file_present = true;
@@ -143,4 +142,6 @@ VideoSchema.statics.scan = function(callback) {
     return async.series([this.scanFiles.bind(this), this.scanDatabase.bind(this)], callback);
 }
 
+
 module.exports = mongoose.model( 'Video', VideoSchema, 'videos' );
+

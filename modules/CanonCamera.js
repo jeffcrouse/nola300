@@ -10,7 +10,7 @@ const async = require('async');
 // 	DO NOT ALLOW RECORDING WHILE A DOWNLOAD IS IN PROGRESS!!!!
 //
 
-var canon = path.join(__dirname, "canon-cli");
+var canon = path.join(__dirname, "..", "bin", "canon-cli");
 String.prototype.trim = function() {
   return this.replace(/^\s+|\s+$/g, "");
 };
@@ -110,7 +110,7 @@ var CanonCamera = function(id) {
 		if(closed) return;
 
 		if(!proc || !proc.connected) {
-			debug("canon-video-capture "+args.join(" "));
+			debug("canon-cli "+args.join(" "));
 			proc = spawn(canon, args, {stdio: ["ipc"]});
 
 			proc.stdout.on('data', on_stdout_data);

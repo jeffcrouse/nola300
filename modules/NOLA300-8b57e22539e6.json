@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "deft-station-178220",
+  "private_key_id": "8b57e22539e6eb766522b2620541e2e568bef7e5",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCkkvmzS0w5G+tG\nQc+6eUNOqWpjMILczQi+XIjndn0W+6khCZxpOzgkOPGn4088NlNje0EhQSJe7zvH\ntC7ao3wGwtYUl7TZTmf38H9eJxB3+cA8sxXiR44+YHBtRKUX6gbYlXMbTq1GyMd5\nlr2hamKmSvqVGOgZZxCVFJA7NWoskb6tXPPtBQCwVwY5ZBac25eXahP/GeDk5xug\ngsjlkAjXzeL5FY7aNiZnhQ/4XX3Jt39baJkEviroDDr3Po8TCj2kQmzy2pVkEFk7\nD5RkxXx12rdyq9SR2SHhSKme7uU18gBooezPLJQT5r0JCw7Z+5dGd1LKwUCd3Ag3\nU/T0e4ElAgMBAAECggEAInT5Xd46j8x2JqgZz4+bFYmoEitygrtVBNJIAbpPt3Oq\ndhXWjzvMZd0cT4vqp48yR2ZjfQxvn1PUftwNYU6QZbP+caJPxZ3Ca+mJKVPhgVUj\nuDHAt7dGo226rE4OiOLBWzBzQLjo06SvCxiSDI1DKVEShQwJcGQhVy1Og28ME1d8\nYcLybZS6HYEMp4Ml1BIl06m7v9NWpsSAZcdEpB9dHeTusUCdiu/1FBYSDqmiFoDl\nesc4pev/MoyjFp0RtWl3o+4GRldkCKcoTx4vf84C13/CBi951hDxQ3n4bYUuCL+4\n2ZGt4h5Nd3/XEgTd5BHjAgprt6py9Wp/TK7s+Mkm8wKBgQDbacVU0hKv01Ppc7w8\nw3fOZP8KW975zXOfEx6vtQDuVZmp3ZwNzH7oFjPEA7DVGGE1BG84q/IuZtcx9OFF\nTVTQc8RLZ4OUq/b0rRDsLYIlTuzlvhvQQU9VGpwzwj+KuiDOdGvLuNdZ5/jfGg9x\nM2FWM1tXS+2i3Pz87Boge6EkTwKBgQDABEFlNAS5/YmM+4pUWJLxalJ/BoLJuUce\nEZvpcIO8sBSNK/Fg0qhTtPhpq/l27EsDPDdpaVL3aRilbtUYsiADG8VspABJwCVj\nzaIlGH9pqzaqFqtsYbmx+h2Wh8aPwndEazawmXpQwmjcZZ97CyOfhryJ2Hg98ZNn\nvDUk6p7CSwKBgQDYAGq5tA2ddogXPU7E6xGY6KiDhCog9ferVOFSzPhbqX2bUoV8\nuCL/TEwt3gxJ3LRlwzXTLsM+lxOnJJJY7WZfyHgoW4GX7SszeOU9/Rcwr2BcVCmB\nfaoh+A5qjgKMCeyeEtLEPfYTlmDVEgy9vn1GpUx4xlDtkmykebLG466h1QKBgBew\nLrUifrbHPXHkEkOnjbE0saq0Dex+6/QcrgRVehsMCe0Ej8mnE1cIS2EV8zelnPdw\nNVHOyYp2L7ExBB8A0owvn+JwNQzkJHi0hJ1Y8VcC5UKEe29qevMm7QGGDIvtrLMH\nGv8cYAeYhEE0VEFktWdXwuiqiOLza4Dvqgq82wsTAoGBAKF+jSqDkrBdnebkgmCX\nXjCVA2qH67AbaJXPGSmZy9zZ/k9mUrMuEODdQmUIFQoQsZUjCVvBP/hy0o9uINF/\nhzbfKvz0P91krMU0U66FL7Xie48TbdQBNnQ4uyCLL1K0g3oSZD+4RBO05rTS843v\nHdzzKh59+dQQoWwChiWISno/\n-----END PRIVATE KEY-----\n",
+  "client_email": "entites-doc@deft-station-178220.iam.gserviceaccount.com",
+  "client_id": "109627780506949492949",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://accounts.google.com/o/oauth2/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/entites-doc%40deft-station-178220.iam.gserviceaccount.com"
+}

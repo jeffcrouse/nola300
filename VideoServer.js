@@ -53,8 +53,6 @@ server.listen(4200);
 
 
 
-
-
 var blacklist = [];
 var playlist = [];
 var query = {
@@ -101,7 +99,7 @@ var send_word = function() {
     var message = {
         text: randomWord()
     };
-    debug(message);
+    //debug(message);
     player_socket.emit("text", message);
 
     var t = 2000 + Math.random() * 5000;
@@ -111,11 +109,70 @@ send_word();
 
 
 
+var n = 0;
+
+var lines = [
+    ["NUM", "TEXT", "SETIMENT", "KEYWORDS", "ENTITIES", "EMOTIONS", "CONCEPTS"]
+];
 
 var SpeechToText = require('./modules/SpeechToText');
 SpeechToText.start();
 SpeechToText.on("sentence", function(sentence){
-    debug(util.inspect(sentence, {depth: 5}));
-   
+    debug(util.inspect(sentence, {depth: 10}));
+
+    
+    var sentiment = null;
+    var keywords = null;
+    var entities = null;
+    var emotion = null;
+    var concepts = null;
+
+    if(sentence.nlu) {
+        var nlu = sentence.nlu;
+        if(nlu.sentiment) {
+            var doc = nlu.sentiment.document;
+            sentiment = Math.round(doc.score*100) + "% " + doc.label;
+        }
+        if(nlu.keywords) {
+            keywords = nlu.keywords.map(x => { return `${Math.round(x.relevance*100)}% ${x.text}`; }).join("\n");
+        }
+        if(nlu.entities) {
+            entities = nlu.entities.map(x => { return `${Math.round(x.relevance*100)}% ${x.text} (${x.type})`; }).join("\n");
+        }
+        if(nlu.emotion) {
+            var e = nlu.emotion.document.emotion;
+            emotion = Object.keys(e).map(x => { return `${Math.round(e[x]*100)}% ${x}`; }).join("\n");
+        }
+        if(nlu.concepts) {
+            concepts = nlu.concepts.map(x => { return `${Math.round(x.relevance*100)}% ${x.text}`; }).join("\n");
+        }
+    }
+
+    lines.push([n, sentence.text, sentiment, keywords, entities, emotion, concepts]);
+    debug(lines[lines.length-1]);
+    n++;
 });
 
+var filename = "010 Road Trip.csv";
+var save_file = (done) => {
+    var text = "";
+    lines.forEach( line => {
+    	console.log(line);
+    	text += line.map(function(val){ return `"${val}"`; }).join(",") + "\r\n";
+    });
+    fs.writeFile(filename, text, done); 
+}
+
+var graceful_exit = function() {
+	debug("saving file");
+    SpeechToText.stop();
+     process.exit(0);
+    /*
+    save_file( err => {
+        process.exit(0);
+    });
+    */
+}
+
+process.on('SIGTERM', graceful_exit);
+process.on('SIGINT', graceful_exit);

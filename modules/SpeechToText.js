@@ -15,6 +15,8 @@ var nlu = new NaturalLanguageUnderstandingV1({
 // https://github.com/watson-developer-cloud/node-sdk/blob/master/natural-language-understanding/v1.js
 var features = { concepts: {}, emotion: {}, entities: {}, keywords: {}, sentiment: {} };
 
+// Categories: 
+
 
 var SpeechToText = function() {
 	EventEmitter.call(this);
@@ -103,17 +105,15 @@ var SpeechToText = function() {
 			debug("less than 3 words");
 			self.emit("sentence", sentence);
 			return;
+		} else {
+			var options = { text: data, features: features };
+			nlu.analyze(options, function(err, res) {
+				if(!err) {
+					sentence.nlu = res;
+				}
+				self.emit("sentence", sentence);
+			});
 		}
-
-		var options = { text: data, features: features };
-		nlu.analyze(options, function(err, res) {
-			if(err) {
-				debug(err);
-			} else {
-				sentence.nlu = res;
-			}
-			self.emit("sentence", sentence);
-		});
 	}
 
 	

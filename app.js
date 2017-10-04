@@ -457,8 +457,8 @@ SpeechToText.on("sentence", function(sentence){
 		});
 
 		if(sentence.nlu.emotion) {
-			var emotion = sentence.nlu.emotion.document.emotion;
-			player_socket.emit("emotion", emotion);
+			var e = sentence.nlu.emotion.document.emotion;
+			player_socket.emit("emotion", e);
 		}
 
 	}

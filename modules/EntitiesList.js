@@ -1,7 +1,7 @@
 
 var GoogleSpreadsheet = require('google-spreadsheet');
 var debug = require('debug')('googlesheet');
-var creds = require('./NOLA300-8b57e22539e6.json');
+var creds = require('../NOLA300-8b57e22539e6.json');
 var doc = new GoogleSpreadsheet('1-8qrqjGRQ6O8kGfZ-gFILUmwIlSU5f--mX-v3wViHrc');
 
 var places = [];

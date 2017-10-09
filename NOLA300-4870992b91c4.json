@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "deft-station-178220",
+  "private_key_id": "4870992b91c45227ee2358785693a6f7d32aae11",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCjunX1LJLWNb61\nJhWZDYEA0iQ86rPKLRDqwAm75Lw5j1Zi+ah8uQ2CdRu9Ggz+kjrEmmAXZXmK6jaZ\nRlMiUxZXmXAHIWzUePqwmB6WlIF7UEtLSY62M5NjM3jxhHCW1Dkg1McyFDKW/t6x\n7fTzhzITuCJ1czyK0Y8AbWf+itCi6k0LYWGUwW+RMgy3H8pd+WDoW7XVca+3xluZ\n9fOieOk4Lmzp6/M3UUw0/ojms4WtOFBCHLJCgcqFyF4H+6f4G1/UuXR6Npgrwbg2\nSeUn6XS87uIhXmwdO3Py39WFqyz2ji2WxTo5ARTy2udarqVGBDf+AA9aZ8OX6/da\ngYB5dPDVAgMBAAECggEAEG+FLChI0eBm9Vf43rqIeCogLCNNYAltGND6noDO1Pe1\nbs3BYvUlTN1vpuh+Dxy5HIejXMXkJmnuMthokQSxNKL4/XuWqVo++XTpISmQOUOY\nA1tDdw6EsvZ1o3JYO7PbIOzAgEpJwnbxqP/fpoYBpLwdGBg00Xn0NnvvxBFwRzeV\nEmbPrRsTKU7HW6wOn40UaGEPw4IPa6EyPuvM9F4EhTgdyrWBd0zSxc/raMKGZa57\nsyb3WxRRCZR3v2OU+ogChgd+zbo8C5vMEh6sRNg+veZMt+4dLSsjId7HGc2o0U1l\n9v3msiI9LATh+Lxh6+VqZb5ibmB0gnv2yZj0xeq+IwKBgQDeT/0jGasxc2sFpiBk\nDNoq2u01P7UzpKRev0mWpJb+PDcgWXOjTX5r41dejyVscT9WbwPokcu/Fe7BrVED\nbT8H0mOREYxA6yn+7UcrXAShd5w2IaLNs0HdtmFfsLywA6Rfn6d/McuO3ngSnVdj\nl+y7974+186SSQYb+a4i2q8cxwKBgQC8idw8GO7QTy+XrJ6FhUhvKjcawr04ZfDd\nhLhJ0HCnaofzNUrf8yAlwoSpI3JzlNqQUhGj/RVgTZFZozGGlO00LO5hcDaFBQyn\n5qSUtJxNOVYSd29OkS/MyqU+j0SNPecQVCK3ke9vxcsVvRZMd6wWR/M+NTFLL/7p\noX7aN5ARgwKBgCsqUtde44udgnk9UWq7yBysF4TQUumtHTE8aRhz6tGAdZ+1Xqul\nn1dpdAxrNPQCZS7uLU8aB/qZUpuOgH1u19837Zc8VgRA5Q2XmssDee60H8Ou8kKI\nfNCE2hFPasOuYVsjz8z1qTWbYqsSm+Y9mHzC1NC07Gog/auu5i3kUj3/AoGBALoj\npYLT3ttcgpFNhIgwSY4u8I6EGwqWYpJhWQzPNJmlLKmqQM0PnPqKrCzM6U9Bc/Ou\nguoTkMouasVDwD6tw+6SOZuLjNgRXyhZJr4F/pajd93ter/nyXh3zWMRUU3dAsZ1\nOn1gIDOK5PEGaQB/2i95Q6Z0H8GqlhKVNcc9ugf/AoGBAIYHs0oSvL/b2Kdm2oIx\njWD83itdnWUx5cXtBGLtpHGLzHwF5qwJTeDWiC7RGfPM1YEE2LPhXtUuWMVmzcsa\njfttqLJvR4BKQOiaSiI/HHqLSXtKuGs5TVsa5SviRrml+5uR8db/R267PpjxHDVv\nUZEI6xaKVs2SA+LrHg0xP4YK\n-----END PRIVATE KEY-----\n",
+  "client_email": "nolavideos@deft-station-178220.iam.gserviceaccount.com",
+  "client_id": "104350913102193350361",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://accounts.google.com/o/oauth2/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/nolavideos%40deft-station-178220.iam.gserviceaccount.com"
+}

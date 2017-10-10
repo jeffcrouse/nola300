@@ -153,7 +153,7 @@ SpeechToText.on("sentence", function(sentence){
     n++;
 });
 
-var filename = "010 Road Trip.csv";
+var filename = "013 Sabreen.csv";
 var save_file = (done) => {
     var text = "";
     lines.forEach( line => {
@@ -166,12 +166,9 @@ var save_file = (done) => {
 var graceful_exit = function() {
 	debug("saving file");
     SpeechToText.stop();
-     process.exit(0);
-    /*
     save_file( err => {
         process.exit(0);
     });
-    */
 }
 
 process.on('SIGTERM', graceful_exit);

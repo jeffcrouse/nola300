@@ -5,6 +5,8 @@ var NaturalLanguageUnderstandingV1 = require('watson-developer-cloud/natural-lan
 const util = require('util');
 var EventEmitter = require('events').EventEmitter;
 const spawn = require('child_process').spawn;
+var Sentence = require('./Sentence.js')
+
 
 const stt = new SpeechToTextV1();
 var nlu = new NaturalLanguageUnderstandingV1({
@@ -14,8 +16,6 @@ var nlu = new NaturalLanguageUnderstandingV1({
 // features to fetch from Watson NLU
 // https://github.com/watson-developer-cloud/node-sdk/blob/master/natural-language-understanding/v1.js
 var features = { concepts: {}, emotion: {}, entities: {}, keywords: {}, sentiment: {} };
-
-// Categories: 
 
 
 var SpeechToText = function() {
@@ -93,15 +93,14 @@ var SpeechToText = function() {
 	// --------------------------------------------------------------------
 	var on_data = function(data) {
 		var now = Date.now();
-		var elapsed = now - startTime;
-		var sentence = {
-			text: data, 
-			elapsed: elapsed,
-			time: now,
-			nlu: null
-		};
 
-		if(data.split(" ").length < 3) {
+		var sentence = new Sentence(data);
+		sentence.time = now;
+		if(startTime) {
+			sentence.elapsed = now - startTime;
+		} else debug("Warning: received a sentence when SpeechToText was not runnning");
+		
+		if(sentence.wordcount() < 3) {
 			debug("less than 3 words");
 			self.emit("sentence", sentence);
 			return;

@@ -16,7 +16,7 @@ var Sentence = function(text) {
 	/**
 	*	Get the middle 1/3 of the keywords.
 	*/
-	this.get_words = () => {
+	this.get_texture_words = () => {
 		var length = this.nlu.keywords.length;
 		if(length < 2) return null;
 		var n = Math.floor(length / 3);

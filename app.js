@@ -31,6 +31,35 @@ var OnAirSign = require('./modules/OnAirSign')				// Singleton
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/******************************************************************************************
+ █████╗ ██████╗ ██████╗     ███████╗███████╗████████╗██╗   ██╗██████╗ 
+██╔══██╗██╔══██╗██╔══██╗    ██╔════╝██╔════╝╚══██╔══╝██║   ██║██╔══██╗
+███████║██████╔╝██████╔╝    ███████╗█████╗     ██║   ██║   ██║██████╔╝
+██╔══██║██╔═══╝ ██╔═══╝     ╚════██║██╔══╝     ██║   ██║   ██║██╔═══╝ 
+██║  ██║██║     ██║         ███████║███████╗   ██║   ╚██████╔╝██║     
+╚═╝  ╚═╝╚═╝     ╚═╝         ╚══════╝╚══════╝   ╚═╝    ╚═════╝ ╚═╝                                                              
+
+Pretty standard stuff, just a few Handlebars helpers
+We also make sure required directories exist, initialize persistent storiage, and 
+connect to the database.
+******************************************************************************************/
+
 /*
 ┬┌┐┌┬┌┬┐┬┌─┐┬  ┬┌─┐┌─┐
 │││││ │ │├─┤│  │┌─┘├┤ 
@@ -58,37 +87,13 @@ mongoose.connect(db_url, {useMongoClient: true}, function(err){
 });
 
 
-
 /*
 ┬  ┬┬┌┬┐┌─┐┌─┐  ┌┬┐┬┬─┐┌─┐┌─┐┌┬┐┌─┐┬─┐┬ ┬  ┌─┐┌─┐┌─┐┌┐┌
 └┐┌┘│ ││├┤ │ │   │││├┬┘├┤ │   │ │ │├┬┘└┬┘  └─┐│  ├─┤│││
  └┘ ┴─┴┘└─┘└─┘  ─┴┘┴┴└─└─┘└─┘ ┴ └─┘┴└─ ┴   └─┘└─┘┴ ┴┘└┘
 */
-Video.scan(function(err) {
-	if(err) debug(err);
-	Video.list(function(err, docs){
-		if(err) return debug("error loading videos");
-	});
-});
+Video.scan(function(err) { if(err) debug(err); });
 
-
-
-
-
-
-
-
-
-/******************************************************************************************
- █████╗ ██████╗ ██████╗     ███████╗███████╗████████╗██╗   ██╗██████╗ 
-██╔══██╗██╔══██╗██╔══██╗    ██╔════╝██╔════╝╚══██╔══╝██║   ██║██╔══██╗
-███████║██████╔╝██████╔╝    ███████╗█████╗     ██║   ██║   ██║██████╔╝
-██╔══██║██╔═══╝ ██╔═══╝     ╚════██║██╔══╝     ██║   ██║   ██║██╔═══╝ 
-██║  ██║██║     ██║         ███████║███████╗   ██║   ╚██████╔╝██║     
-╚═╝  ╚═╝╚═╝     ╚═╝         ╚══════╝╚══════╝   ╚═╝    ╚═════╝ ╚═╝                                                              
-
-Pretty standard stuff, just a few Handlebars helpers
-******************************************************************************************/
 
 var app = express();
 
@@ -113,6 +118,16 @@ hbs.registerHelper('json', function(obj) {
 	debug(JSON.stringify(obj));
 	return JSON.stringify(obj);
 });
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -239,6 +254,20 @@ app.post('/videos', valid, function(req, res, next){
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /******************************************************************************************
 ███████╗ ██████╗  ██████╗██╗  ██╗███████╗████████╗███████╗
 ██╔════╝██╔═══██╗██╔════╝██║ ██╔╝██╔════╝╚══██╔══╝██╔════╝
@@ -338,12 +367,23 @@ video_socket.on("connection", function( client ) {
 texture_socket.on("connection", function( client ) {
 	debug("/texture client joined")
 
-
 	client.on('tock', (data) => { });
 
 	client.on('disconnect', () => {
 		debug("/texture client left")
 	});
+
+	var send_word = function(done) {
+		if(texture_words.length==0) return setTimeout(done, 500);
+
+		var w = texture_words.shift();
+		client.emit("text", { text: w });
+
+		var t = 1000 + Math.random() * 1000;
+		setTimeout(done, t);
+	}
+	send_word();
+
 
 	var loop = function() {
 		client.emit("tick", Date.now());
@@ -356,7 +396,22 @@ texture_socket.on("connection", function( client ) {
 
 
 
-//-----------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /******************************************************************************************
 ███████╗███████╗███████╗███████╗██╗ ██████╗ ███╗   ██╗
 ██╔════╝██╔════╝██╔════╝██╔════╝██║██╔═══██╗████╗  ██║
@@ -402,6 +457,8 @@ timer.on("tick", (str) => {
 });
 
 
+
+//-----------------------------------------------------------------------------------------
 var start_session = function() {
 	debug("start_session");
 	var story = null;
@@ -442,7 +499,7 @@ var start_session = function() {
 	});
 }
 
-
+//-----------------------------------------------------------------------------------------
 var end_session = function() {
 	debug("end_session");
 	timer.stop();
@@ -508,6 +565,8 @@ var end_session = function() {
 	});
 }
 
+
+//-----------------------------------------------------------------------------------------
 FootPedal.on("press", function(date){
 	debug("footpedal pressed")
 	if(starting || ending) {
@@ -521,6 +580,17 @@ FootPedal.on("press", function(date){
 		start_session();
 	}
 });
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -566,9 +636,13 @@ SpeechToText.on("sentence", (sentence) => {
 
 	if(sentence.has_nlu()) {
 
-		var tmp = sentence.get_words();
+		// Replace the texture_words if the current sentence
+		// has any words to offer
+		var tmp = sentence.get_texture_words();
 		if(tmp) texture_words = tmp;
 
+		// DO YOU FEEL THE EMOTION?
+		// if so, send it to the texture_socket
 		if(sentence.has_emotion()) {
 			texture_socket.emit("emotion", sentence.get_emotion());
 		}
@@ -578,7 +652,7 @@ SpeechToText.on("sentence", (sentence) => {
 		if(err) throw new Error(err);
 		if(!story) return debug("Warning: SpeechToText result with no story to add to.")
 
-		// Find the videos based on previous speech and put them into playlist
+		// TODO: Find the videos based on previous speech and put them into playlist
 
 		story.sentences.push( sentence.json() );
 		storage.setItem("story", story).catch(err => {
@@ -589,20 +663,19 @@ SpeechToText.on("sentence", (sentence) => {
 
 
 
-// TO DO: MOve this to the texure_socket on_connect handler so that it only
-// gets sent out if there is a client connected.
-var send_word = function(done) {
-	if(texture_words.length==0) return setTimeout(done, 500);
 
-	var w = texture_words.shift();
-	var message = { text: w };
-	debug("!! text", message);
-	texture_socket.emit("text", message);
 
-	var t = 1000 + Math.random() * 1000;
-	setTimeout(done, t);
-}
-async.forever(send_word, err => {})
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -625,6 +698,9 @@ module for more information about what happens next.
 async.forever(postprocess, err => {
 	debug("postprocess returned an error:", err);
 });
+
+
+
 
 
 

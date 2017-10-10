@@ -1,6 +1,13 @@
 const util = require('util');
 var EventEmitter = require('events').EventEmitter;
 
+
+
+/**
+*	This timer is a very simple timekeeper that can be started with a number of milliseconds, 
+*	and then emits a "tick" every 1/10 of a second, and then emits a "done" event when the 
+*	time runs out.
+*/
 var CountdownTimer = function() {
 	
 	var self = this;

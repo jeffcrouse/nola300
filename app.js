@@ -512,7 +512,6 @@ var end_session = function(cancel) {
 
 	state.set(STATE.STOPPING);
 
-
 	var user = null;
 	var directory = null;
 
@@ -531,22 +530,20 @@ var end_session = function(cancel) {
 			done(null);
 		});
 	}
-		
+	
 	var mkdir = done => {
 		debug("mkdir", directory);
 		mkdirp(directory, done);
 	}
 
+	var cancel_devices = done => {
+		async.parallel([cam0.cancel, cam1.cancel, SpeechToText.stop, OnAirSign.off], done);
+	}
+
 	var stop_devices = done => {
 		debug("stop_devices");
-		var stop_0 = (cb) => { 
-			var path = (cancel) ? null : `${directory}/vid_00.mp4`
-			cam0.stop(path, cb); 
-		}
-		var stop_1 = (cb) => { 
-			var path = (cancel) ? null : `${directory}/vid_01.mp4`
-			cam1.stop(path, cb); 
-		}
+		var stop_0 = (cb) => {  cam0.stop(`${directory}/vid_00.mp4`, cb); }
+		var stop_1 = (cb) => {  cam1.stop(`${directory}/vid_01.mp4`, cb); }
 		async.parallel([stop_0, stop_1, SpeechToText.stop, OnAirSign.off], done);
 	}
 
@@ -569,7 +566,7 @@ var end_session = function(cancel) {
 
 	var tasks = [];
 	if(cancel){
-		tasks = [stop_devices, remove_from_storage, wait_5];
+		tasks = [cancel_devices, remove_from_storage, wait_5];
 	} else {
 		tasks = [get_user, mkdir, stop_devices, save_to_file, remove_from_storage, wait_5];
 	}

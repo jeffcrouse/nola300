@@ -3,8 +3,6 @@ var EventEmitter = require('events').EventEmitter;
 var debug = require('debug')('state');
 
 
-
-
 var StateManager = function(initial) {
 
 	EventEmitter.call(this);

@@ -92,6 +92,13 @@ var CanonCamera = function(id) {
 		});
 	}
 
+	this.cancel = function(callback) {
+		callback = callback || function(){};
+		proc.send("cancel", err => {
+			callback(err)
+		});
+	}
+
 	this.close = function(callback) {
 		if(!proc || !proc.connected) return callback();
 

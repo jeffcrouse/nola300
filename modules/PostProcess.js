@@ -61,7 +61,9 @@ var process_story = function(filename, callback) {
 		};
 		request.post({url: api_post_url, formData: formData}, function(err, httpResponse, body){
 			debug(body);
-			if(err) done(err);
+			if(err) {
+				done(err);
+			}
 			else if(body == "OK") done(null);
 			else done("unexpected response from server: "+body);
 		});

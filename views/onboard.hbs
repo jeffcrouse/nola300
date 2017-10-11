@@ -216,6 +216,13 @@
 
 		<script src="/socket.io/socket.io.js"></script>
 		<script>
+		const APP_STATE = {
+			IDLE: 			"idle",
+			SUBMITTED: 		"submitted",
+			STARTING: 		"starting",
+			IN_PROGRESS: 	"in progress",
+			STOPPING: 		"stopping"
+		};
 		var form = $("#onboard-form");
 		var submit_status = $("#submit-status");
 		var submit_button = $("#btn-submit")
@@ -259,10 +266,17 @@
 				data: data
 			}).done(function(data){
 				console.log(data);
-				if(data.status != "OK") {
+				if(data.status == "OK") {
+					setTimeout(function(){
+						document.getElementById("onboard-form").reset();
+						$(pages[8]).slideToggle("slow");
+						$(pages[0]).slideToggle("slow");
+						p = 0;
+					}, 3000);
+				} else {
 					alert(data.messages.join("\n"));
 					console.log(data.messages)
-				} 
+				}
 			}).fail(function(xhr, status, error){
 				alert(xhr.responseText);
 				console.log("error submitting data: "+xhr.responseText);
@@ -278,25 +292,33 @@
 		})
 
 		// messages received: submit_status, reset_form
-		var socket = io.connect("/onboard");
+		var socket = io.connect("/ui");
 
-		socket.on('submit_status', function(status){
-			console.log("submit_status", status);
-			if(status=="wait") {
-				submit_button.prop("disabled", true);
+		socket.on('state', function(new_state){
+			console.log("new_state", new_state);
+			switch(new_state) {
+				case APP_STATE.IDLE:
+					submit_button.prop("disabled", false);
+					break;
+				case APP_STATE.SUBMITTED:
+					submit_button.prop("disabled", true);
+					break;
+				case APP_STATE.STARTING:
+					break;
+				case APP_STATE.IN_PROGRESS:
+					break;
+				case APP_STATE.STOPPING:
+					break;
 			}
-			if(status=="ready") {
-				submit_button.prop("disabled", false);
-			}
-		})
-
-		socket.on('reset_form', function() {
-			document.getElementById("onboard-form").reset();
-			$(pages[8]).slideToggle("slow");
-			$(pages[0]).slideToggle("slow");
-			p = 0;
 		});
 
+		socket.on('countdown', function(t){
+			//console.log(t);
+		});
+
+		socket.on('user', function(user) {
+			console.log(user);
+		});
 		</script>
 	</body>
 </html>

@@ -1,8 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<meta name="description" content="">
+		<meta name="author" content="">
+		<link rel="icon" href="/favicon.ico">
+
+		<title>{{title}}</title>
+
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+		<link href="/stylesheets/index.css" rel="stylesheet">
+	</head>
+
+ 	<body>
+
+		<div class="container">
+			<div class="header clearfix">
+			<nav>
+				<ul class="nav nav-pills float-right">
+					<li class="nav-item">
+						<a class="nav-link active" href="#">Home <span class="sr-only">(current)</span></a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="/videos">Videos</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="/onboard">Onboard</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="/booth">Booth</a>
+					</li>
+				</ul>
+			</nav>
+			<h3 class="text-muted">NOLA300 Storybooth</h3>
+		</div>
+
+		<div class="jumbotron">
+			<h1 class="display-3" id="countdown">00:00</h1>
+			<h1 class="display-4" id="user_name">No User</h1>
+			
+			<p class="lead" id="session_state">Not Recording</p>
+
+			<p><a class="btn btn-lg btn-success disabled" href="#" role="button" id="cancel_button">Cancel</a></p>
+		</div>
+		<!--
+		  <div class="row marketing">
+		    <div class="col-lg-6">
+		      <h4>Subheading</h4>
+		      <p>Donec id elit non mi porta gravida at eget metus. Maecenas faucibus mollis interdum.</p>
+
+		      <h4>Subheading</h4>
+		      <p>Morbi leo risus, porta ac consectetur ac, vestibulum at eros. Cras mattis consectetur purus sit amet fermentum.</p>
+
+		      <h4>Subheading</h4>
+		      <p>Maecenas sed diam eget risus varius blandit sit amet non magna.</p>
+		    </div>
+
+		    <div class="col-lg-6">
+		      <h4>Subheading</h4>
+		      <p>Donec id elit non mi porta gravida at eget metus. Maecenas faucibus mollis interdum.</p>
+
+		      <h4>Subheading</h4>
+		      <p>Morbi leo risus, porta ac consectetur ac, vestibulum at eros. Cras mattis consectetur purus sit amet fermentum.</p>
+
+		      <h4>Subheading</h4>
+		      <p>Maecenas sed diam eget risus varius blandit sit amet non magna.</p>
+		    </div>
+		  </div>
+			-->
+		<footer class="footer">
+			<p>May the force be with you</p>
+		</footer>
+
+   		</div> <!-- /container -->
+
+		<!-- Optional JavaScript -->
+		<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+		<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
+		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
+		<script src="/socket.io/socket.io.js"></script>
+		<script>
+			const APP_STATE = {
+				IDLE: 			"idle",
+				SUBMITTED: 		"submitted",
+				STARTING: 		"starting",
+				IN_PROGRESS: 	"in progress",
+				STOPPING: 		"stopping"
+			};
+			var socket = io.connect("/ui");
+			var user_name = $("#user_name");
+			var countdown = $("#countdown");
+			var cancel_button = $("#cancel_button");
+			var session_state = $("#session_state");
 
 
-  <h1 class="title">
-    {{title}}
-  </h1>
-  <p class="subtitle">
-    My first website with <strong>Bulma</strong>!
-  </p>
+			socket.on('countdown', function (data) {
+				//console.log('countdown', data );
+				countdown.text(data);
+			});
+
+			socket.on('user', function(story) {
+				console.log("story", story);
+				user_name.text(story.fname + " " + story.lname);
+			});
+
+
+			socket.on('state', function(new_state){
+				console.log("new_state", new_state);
+				switch(new_state) {
+					case APP_STATE.IDLE:
+						session_state.text("Idle");
+						countdown.text("00:00");
+						user_name.text("No User");
+						break;
+					case APP_STATE.SUBMITTED:
+						session_state.text("Submitted");
+						cancel_button.removeClass("disabled");
+						break;
+					case APP_STATE.STARTING:
+						session_state.text("Starting");
+						break;
+					case APP_STATE.IN_PROGRESS:
+						session_state.text("In Progress");
+						break;
+					case APP_STATE.STOPPING:
+						session_state.text("Stopping");
+						cancel_button.addClass("disabled");
+						break;
+				}
+			});
+
+			cancel_button.click(function(evt){
+				console.log("click");
+				socket.emit("cancel");
+			});
+		</script>
+	</body>
+</html>

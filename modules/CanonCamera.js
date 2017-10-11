@@ -11,9 +11,9 @@ const async = require('async');
 //
 
 var canon = path.join(__dirname, "..", "bin", "canon-cli");
-String.prototype.trim = function() {
-  return this.replace(/^\s+|\s+$/g, "");
-};
+// String.prototype.trim = function() {
+//   return this.replace(/^\s+|\s+$/g, "");
+// };
 
 
 var CanonCamera = function(id) {
@@ -116,7 +116,7 @@ var CanonCamera = function(id) {
 			proc.stdout.on('data', on_stdout_data);
 			proc.stderr.on('data', on_stderr_data);
 			proc.on('close', on_close);
-			proc.send("stop");
+			//proc.send("stop");
 		}
 		if(!closed) setTimeout(done, 2000);
 	}

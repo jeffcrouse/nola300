@@ -10,7 +10,6 @@ const bodyParser = require('body-parser');
 var socketio = require('socket.io');
 var mongoose = require('mongoose');
 var storage = require('node-persist');
-var _ = require('underscore');
 const { check, validationResult } = require('express-validator/check');
 const { matchedData } = require('express-validator/filter');
 var fs = require("fs");
@@ -25,23 +24,9 @@ var EntitiesList = require('./modules/EntitiesList');
 var postprocess = require("./modules/PostProcess");
 var CountdownTimer = require('./modules/CountdownTimer')
 var CanonCamera = require('./modules/CanonCamera')	
-var FootPedal = require('./modules/FootPedal')				// Singleton
-var OnAirSign = require('./modules/OnAirSign')				// Singleton
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+var FootPedal = require('./modules/FootPedal');				// Singleton
+var OnAirSign = require('./modules/OnAirSign');				// Singleton
+var StateManager = require('./modules/StateManager');
 
 
 
@@ -60,18 +45,45 @@ We also make sure required directories exist, initialize persistent storiage, an
 connect to the database.
 ******************************************************************************************/
 
+
+
 /*
 ┬┌┐┌┬┌┬┐┬┌─┐┬  ┬┌─┐┌─┐
 │││││ │ │├─┤│  │┌─┘├┤ 
 ┴┘└┘┴ ┴ ┴┴ ┴┴─┘┴└─┘└─┘
 */
 
+/*
+┌─┐┌┬┐┌─┐┌┬┐┌─┐  ┌┬┐┌─┐┌┬┐┌┬┐
+└─┐ │ ├─┤ │ ├┤   ││││ ┬│││ │ 
+└─┘ ┴ ┴ ┴ ┴ └─┘  ┴ ┴└─┘┴ ┴ ┴ 
+*/
+
+const STATE = {
+	IDLE: 			"idle",
+	SUBMITTED: 		"submitted",
+	STARTING: 		"starting",
+	IN_PROGRESS: 	"in progress",
+	STOPPING: 		"stopping",
+}
+var state = new StateManager(STATE.IDLE);
+
+
+
+
 async.each([process.env.STORAGE_ROOT, process.env.VIDEO_ROOT], mkdirp, function(err){
 	if(err) debug(err);
 })
 
 storage.initSync({dir: "persist"});
-
+storage.getItem("user", (err, user) => {
+	if(err) 
+		throw new Error(err);
+	if(user) 
+		state.set(STATE.SUBMITTED);
+	else 
+		state.set(STATE.IDLE);
+});
 
 /*
 ┌┬┐┌─┐┌┬┐┌─┐┌┐ ┌─┐┌─┐┌─┐
@@ -94,6 +106,15 @@ mongoose.connect(db_url, {useMongoClient: true}, function(err){
 */
 Video.scan(function(err) { if(err) debug(err); });
 
+
+
+
+
+/*
+┌─┐─┐ ┬┌─┐┬─┐┌─┐┌─┐┌─┐  ┌─┐┌─┐┌┬┐┬ ┬┌─┐
+├┤ ┌┴┬┘├─┘├┬┘├┤ └─┐└─┐  └─┐├┤  │ │ │├─┘
+└─┘┴ └─┴  ┴└─└─┘└─┘└─┘  └─┘└─┘ ┴ └─┘┴  
+*/
 
 var app = express();
 
@@ -152,7 +173,7 @@ hbs.registerHelper('json', function(obj) {
 ******************************************************************************************/
 
 app.get('/', function(req, res, next) {
-	res.render('index', { title: 'NOLA300 Admin' });
+	res.render('index', { layout: false, title: 'NOLA300 Admin' });
 });
 
 app.get('/booth', function(req, res, next) {
@@ -180,8 +201,8 @@ app.post('/onboard', valid, function(req, res, next) {
 	debug("req.body", req.body);
 
 	try {
-		storage.getItem("story", (err, item) => {
-			if(item) throw "story still in progress.";
+		storage.getItem("user", (err, item) => {
+			if(item) throw "user still in progress.";
 
 			// Validate post request
 			const errors = validationResult(req);
@@ -189,14 +210,13 @@ app.post('/onboard', valid, function(req, res, next) {
 				throw errors.array().map(item => { return item.msg; }).join(",");
 			}
 
-			var data = matchedData(req); 
-
-			booth_socket.emit("set_name", data.fname+" "+data.lname);
-			onboard_socket.emit("submit_status", "wait");
-			onboard_socket.emit("reset_form");
-
-			storage.setItem("story", data, err => {
+			var user = matchedData(req); 
+			storage.setItem("user", user, (err) => {
 				if(err) throw err;
+
+				state.set(STATE.SUBMITTED);
+				ui_socket.emit("user", user);
+
 				res.json({status: "OK"});
 			});
 		});
@@ -276,54 +296,48 @@ app.post('/videos', valid, function(req, res, next){
 ███████║╚██████╔╝╚██████╗██║  ██╗███████╗   ██║   ███████║
 ╚══════╝ ╚═════╝  ╚═════╝╚═╝  ╚═╝╚══════╝   ╚═╝   ╚══════╝
 
-These are the various socket namespaces that different 
-front-end apps connect to.
-- onboard: 
-- booth: 
-- video: 
-- texture: 
+These are the socket namespaces that front-end apps connect to for real-time updates.
+
+- /ui: Communicate with the web interfaces: onboarding, booth interface, and admin index
+	- SEND state 						one of the STATEs
+	- SEND user 						a user object, emitted at the correct times (mostly during state changes)
+	- SEND countdown 					sent frequently while a session is in progress with time remaining string
+	- RCV cancel 						cancel's the current user's sesssion
+- /video: 
+	- SEND playlist: an array of video objs (with path,id), sorted by relevance
+	- RCV blacklist: the ID of a video that shouldn't be played again in this session
+- /emotion
+	- SEND emotion: a JSON object of emotions and their current values coming from SpeechToText
+
 ******************************************************************************************/                                                  
 
 var io = socketio();
 app.io = io;
 
 // Set up socket namespaces
-var onboard_socket = io.of('/onboard');
-var booth_socket = io.of('/booth');
+var ui_socket = io.of('/ui');	
 var video_socket = io.of('/video');
-var texture_socket = io.of('/texture');
+var emotion_socket = io.of('/emotion')
 
 
 //-----------------------------------------------------------------------------------------
-onboard_socket.on("connection", function( client ) {
-	debug("/onboard client joined")
+ui_socket.on("connection", function( client ) {
+	debug("/ui client joined")
 
-	storage.getItem("story").then(story => {
-		var status = (story) ? "wait" : "ready";
-		client.emit("submit_status", status);
-	});
+	client.emit("state", state.get());
 
-	client.on('disconnect', () => {
-		debug("/onboard client left")
-	});
-});
-
-//-----------------------------------------------------------------------------------------
-booth_socket.on("connection", function( client ) {
-	debug("/booth client joined")
-
-	storage.getItem("story", (err, story) => {
+	storage.getItem("user", (err, user) => {
 		if(err) throw new Error(err);
+		if(user) 
+			client.emit("user", user);
+	});
 
-		if(story) {
-			client.emit("set_name", story.fname+" "+story.lname);
-		} else {
-			client.emit("set_name", "?");
-		}
+	client.on("cancel", () => {
+		end_session(true);
 	});
 
 	client.on('disconnect', () => {
-		debug("/booth client left")
+		debug("/ui client left")
 	});
 });
 
@@ -340,8 +354,6 @@ video_socket.on("connection", function( client ) {
 		client.emit("playlist", playlist);
 	});
 
-	client.on('tock', (data) => { });
-
 	client.on('disconnect', () => {
 		debug("/video client left")
 	});
@@ -355,24 +367,17 @@ video_socket.on("connection", function( client ) {
 			debug(blacklist); 
         }
 	});
-
-	var loop = function() {
-		client.emit("tick", Date.now());
-		setTimeout(loop, 1000);
-	}
-	loop();
 });
 
 //-----------------------------------------------------------------------------------------
-texture_socket.on("connection", function( client ) {
-	debug("/texture client joined")
-
-	client.on('tock', (data) => { });
+emotion_socket.on("connection", function( client ) {
+	debug("/emotion client joined")
 
 	client.on('disconnect', () => {
-		debug("/texture client left")
+		debug("/emotion client left")
 	});
 
+	/*
 	var send_word = function(done) {
 		if(texture_words.length==0) return setTimeout(done, 500);
 
@@ -383,17 +388,16 @@ texture_socket.on("connection", function( client ) {
 		setTimeout(done, t);
 	}
 	send_word();
-
-
-	var loop = function() {
-		client.emit("tick", Date.now());
-		setTimeout(loop, 1000);
-	}
-	loop();
+	*/
 });
 
 
 
+//-----------------------------------------------------------------------------------------
+state.on("state_change", (old_state, new_state) => {
+	if(ui_socket)
+		ui_socket.emit("state", new_state);
+});
 
 
 
@@ -420,7 +424,7 @@ texture_socket.on("connection", function( client ) {
 ███████║███████╗███████║███████║██║╚██████╔╝██║ ╚████║
 ╚══════╝╚══════╝╚══════╝╚══════╝╚═╝ ╚═════╝ ╚═╝  ╚═══╝
 
-This is a storytelling session. 
+This is a storytelling session. It is started by the foot pedal
 It is possible to start a session once a user has submitted the onboarding form.
 
 A storytelling session is started by pressing the 
@@ -429,7 +433,7 @@ happen:
 - Cameras start recording
 - "ON AIR" sign goes on
 - Speech to Text starts
-- The "story" persistent object gets updated
+- The "user" persistent object gets updated
 - Countdown Timer starts from 120,000 millis
 
 When the user hits the foot pedal again (or the timer
@@ -440,43 +444,47 @@ actions:
 - ...
 ******************************************************************************************/
 
+
+
+
 var cam0 = new CanonCamera("0");
 var cam1 = new CanonCamera("1");
-var session_in_progress = false;
-var starting = false;
-var ending = false;
-
 
 var timer = new CountdownTimer();
 timer.on("done", function() {
 	debug("TIMER DONE!");
-	if(session_in_progress) end_session();
+	if(state.is(STATE.IN_PROGRESS)) 
+		end_session(false);
 });
 timer.on("tick", (str) => {
-	booth_socket.emit('time', str);
+	ui_socket.emit('countdown', str);
 });
 
 
 
 //-----------------------------------------------------------------------------------------
 var start_session = function() {
-	debug("start_session");
-	var story = null;
 
-	var get_story = done => {
-		storage.getItem("story", (err, item) => {
+	debug("start_session");
+
+	state.set(STATE.STARTING);
+
+	var user = null;
+
+	var get_user = done => {
+		storage.getItem("user", (err, item) => {
 			if(err) return done(err);
-			if(!item) return done("no story present. ignoring.");
-			story = item;
+			if(!item) return done("no user present. ignoring.");
+			user = item;
 			done(null);
 		});
 	}
 
-	var update_story = done => {
-		story.start = Date.now();
-		story.sentences = [];
-		story.location = process.env.NOLA_LOCATION;
-		storage.setItem("story", story, done);
+	var update_user = done => {
+		user.start = Date.now();
+		user.sentences = [];
+		user.location = process.env.NOLA_LOCATION;
+		storage.setItem("user", user, done);
 	}
 
 	var start_devices = done => {
@@ -488,38 +496,38 @@ var start_session = function() {
 		], done); 
 	}
 
-	starting = true;
-	async.series([get_story, update_story, start_devices], err => {
-		starting = false;
+	async.series([get_user, update_user, start_devices], err => {
 		if(err) return debug(err);
 
 		timer.begin(120000);
-		debug("session_in_progress=true");
-		session_in_progress = true;
+		
+		state.set(STATE.IN_PROGRESS);
 	});
 }
 
 //-----------------------------------------------------------------------------------------
-var end_session = function() {
+var end_session = function(cancel) {
 	debug("end_session");
 	timer.stop();
-	booth_socket.emit("set_message", "thank you");
-	
-	var story = null;
+
+	state.set(STATE.STOPPING);
+
+
+	var user = null;
 	var directory = null;
 
-	var get_story = done => {
-		debug("get_story");
-		storage.getItem("story", (err, item) => {
+	var get_user = done => {
+		debug("get_user");
+		storage.getItem("user", (err, item) => {
 			if(err) return done(err);
-			if(!item) return done("no story present. ignoring.");
+			if(!item) return done("no user present. ignoring.");
 
-			story = item;
-			story.id = shortid.generate();
-			story.end = Date.now();
-			story.duration = story.end - story.start;
+			user = item;
+			user.id = shortid.generate();
+			user.end = Date.now();
+			user.duration = user.end - user.start;
 
-			directory = path.join(process.env.STORAGE_ROOT, story.id);
+			directory = path.join(process.env.STORAGE_ROOT, user.id);
 			done(null);
 		});
 	}
@@ -531,21 +539,27 @@ var end_session = function() {
 
 	var stop_devices = done => {
 		debug("stop_devices");
-		var stop_0 = (cb) => { cam0.stop(`${directory}/vid_00.mp4`, cb); }
-		var stop_1 = (cb) => { cam1.stop(`${directory}/vid_01.mp4`, cb); }
+		var stop_0 = (cb) => { 
+			var path = (cancel) ? null : `${directory}/vid_00.mp4`
+			cam0.stop(path, cb); 
+		}
+		var stop_1 = (cb) => { 
+			var path = (cancel) ? null : `${directory}/vid_01.mp4`
+			cam1.stop(path, cb); 
+		}
 		async.parallel([stop_0, stop_1, SpeechToText.stop, OnAirSign.off], done);
 	}
 
 	var save_to_file = done => {
 		debug("save_to_file");
 		var data_file = path.join(directory, "info.json");
-		var data = JSON.stringify(story, null, 4);
+		var data = JSON.stringify(user, null, 4);
 		return fs.writeFile(data_file, data, 'utf8', done);
 	}
 
 	var remove_from_storage = done => {
 		debug("remove_from_storage");
-		storage.removeItem("story", done);
+		storage.removeItem("user", done);
 	}
 	
 	var wait_5 = done => {
@@ -553,31 +567,41 @@ var end_session = function() {
 		setTimeout(done, 5000);
 	}
 
-	ending = true;
-	async.series([get_story, mkdir, stop_devices, save_to_file, remove_from_storage, wait_5], (err) => {
+	var tasks = [];
+	if(cancel){
+		tasks = [stop_devices, remove_from_storage, wait_5];
+	} else {
+		tasks = [get_user, mkdir, stop_devices, save_to_file, remove_from_storage, wait_5];
+	}
+
+	async.series(tasks, (err) => {
 		ending = false;
 		if(err) return debug(err);
 
-		booth_socket.emit("reset");
-		onboard_socket.emit("submit_status", "ready");
-		debug("session_in_progress=false");
-		session_in_progress = false;
+		state.set(STATE.IDLE);
 	});
 }
 
 
+
 //-----------------------------------------------------------------------------------------
 FootPedal.on("press", function(date){
-	debug("footpedal pressed")
-	if(starting || ending) {
-		debug("ignoring pedal press while events are in progress")
-		return;
-	}
+	debug("footpedal pressed");
 
-	if(session_in_progress) {
-		end_session();
-	} else {
-		start_session();
+	switch(state.get()) {
+		case STATE.STARTING:
+		case STATE.ENDING:
+			debug("ignoring pedal press. events in progress.");
+			return;
+		case STATE.IDLE:
+			debug("ignoring pedal press. no user present.");
+			return;
+		case STATE.IN_PROGRESS:
+			end_session(false);
+			break;
+		case STATE.SUBMITTED:
+			start_session();
+			break;
 	}
 });
 
@@ -648,15 +672,15 @@ SpeechToText.on("sentence", (sentence) => {
 		}
 	}
 
-	storage.getItem("story", (err, story) => {
+	storage.getItem("user", (err, user) => {
 		if(err) throw new Error(err);
-		if(!story) return debug("Warning: SpeechToText result with no story to add to.")
+		if(!user) return debug("Warning: SpeechToText result with no user to add to.")
 
 		// TODO: Find the videos based on previous speech and put them into playlist
 
-		story.sentences.push( sentence.json() );
-		storage.setItem("story", story).catch(err => {
-			debug("Warning: error saving story after adding sentence.")
+		user.sentences.push( sentence.json() );
+		storage.setItem("user", user).catch(err => {
+			debug("Warning: error saving user after adding sentence.")
 		});
 	});
 });

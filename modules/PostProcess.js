@@ -12,8 +12,6 @@ var request = require('request');
 // var s3bucket = new AWS.S3({params: {Bucket: 'nola300'}});
 
 
-var api_post_url = "http://localhost:3001/upload";
-
 /********************************************************************************************
 ██████╗  ██████╗ ███████╗████████╗   ██████╗ ██████╗  ██████╗  ██████╗███████╗███████╗███████╗
 ██╔══██╗██╔═══██╗██╔════╝╚══██╔══╝   ██╔══██╗██╔══██╗██╔═══██╗██╔════╝██╔════╝██╔════╝██╔════╝
@@ -59,7 +57,7 @@ var process_story = function(filename, callback) {
 			archive: fs.createReadStream(archive),
 			data: JSON.stringify(obj)
 		};
-		request.post({url: api_post_url, formData: formData}, function(err, httpResponse, body){
+		request.post({url: process.env.UPLOAD_ENDPOINT, formData: formData}, function(err, httpResponse, body){
 			debug(body);
 			if(err) {
 				done(err);

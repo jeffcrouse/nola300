@@ -663,9 +663,9 @@ SpeechToText.on("sentence", (sentence) => {
 		if(tmp) texture_words = tmp;
 
 		// DO YOU FEEL THE EMOTION?
-		// if so, send it to the texture_socket
+		// if so, send it to the emotion_socket
 		if(sentence.has_emotion()) {
-			texture_socket.emit("emotion", sentence.get_emotion());
+			emotion_socket.emit("emotion", sentence.get_emotion());
 		}
 	}
 

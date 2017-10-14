@@ -7,14 +7,13 @@
 		<title>Nola300 Onboarding Interface</title>
 
 
-		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+		<link rel="stylesheet" href="/css/bootstrap.min.css">
 		<style>
 		body {
 			margin-top: 20px;
 		}
 		div.card {
 			margin-bottom: 10px;
-			display: none;
 		}
 		</style>
 	</head>
@@ -34,7 +33,7 @@
 					</div>
 				</div>
 
-
+				<!--
 				<div class="card" id="01-what-to-expect">
 					<div class="card-header">What to Expect</div>
 
@@ -56,8 +55,7 @@
 						<button type="button" class="btn btn-primary nextbtn">Next</button>
 					</div>
 				</div>
-
-
+				-->
 
 				<div class="card" id="02-guest-info">
 					<div class="card-header">Guest Info</div>
@@ -65,23 +63,46 @@
 					<div class="card-body">
 
 						<div class="form-group">
-							<input type="text" class="form-control" id="fname" name="fname" placeholder="First Name"> 
+							<input type="text" class="form-control" id="firstName" name="firstName" placeholder="First Name"> 
 						</div>
 
 						<div class="form-group">
-							<input type="text" class="form-control" id="lname" name="lname" placeholder="Last Name">
+							<input type="text" class="form-control" id="lastName" name="lastName" placeholder="Last Name">
 						</div>
 
 						<div class="form-group">
 							<input type="text" class="form-control" id="email" name="email" placeholder="Email">
 						</div>
 
+						<div class="form-group">
+							<input type="text" class="form-control" id="zipCode" name="zipCode" placeholder="Zip Code">
+						</div>
+
+
+						<div class="form-check">
+						  <label class="form-check-label">
+						    <input class="form-check-input" type="checkbox" name="emailList" value="yes" />
+							Join the Mailing List
+						  </label>
+						</div>
+
+
+						<div class="form-check">
+						  <label class="form-check-label">
+						    <input class="form-check-input" type="checkbox" name="acceptTerms" value="yes" />
+							Terms and Conditions
+						  </label>
+						</div>
+
+						<br/ >
+
 						<button type="button" class="btn btn-primary backbtn">Back</button>
 						<button type="button" class="btn btn-primary nextbtn">Next</button>
 					</div>
 				</div>
 
-			
+				
+				<!--
 				<div class="card" id="03-location">
 					<div class="card-header">Where does your story take place?</div>
 
@@ -144,8 +165,8 @@
 						<button type="button" class="btn btn-primary nextbtn">Next</button>
 					</div>
 				</div>
-
-
+				
+	
 
 				<div class="card" id="06-legal">
 					<div class="card-header">Is it cool if we use your story?</div>
@@ -154,18 +175,15 @@
 						<h4 class="card-title">please agree!</h4>
 
 
-						<div class="form-check">
-						  <label class="form-check-label">
-						    <input class="form-check-input" type="checkbox" name="consent" value="yes" />
-							I agree
-						  </label>
-						</div>
+			
 
 						<button type="button" class="btn btn-primary backbtn">Back</button>
 						<button type="button" class="btn btn-primary nextbtn">Next</button>
 						
 					</div>
 				</div>
+				-->
+
 
 
 				<div class="card" id="07-instructions">
@@ -189,7 +207,6 @@
 				</div>
 
 
-
 				<div class="card" id="08-queue">
 					<div class="card-header">Get ready!</div>
 					<div class="card-body">
@@ -207,13 +224,11 @@
 		</div> <!-- end #container -->
 
 
-
 		<!-- Optional JavaScript -->
 		<!-- jQuery first, then Popper.js, then Bootstrap JS -->
-		<script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
-		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
-
+		<script src="/js/jquery-3.2.1.min.js"></script>
+		<script src="/js/popper.min.js"></script>
+		<script src="/js/bootstrap.min.js"></script>
 		<script src="/socket.io/socket.io.js"></script>
 		<script>
 		const APP_STATE = {
@@ -227,6 +242,8 @@
 		var submit_status = $("#submit-status");
 		var submit_button = $("#btn-submit")
 
+
+		/*
 		var pages = ["#00-home", "#01-what-to-expect", "#02-guest-info", 
 			"#03-location", "#04-items", "#05-theme", 
 			"#06-legal", "#07-instructions", "#08-queue"];
@@ -251,12 +268,15 @@
 			p--;
 		}
 
+
 		// Handle the "next" action on all pages
 		$("button.nextbtn").click(next)
 		$("button.backbtn").click(back);
+		*/
+
 
 		// Handle the form submit
-		$("#onboard-form").submit(function( event ) {
+		form.submit(function( event ) {
 			var data = form.serialize();
 			console.log("submit! "+data)
 			$.ajax({
@@ -269,9 +289,9 @@
 				if(data.status == "OK") {
 					setTimeout(function(){
 						document.getElementById("onboard-form").reset();
-						$(pages[8]).slideToggle("slow");
-						$(pages[0]).slideToggle("slow");
-						p = 0;
+						// $(pages[8]).slideToggle("slow");
+						// $(pages[0]).slideToggle("slow");
+						// p = 0;
 					}, 3000);
 				} else {
 					alert(data.messages.join("\n"));
@@ -284,14 +304,13 @@
 			event.preventDefault();
 		});
 
-		$("#onboard-form").keypress(function(){
+		form.keypress(function(){
 			if ( event.which == 13 ) {
      			event.preventDefault();
      			next();
   			}
 		})
 
-		// messages received: submit_status, reset_form
 		var socket = io.connect("/ui");
 
 		socket.on('state', function(new_state){
@@ -312,10 +331,7 @@
 			}
 		});
 
-		socket.on('countdown', function(t){
-			//console.log(t);
-		});
-
+		//socket.on('countdown', function(t){ });
 		socket.on('user', function(user) {
 			console.log(user);
 		});

@@ -6,9 +6,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 		<title>Nola300 Video Tagging Interface</title>
 		<!-- Bootstrap CSS -->
-		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
-		<link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
-		<link rel="stylesheet" href="/stylesheets/jquery.tag-editor.css">
+		<link rel="stylesheet" href="/css/bootstrap.min.css">
 		<style>
 		body {
 			margin-top: 50px;
@@ -47,9 +45,14 @@
 					<tr>
 						<th scope="row">{{@index}}</th>
 						<td>{{this.name}} ({{this.duration}})</td>
+						<td>{{join this.places ", "}}</td>
+						<td>{{join this.items ", "}}</td>
+						<td>{{join this.themes ", "}}</td>
+						<!--
 						<td><textarea id="places.{{this.id}}" data-video="{{this.id}}" data-entity="places" class="entities">{{join this.places ", "}}</textarea></td>
 						<td><textarea id="items.{{this.id}}" data-video="{{this.id}}" data-entity="items" class="entities">{{join this.items ", "}}</textarea></td>
 						<td><textarea id="themes.{{this.id}}" data-video="{{this.id}}" data-entity="themes" class="entities">{{join this.themes ", "}}</textarea></td>
+						-->
 					</tr>
 					{{/each}}
 				</tbody>
@@ -59,23 +62,14 @@
 
     <!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->
-    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <script src="/js/jquery-3.2.1.min.js"></script>
 
-    <!-- https://jqueryui.com/autocomplete/ -->
-    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
-
-    <!-- https://github.com/acdvorak/jquery.caret -->
-    <script src="/javascripts/jquery.caret.min.js"></script>
-
-    <!-- https://goodies.pixabay.com/jquery/tag-editor/demo.html -->
-    <script src="/javascripts/jquery.tag-editor.min.js"></script>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js" integrity="sha384-b/U6ypiBEHpOf/4+1nzFpr53nxSS+GLCkfwBdFNTxtclqqenISfwAzpKaMNFNmj4" crossorigin="anonymous"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/js/bootstrap.min.js" integrity="sha384-h0AbiXch4ZDo7tp9hKZ4TsHbi047NrKGLO3SEJAg45jXxnGIfYzk4Si90RDIqNm1" crossorigin="anonymous"></script>
+    <script src="/js/popper.min.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
 
     <script>
     	$(document).ready(function() {
-
+    		/*
     		var entities = {
     			"places" : {{{json places}}},
     			"items" : {{{json items}}},
@@ -117,23 +111,7 @@
 					if(e.keyCode == 13) return false;
 				});
     		})
-
-			/*
-			$.ajax({
-				type: "POST",
-				url: "/videos",
-				dataType: 'json',
-				data: data
-			}).done(function(data){
-				console.log(data);
-				if(data.status != "OK") {
-					alert(data.messages.join("\n"));
-					console.log(data.messages)
-				}
-			}).fail(function(xhr, status, error){
-				console.log("error submitting data: "+error);
-			});
-			*/
+		*/
     });
     </script>
   </body>

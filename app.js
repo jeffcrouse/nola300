@@ -20,7 +20,7 @@ const async = require('async');
 var hbs = require('hbs');
 const randomWord = require('random-word');
 var SpeechToText = require('./modules/SpeechToText');
-var EntitiesList = require('./modules/EntitiesList');
+//var EntitiesList = require('./modules/EntitiesList');
 var postprocess = require("./modules/PostProcess");
 var CountdownTimer = require('./modules/CountdownTimer')
 var CanonCamera = require('./modules/CanonCamera')	
@@ -68,6 +68,10 @@ const STATE = {
 }
 var state = new StateManager(STATE.IDLE);
 
+state.on("state_change", (old_state, new_state) => {
+	if(ui_socket)
+		ui_socket.emit("state", new_state);
+});
 
 
 
@@ -183,21 +187,23 @@ app.get('/booth', function(req, res, next) {
 app.get('/onboard', function(req, res, next) {
 	var data = {
 		layout: false,
-		places: EntitiesList.places,
-		items: EntitiesList.items,
-		themes: EntitiesList.themes
+		// places: EntitiesList.places,
+		// items: EntitiesList.items,
+		// themes: EntitiesList.themes
 	}
 	res.render('onboard', data);
 });
 
 var valid = [
-	check('fname').exists().isLength({ min: 2, max: 20 }).withMessage('Please provide a valid first name'), 
-	check('lname').exists().isLength({ min: 2, max: 30 }).withMessage('Please provide a valid last name'), 
+	check('firstName').exists().isLength({ min: 2, max: 20 }).withMessage('Please provide a valid first name'), 
+	check('lastName').exists().isLength({ min: 2, max: 30 }).withMessage('Please provide a valid last name'), 
+	check('zipCode').exists().isLength({ min: 5, max: 5 }).withMessage('Please provide a valid zipcode'),
 	check('email').exists().isEmail().withMessage('Please provide a valid email address'),
-	check('entities.*').exists() // TODO: make sure there are at least 2 entities selected.
+	check('aceptTerms').exists().withMessage('Please accept terms and conditions'),
+	check('emailList').exists()
 ];
 
-app.post('/onboard', valid, function(req, res, next) {
+app.post(['/onboard', '/submiteEndPoint'], valid, function(req, res, next) {
 	debug("req.body", req.body);
 
 	try {
@@ -211,6 +217,9 @@ app.post('/onboard', valid, function(req, res, next) {
 			}
 
 			var user = matchedData(req); 
+			//user.emailList = (req.body.emailList) ? true : false;
+			debug(user);
+
 			storage.setItem("user", user, (err) => {
 				if(err) throw err;
 
@@ -393,11 +402,6 @@ emotion_socket.on("connection", function( client ) {
 
 
 
-//-----------------------------------------------------------------------------------------
-state.on("state_change", (old_state, new_state) => {
-	if(ui_socket)
-		ui_socket.emit("state", new_state);
-});
 
 
 

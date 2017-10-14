@@ -199,7 +199,7 @@ var valid = [
 	check('lastName').exists().isLength({ min: 2, max: 30 }).withMessage('Please provide a valid last name'), 
 	check('zipCode').exists().isLength({ min: 5, max: 5 }).withMessage('Please provide a valid zipcode'),
 	check('email').exists().isEmail().withMessage('Please provide a valid email address'),
-	check('aceptTerms').exists().withMessage('Please accept terms and conditions'),
+	check('acceptTerms').exists().withMessage('Please accept terms and conditions'),
 	check('emailList').exists()
 ];
 

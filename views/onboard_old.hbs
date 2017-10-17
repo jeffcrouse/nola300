@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<!-- Required meta tags -->
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<title>Nola300 Onboarding Interface</title>
+
+
+		<link rel="stylesheet" href="/css/bootstrap.min.css">
+		<style>
+		body {
+			margin-top: 20px;
+		}
+		div.card {
+			margin-bottom: 10px;
+		}
+		</style>
+	</head>
+	<body>
+
+		<div class="container">
+
+			<form role="form" class="onboard-form" id="onboard-form">
+
+				<div class="card" id="00-home">
+					<div class="card-header">One Time in New Orleans</div>
+					<div class="card-body">
+						<h4 class="card-title">Welcome to NOLA 300th anniversary storytelling experience.</h4>
+						<p class="card-text">This is a story gathering experiment...</p>
+
+						<button type="button" class="btn btn-primary nextbtn">Next</button>
+					</div>
+				</div>
+
+				<!--
+				<div class="card" id="01-what-to-expect">
+					<div class="card-header">What to Expect</div>
+
+					<div class="card-body">
+						<h4 class="card-title">Step 1</h4>
+						<p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+
+						<h4 class="card-title">Step 2</h4>
+						<p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+
+						<h4 class="card-title">Step 3</h4>
+						<p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+				
+
+						<h4 class="card-title">Step 4</h4>
+						<p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+
+						<button type="button" class="btn btn-primary backbtn">Back</button>
+						<button type="button" class="btn btn-primary nextbtn">Next</button>
+					</div>
+				</div>
+				-->
+
+				<div class="card" id="02-guest-info">
+					<div class="card-header">Guest Info</div>
+
+					<div class="card-body">
+
+						<div class="form-group">
+							<input type="text" class="form-control" id="firstName" name="firstName" placeholder="First Name"> 
+						</div>
+
+						<div class="form-group">
+							<input type="text" class="form-control" id="lastName" name="lastName" placeholder="Last Name">
+						</div>
+
+						<div class="form-group">
+							<input type="text" class="form-control" id="email" name="email" placeholder="Email">
+						</div>
+
+						<div class="form-group">
+							<input type="text" class="form-control" id="zipCode" name="zipCode" placeholder="Zip Code">
+						</div>
+
+
+						<div class="form-check">
+						  <label class="form-check-label">
+						    <input class="form-check-input" type="checkbox" name="emailList" value="yes" />
+							Join the Mailing List
+						  </label>
+						</div>
+
+
+						<div class="form-check">
+						  <label class="form-check-label">
+						    <input class="form-check-input" type="checkbox" name="acceptTerms" value="yes" />
+							Terms and Conditions
+						  </label>
+						</div>
+
+						<br/ >
+
+						<button type="button" class="btn btn-primary backbtn">Back</button>
+						<button type="button" class="btn btn-primary nextbtn">Next</button>
+					</div>
+				</div>
+
+				
+				<!--
+				<div class="card" id="03-location">
+					<div class="card-header">Where does your story take place?</div>
+
+					<div class="card-body">
+						<h4 class="card-title">check any that apply</h4>
+
+						{{#each places}}
+						<div class="form-check">
+						  <label class="form-check-label">
+						    <input class="form-check-input" type="checkbox" name="entities[places][]" value="{{ @this }}">
+							{{this}}
+						  </label>
+						</div>
+						{{/each}}
+
+						<button type="button" class="btn btn-primary backbtn">Back</button>
+						<button type="button" class="btn btn-primary nextbtn">Next</button>
+					</div>
+				</div>
+
+
+			
+				<div class="card" id="04-items">
+					<div class="card-header">Does your story involve any of these?</div>
+
+					<div class="card-body">
+						<h4 class="card-title">check any that apply</h4>
+						{{#each items}}
+						<div class="form-check">
+						  <label class="form-check-label">
+						    <input class="form-check-input" type="checkbox" name="entities[items][]" value="{{ @this }}">
+							{{this}}
+						  </label>
+						</div>
+						{{/each}}
+
+						<button type="button" class="btn btn-primary backbtn">Back</button>
+						<button type="button" class="btn btn-primary nextbtn">Next</button>
+					</div>
+				</div>
+
+
+
+				<div class="card" id="05-theme">
+					<div class="card-header">Does your story follow any of these themes?</div>
+
+					<div class="card-body">
+						<h4 class="card-title">check any that apply</h4>
+
+						{{#each themes}}
+						<div class="form-check">
+						  <label class="form-check-label">
+						    <input class="form-check-input" type="checkbox" name="entities[themes][]" value="{{ @this }}">
+							{{this}}
+						  </label>
+						</div>
+						{{/each}}
+
+						<button type="button" class="btn btn-primary backbtn">Back</button>
+						<button type="button" class="btn btn-primary nextbtn">Next</button>
+					</div>
+				</div>
+				
+	
+
+				<div class="card" id="06-legal">
+					<div class="card-header">Is it cool if we use your story?</div>
+
+					<div class="card-body">
+						<h4 class="card-title">please agree!</h4>
+
+
+			
+
+						<button type="button" class="btn btn-primary backbtn">Back</button>
+						<button type="button" class="btn btn-primary nextbtn">Next</button>
+						
+					</div>
+				</div>
+				-->
+
+
+
+				<div class="card" id="07-instructions">
+					<div class="card-header">Instructions</div>
+
+					<div class="card-body">
+					<h4 class="card-title">instructions here</h4>
+
+						<h4 class="card-title">Thing 1</h4>
+						<p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+
+						<h4 class="card-title">Thing 2</h4>
+						<p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+
+						<h4 class="card-title">Thing 3</h4>
+						<p class="card-text">With supporting text below as a natural lead-in to additional content.</p>
+
+						<button type="button" class="btn btn-primary backbtn">Back</button>
+						<button type="button" class="btn btn-primary nextbtn">Next</button>
+					</div>
+				</div>
+
+
+				<div class="card" id="08-queue">
+					<div class="card-header">Get ready!</div>
+					<div class="card-body">
+						<h4 class="card-title">Wait for the light to turn green</h4>
+
+						<div id="submit-status"></div>
+
+						<button type="button" class="btn btn-primary backbtn">Back</button>
+						<button type="submit" id="btn-submit" class="btn btn-primary">Go!</button>
+					</div>
+				</div>
+
+
+			</form> <!-- End #onboard-form -->
+		</div> <!-- end #container -->
+
+
+		<!-- Optional JavaScript -->
+		<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+		<script src="/js/jquery-3.2.1.min.js"></script>
+		<script src="/js/popper.min.js"></script>
+		<script src="/js/bootstrap.min.js"></script>
+		<script src="/socket.io/socket.io.js"></script>
+		<script>
+		const APP_STATE = {
+			IDLE: 			"idle",
+			SUBMITTED: 		"submitted",
+			STARTING: 		"starting",
+			IN_PROGRESS: 	"in progress",
+			STOPPING: 		"stopping"
+		};
+		var form = $("#onboard-form");
+		var submit_status = $("#submit-status");
+		var submit_button = $("#btn-submit")
+
+
+		/*
+		var pages = ["#00-home", "#01-what-to-expect", "#02-guest-info", 
+			"#03-location", "#04-items", "#05-theme", 
+			"#06-legal", "#07-instructions", "#08-queue"];
+		var p = 0;
+
+		// Fade in the first page
+		$(pages[p]).fadeIn("fast");
+
+		var next = function() {
+			var current = $(pages[p]);
+			var next = $(pages[p+1]);
+			current.slideToggle("slow");
+			next.slideToggle("slow");
+			p++;
+			return false;
+		}
+		var back = function() {
+			var current = $(pages[p]);
+			var prev = $(pages[p-1]);
+			current.slideToggle("slow");
+			prev.slideToggle("slow");
+			p--;
+		}
+
+
+		// Handle the "next" action on all pages
+		$("button.nextbtn").click(next)
+		$("button.backbtn").click(back);
+		*/
+
+
+		// Handle the form submit
+		form.submit(function( event ) {
+			var data = form.serialize();
+			console.log("submit! "+data)
+			$.ajax({
+				type: "POST",
+				url: "/onboard",
+				dataType: 'json',
+				data: data
+			}).done(function(data){
+				console.log(data);
+				if(data.status == "OK") {
+					setTimeout(function(){
+						document.getElementById("onboard-form").reset();
+						// $(pages[8]).slideToggle("slow");
+						// $(pages[0]).slideToggle("slow");
+						// p = 0;
+					}, 3000);
+				} else {
+					alert(data.messages.join("\n"));
+					console.log(data.messages)
+				}
+			}).fail(function(xhr, status, error){
+				alert(xhr.responseText);
+				console.log("error submitting data: "+xhr.responseText);
+			});
+			event.preventDefault();
+		});
+
+		form.keypress(function(){
+			if ( event.which == 13 ) {
+     			event.preventDefault();
+     			next();
+  			}
+		})
+
+		var socket = io.connect("/ui");
+
+		socket.on('state', function(new_state){
+			console.log("new_state", new_state);
+			switch(new_state) {
+				case APP_STATE.IDLE:
+					submit_button.prop("disabled", false);
+					break;
+				case APP_STATE.SUBMITTED:
+					submit_button.prop("disabled", true);
+					break;
+				case APP_STATE.STARTING:
+					break;
+				case APP_STATE.IN_PROGRESS:
+					break;
+				case APP_STATE.STOPPING:
+					break;
+			}
+		});
+
+		//socket.on('countdown', function(t){ });
+		socket.on('user', function(user) {
+			console.log(user);
+		});
+		</script>
+	</body>
+</html>

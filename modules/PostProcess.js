@@ -92,7 +92,7 @@ var process_story = function(filename, callback) {
 var loop = function(done) {
 	// Loop through each */info.json file in STORAGE_ROOT
 	// Each of these will be a story that is complete, but not yet uploaded
-	var pattern = util.format("%s/*/info.json", process.env.STORAGE_ROOT);
+	var pattern = `${process.env.STORAGE_ROOT}/*/info.json`;
 	glob(pattern, {cwd: process.env.STORAGE_ROOT}, function (err, files) {
 		if(err) return debug(err);
 

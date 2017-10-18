@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<!-- Required meta tags -->
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<title>Nola300 Timer</title>
+		<!-- Bootstrap CSS -->
+		<link rel="stylesheet" href="/css/bootstrap.min.css">
+		<link rel="stylesheet" href="/fonts/digital-7/stylesheet.css" type="text/css" charset="utf-8" />
+		<style>
+		body {
+			color: red;
+			background: black;
+		}
+		.container-fluid {
+			font-family: 'digital-7_monomono';
+			text-align: center;
+		}
+		.message {
+			position:absolute;
+			top: 50%;
+			width: 100%;
+
+		}
+		.welcome{
+			font-size: 15vw;
+			line-height: 15vw;
+
+			height: 30vw;
+			margin-top:-15vw;
+		}
+		.timer {
+			font-size: 40vw;
+			line-height: 40vw;
+
+			height: 40vw;
+			margin-top:-20vw;
+		}
+		</style>
+
+	</head>
+	<body>
+
+		<div class="container-fluid">
+			<div id="main" class="message timer">
+				00:00
+			</div>
+		</div>
+
+		<!-- Optional JavaScript -->
+		<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+		<script src="/js/jquery-3.2.1.min.js"></script>
+		<script src="/js/popper.min.js"></script>
+		<script src="/js/bootstrap.min.js"></script>
+		<script src="/socket.io/socket.io.js"></script>
+		<script>
+			var socket = io.connect("/ui");
+			var container = $("#main");
+			var user = null;
+
+			socket.on('countdown', function (data) {
+				container.addClass("timer");
+				container.removeClass("welcome");
+				container.text( data );
+			});
+
+			socket.on('user', function(_user) {
+				user = _user;
+				console.log(user);
+				container.html( "Welcome<br />"+user.firstName + " "+user.lastName );			
+				container.removeClass("timer");
+				container.addClass("welcome");
+			});
+
+			socket.on('state', function(state){
+				switch(state) {
+					case "idle":
+						container.text("00:00");
+						container.addClass("timer");
+						container.removeClass("welcome");
+						break;
+					case "submitted":
+						break;
+					case "starting":
+						break;
+					case "in progress":
+						break;
+					case "stopping":
+						container.removeClass("timer");
+						container.addClass("welcome");
+						container.text( "Thanks!" );
+						break;
+				}
+			});
+		</script>
+	</body>
+</html>

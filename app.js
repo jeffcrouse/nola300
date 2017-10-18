@@ -170,7 +170,7 @@ hbs.registerHelper('json', function(obj) {
 ██║  ██║╚██████╔╝╚██████╔╝   ██║   ███████╗███████║
 ╚═╝  ╚═╝ ╚═════╝  ╚═════╝    ╚═╝   ╚══════╝╚══════╝
 - /  This will be the admin debug screen
-- /booth
+- /timer
 - /onboard GET
 - /onboard POST
 - /videos
@@ -180,8 +180,8 @@ app.get('/', function(req, res, next) {
 	res.render('index', { layout: false, title: 'NOLA300 Admin' });
 });
 
-app.get('/booth', function(req, res, next) {
-	res.render('booth', { layout: false });
+app.get('/timer', function(req, res, next) {
+	res.render('timer', { layout: false });
 });
 
 app.get('/onboard', function(req, res, next) {
@@ -239,9 +239,9 @@ app.get('/videos', function(req, res, next) {
 
 	var data = {
 		layout: false,
-		places: EntitiesList.places,
-		items: EntitiesList.items,
-		themes: EntitiesList.themes
+		// places: EntitiesList.places,
+		// items: EntitiesList.items,
+		// themes: EntitiesList.themes
 	}
 
 	Video.scan(function(err) {

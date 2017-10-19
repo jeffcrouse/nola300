@@ -681,7 +681,9 @@ SpeechToText.on("sentence", (sentence) => {
 	if(sentence.has_nlu()) {
 		// DO YOU FEEL THE EMOTION? if so, send it to the emotion_socket
 		if(sentence.has_emotion()) {
-			emotion_socket.emit("emotion", sentence.get_emotion());
+			var emo = sentence.get_emotion();
+			debug("emotion", emo);
+			emotion_socket.emit("emotion", emo);
 		}
  
 		var terms = sentence.get_search_terms();

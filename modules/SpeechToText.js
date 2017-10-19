@@ -6,7 +6,7 @@ const util = require('util');
 var EventEmitter = require('events').EventEmitter;
 const spawn = require('child_process').spawn;
 var Sentence = require('./Sentence.js')
-
+var _ = require('lodash');
 
 const stt = new SpeechToTextV1();
 var nlu = new NaturalLanguageUnderstandingV1({
@@ -94,11 +94,15 @@ var SpeechToText = function() {
 	var on_data = function(data) {
 		var now = Date.now();
 
+		data = data.replace("%HESITATION", "");
+
 		var sentence = new Sentence(data);
-		sentence.time = now;
+
 		if(startTime) {
 			sentence.elapsed = now - startTime;
-		} else debug("Warning: received a sentence when SpeechToText was not runnning");
+		} else {
+			debug("Warning: received a sentence when SpeechToText was not runnning");
+		}
 		
 		if(sentence.wordcount() < 3) {
 			debug("less than 3 words");
@@ -108,7 +112,7 @@ var SpeechToText = function() {
 			var options = { text: data, features: features };
 			nlu.analyze(options, function(err, res) {
 				if(!err) {
-					sentence.nlu = res;
+					sentence.nlu = _.pick(res, ["sentiment", "keywords", "entities", "emotion", "concepts"]);
 				}
 				self.emit("sentence", sentence);
 			});

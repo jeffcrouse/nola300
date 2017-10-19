@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<!-- Required meta tags -->
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+		<title>Nola300 Video Playlist Preview</title>
+		<!-- Bootstrap CSS -->
+		<link rel="stylesheet" href="/css/bootstrap.min.css">
+		<link rel="stylesheet" href="//cdn.datatables.net/1.10.16/css/jquery.dataTables.min.css">
+		<style>
+		body {
+			margin-top: 50px;
+			font-size: 10px;
+		}
+		.blacklisted {
+			background-color: gray;
+		}
+		.table td {
+			padding: 2px;
+			line-height: 12px;
+		}
+		</style>
+
+	</head>
+
+
+	<body>
+  
+		<div class="container" >
+			<table class="table" id="videos">
+				<thead>
+					<tr>
+						<th>Path</th>
+						<th>Score</th>
+					</tr>
+				</thead>
+				<tbody></tbody>
+			</table>
+		</div><!-- end div.container -->
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+	<script src="/js/jquery-3.2.1.min.js"></script>
+	<script src="/js/popper.min.js"></script>
+	<script src="/js/bootstrap.min.js"></script>
+	<script src="/socket.io/socket.io.js"></script>
+	<script src="//cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
+    <script>
+	var socket = io.connect("/video");
+	var tbody = $("#videos");
+
+	// ----------------------------------------------------------------------------------
+	socket.on("playlist", function(videos){
+		$("#videos > tbody").html("");
+		videos.forEach((vid) => {
+			var path = vid.path.split("/").pop();
+			var html = `<tr id="${vid.id}"><td>${path}</td><td>${vid.score}</td></tr>`;
+			$("#videos > tbody:last").append(html);
+		});
+	});
+
+	// ----------------------------------------------------------------------------------
+	socket.on("blacklist", function(videos){
+		$("#videos > tbody tr").css("background-color", "");
+		videos.forEach((vid) => {
+			$("#"+vid).css("background-color", "#CCCCCC");
+		});
+	});
+
+	socket.on("terms", function(terms){
+
+	});
+
+	$(document).ready(function(){
+
+	});
+    </script>
+  </body>
+</html>

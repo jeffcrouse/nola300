@@ -10,6 +10,7 @@ const bodyParser = require('body-parser');
 var socketio = require('socket.io');
 var mongoose = require('mongoose');
 var storage = require('node-persist');
+var _ = require('lodash');
 const { check, validationResult } = require('express-validator/check');
 const { matchedData } = require('express-validator/filter');
 var fs = require("fs");
@@ -75,6 +76,7 @@ state.on("state_change", (old_state, new_state) => {
 
 
 
+
 async.each([process.env.STORAGE_ROOT, process.env.VIDEO_ROOT], mkdirp, function(err){
 	if(err) debug(err);
 })
@@ -136,7 +138,7 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 hbs.registerHelper("join", function( array, sep ) {
-    return array.join( sep );
+	return array.join( sep );
 });
 
 hbs.registerHelper('json', function(obj) {
@@ -237,22 +239,20 @@ app.post(['/onboard', '/submiteEndPoint'], valid, function(req, res, next) {
 
 app.get('/videos', function(req, res, next) {
 
-	var data = {
-		layout: false,
-		// places: EntitiesList.places,
-		// items: EntitiesList.items,
-		// themes: EntitiesList.themes
-	}
-
 	Video.scan(function(err) {
-		if(err) debug(err);
+		if(err) throw (err);
 
 		Video.list(function(err, docs){
 			if(err) throw new Error("!! error loading videos")
-			data.videos = docs;
+			var data = { layout: false, videos: docs }
 			res.render('videos', data);
 		});
 	});
+});
+
+app.get('/playlist', function(req, res, next) {
+	var data = { layout: false };
+	res.render('playlist', data);
 });
 
 /*
@@ -350,18 +350,23 @@ ui_socket.on("connection", function( client ) {
 	});
 });
 
-//-----------------------------------------------------------------------------------------
-video_socket.on("connection", function( client ) {
-	debug("/video client joined")
-	var blacklist = [];
-
+var blacklist = [];
+var send_random_videos = done => {
 	var query = { file_present: true,  _id: { $nin: blacklist } };
-	Video.findRandom(query, {}, {limit: 50}, function(err, docs) {
+	Video.findRandom(query, {}, {limit: 40}, (err, docs) => {
 		if (err) return debug(results); // 5 elements
 
 		var playlist = docs.map(d => { return d.as_playlist(); })
-		client.emit("playlist", playlist);
+		video_socket.emit("playlist", playlist);
+		done(null);
 	});
+}
+
+//-----------------------------------------------------------------------------------------
+video_socket.on("connection", function( client ) {
+	debug("/video client joined")
+	
+	client.emit("blacklist", blacklist);
 
 	client.on('disconnect', () => {
 		debug("/video client left")
@@ -371,10 +376,21 @@ video_socket.on("connection", function( client ) {
 		debug("blacklist", msg)
 		if(blacklist.indexOf(msg) > -1) {
 			debug("warning: video is already blacklisted.")
-        } else {
+		} else {
 			blacklist.push(msg);
+			client.broadcast.emit("blacklist", blacklist); // broadcast it back out to any other listening clients
 			debug(blacklist); 
-        }
+		}
+	});
+
+	client.on("get_random", () => {
+		var query = { file_present: true,  _id: { $nin: blacklist } };
+		Video.findRandom(query, {}, {limit: 20}, (err, docs) => {
+			if (err) return debug(results); // 5 elements
+
+			var playlist = docs.map(d => { return d.as_playlist(); })
+			video_socket.emit("playlist", playlist);
+		});
 	});
 });
 
@@ -399,7 +415,6 @@ emotion_socket.on("connection", function( client ) {
 	send_word();
 	*/
 });
-
 
 
 
@@ -491,6 +506,7 @@ var start_session = function() {
 		storage.setItem("user", user, done);
 	}
 
+
 	var start_devices = done => {
 		async.parallel([
 			cam0.record.bind(cam0, null), 
@@ -500,7 +516,7 @@ var start_session = function() {
 		], done); 
 	}
 
-	async.series([get_user, update_user, start_devices], err => {
+	async.series([get_user, update_user, send_random_videos, start_devices], err => {
 		if(err) return debug(err);
 
 		timer.begin(120000);
@@ -515,6 +531,10 @@ var end_session = function(cancel) {
 	timer.stop();
 
 	state.set(STATE.STOPPING);
+
+	blacklist = [];
+	video_socket.emit("blacklist", []);
+
 
 	var user = null;
 	var directory = null;
@@ -647,45 +667,44 @@ this handler is fired with an object with the following keys:
 /*
 var whitelist = [];
 fs.readFile('whitelist.txt', function(err, data) {
-    if(err) throw err;
-    var array = data.toString().split("\n");
-    whitelist = array.map((str) => { 
-    	return str.toLowerCase().trim();
-    });
+	if(err) throw err;
+	var array = data.toString().split("\n");
+	whitelist = array.map((str) => { 
+		return str.toLowerCase().trim();
+	});
 });
 */
-
-var texture_words = [];
+//SpeechToText.start();
 SpeechToText.on("sentence", (sentence) => {
-	debug(util.inspect(sentence, {depth: 10}));
+	//debug(util.inspect(sentence.toJson(), {depth: 10}));
 
 	if(sentence.has_nlu()) {
-
-		// Replace the texture_words if the current sentence
-		// has any words to offer
-		var tmp = sentence.get_texture_words();
-		if(tmp) texture_words = tmp;
-
-		// DO YOU FEEL THE EMOTION?
-		// if so, send it to the emotion_socket
+		// DO YOU FEEL THE EMOTION? if so, send it to the emotion_socket
 		if(sentence.has_emotion()) {
 			emotion_socket.emit("emotion", sentence.get_emotion());
 		}
+ 
+		var terms = sentence.get_search_terms();
+		debug( "search terms",  terms )
+
+		video_socket.emit("query", terms);
+		Video.getPlaylist(terms, blacklist, 20, (err, playlist) => {
+			if(err) return debug(err);
+			playlist = 	playlist.map(d => { return d.as_playlist(); });
+			video_socket.emit("playlist", playlist);
+		});
 	}
 
 	storage.getItem("user", (err, user) => {
 		if(err) throw new Error(err);
 		if(!user) return debug("Warning: SpeechToText result with no user to add to.")
 
-		// TODO: Find the videos based on previous speech and put them into playlist
-
-		user.sentences.push( sentence.json() );
+		user.sentences.push( sentence.toJson() );
 		storage.setItem("user", user).catch(err => {
 			debug("Warning: error saving user after adding sentence.")
 		});
 	});
 });
-
 
 
 

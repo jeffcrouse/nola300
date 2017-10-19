@@ -4,20 +4,21 @@
 		<!-- Required meta tags -->
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-		<title>Nola300 Video Tagging Interface</title>
+		<title>Nola300 Video List</title>
 		<!-- Bootstrap CSS -->
 		<link rel="stylesheet" href="/css/bootstrap.min.css">
+		<link rel="stylesheet" href="//cdn.datatables.net/1.10.16/css/jquery.dataTables.min.css">
 		<style>
 		body {
 			margin-top: 50px;
+			font-size: 10px;
 		}
-		textarea.entities {
-			width: 100%;
-			height: 50px;
+		.blacklisted {
+			background-color: gray;
 		}
-		ul.tag-editor {
-			width: 300px;
-			height: 100px;
+		.table td {
+			padding: 2px;
+			line-height: 12px;
 		}
 		</style>
 
@@ -26,14 +27,15 @@
 
 	<body>
   
-		<div class="container-fluid" >
+		<div class="container" >
 
 
-			<table class="table">
+			<table class="table" id="myTable">
 				<thead>
 					<tr>
-						<th>#</th>
+						<!--<th>#</th>-->
 						<th>Name</th>
+						<th>Score</th>
 						<th>Places</th>
 						<th>Items</th>
 						<th>Themes</th>
@@ -42,9 +44,10 @@
 				<tbody>
 
 					{{#each videos}}
-					<tr>
-						<th scope="row">{{@index}}</th>
+					<tr id="{{this._id}}" class="">
+						<!--<th scope="row">{{@index}}</th>-->
 						<td>{{this.name}} ({{this.duration}})</td>
+						<td class="score">{{this.score}}</td>
 						<td>{{join this.places ", "}}</td>
 						<td>{{join this.items ", "}}</td>
 						<td>{{join this.themes ", "}}</td>
@@ -60,59 +63,65 @@
 
 		</div><!-- end div.container -->
 
-    <!-- Optional JavaScript -->
-    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
-    <script src="/js/jquery-3.2.1.min.js"></script>
+	<!-- Optional JavaScript -->
+	<!-- jQuery first, then Popper.js, then Bootstrap JS -->
+	<script src="/js/jquery-3.2.1.min.js"></script>
+	<script src="/js/popper.min.js"></script>
+	<script src="/js/bootstrap.min.js"></script>
+	<script src="/socket.io/socket.io.js"></script>
+	<script src="//cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
+	<script>
+	var socket = io.connect("/video");
 
-    <script src="/js/popper.min.js"></script>
-    <script src="/js/bootstrap.min.js"></script>
+	socket.on("playlist", function(videos){
+		$("td.score").text(0);
+		//console.log(videos);
+		videos.forEach((v) => {
+			var q = "#"+v.id+" .score";
+			$(q).text(v.score);
+		});
+		sortTable();
+	});
 
-    <script>
-    	$(document).ready(function() {
-    		/*
-    		var entities = {
-    			"places" : {{{json places}}},
-    			"items" : {{{json items}}},
-    			"themes": {{{json themes}}}
-    		}
+	socket.on("blacklist", function(videos){
+		console.log(videos);
+		$("tr").removeClass("blacklisted");
+		videos.forEach((v) => {
+			$("#"+v).addClass('blacklisted');
+		});
+	});
 
-    		$("textarea").each(function(index){
-    			var ele = $(this);
-				var video = ele.data("video");
-				var entity = ele.data("entity");
-    			var autocomplete_tags = entities[entity];
+	function sortTable(){
+		var rows = $('#myTable tbody tr').get();
+		rows.sort(function(a, b) {
+			var A = parseFloat( $(a).children('td').eq(1).text() );
+			var B = parseFloat( $(b).children('td').eq(1).text() );
+			console.log("comparing", A, "and", B);
+			if(A > B) return -1;
+			if(A < B) return 1;
+			return 0;
+		});
+		$.each(rows, function(index, row) {
+			$('#myTable').children('tbody').append(row);
+		});
+	}
 
- 				var onChange = function(field, editor, tags) {
-   					var post_data = {"video": video, "entity": entity, "values": tags };
-					$.ajax({
-						type: "POST",
-						url: "/videos",
-						dataType: 'json',
-						data: post_data
-					}).done(function(data){
-						console.log(data);
-						if(data.status != "OK") {
-							alert(data.messages.join("\n"));
-							console.log(data.messages)
-						}
-					}).fail(function(xhr, status, error){
-						console.log("error submitting data: "+error);
-					});
- 				}
-
-
-    			var editor = ele.tagEditor({ 
-    				autocomplete: {'source': autocomplete_tags, minLength: 1 },
-    				forceLowercase: false, removeDuplicates: true,
-    				onChange: onChange
-    			});
-				
-				$(this).keypress(function(e){
-					if(e.keyCode == 13) return false;
-				});
-    		})
-		*/
-    });
-    </script>
+	/*
+	$(document).ready(function(){
+		$('#myTable').DataTable({
+			"pageLength": 100,
+			"order": [[ 2, "desc" ]],
+			"fnRowCallback": function(nRow, aData, iDisplayIndex, iDisplayIndexFull ) {
+				console.log(nRow);
+				if($(nRow).data('blacklisted')) {
+					$(nRow).css('background-color', "gray");
+				} else {
+					$(nRow).css('background-color', "white");
+				}
+			}
+		});
+	});
+	*/
+	</script>
   </body>
 </html>

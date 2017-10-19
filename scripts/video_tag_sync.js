@@ -16,6 +16,8 @@ mongoose.connect(db_url, {useMongoClient: true}, function(err){
 });
 
 
+var proc = function(s){ return s.trim().toLowerCase() }
+
 Video.scan(err => {
 	doc.useServiceAccountAuth(creds, function (err) {
 		doc.getRows(1, function (err, rows) {
@@ -26,11 +28,17 @@ Video.scan(err => {
 					if(err) return done(err)
 					if(!doc) return done(row.filename+" not found");
 
-					console.log(doc.name, doc._id)
-					done();
+					doc.places = row.places.split(",").map(proc);
+					doc.items = row.items.split(",").map(proc);
+					doc.themes = row.themes.split(",").map(proc);
+
+					doc.save(done);
 				});
 			}, function(err){
 				if(err) console.log(err);
+
+				console.log("done")
+				process.exit();
 			});
 		})
 	});

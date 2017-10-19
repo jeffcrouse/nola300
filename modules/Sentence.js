@@ -1,4 +1,4 @@
-
+var _ = require('lodash');
 
 
 
@@ -11,7 +11,7 @@ var Sentence = function(text) {
 	this.nlu = null;
 	this.elapsed = null;
 	this.time = null;
-
+	this.text = text;
 
 	/**
 	*	Get the middle 1/3 of the keywords.
@@ -22,6 +22,14 @@ var Sentence = function(text) {
 		var n = Math.floor(length / 3);
 		var sliced = this.nlu.keywords.slice(n, length-n);
 		return sliced.map( w => { return w.text });
+	}
+
+
+	this.get_search_terms = () => {
+		var words = _.concat(this.nlu.keywords, this.nlu.entities, this.nlu.concepts);
+		return words;
+		// TODO: Allow duplicates here?
+		//return _.uniqBy(words, 'text');
 	}
 
 	this.wordcount = () => {
@@ -40,8 +48,8 @@ var Sentence = function(text) {
 		return this.nlu != null;
 	}
 
-	this.json = () => {
-		return {text: text, nlu: this.nlu, elapsed: this.elapsed, time: this.time};
+	this.toJson = () => {
+		return _.pick(this, ["text", "nlu", "elapsed"]); 
 	}
 }
 

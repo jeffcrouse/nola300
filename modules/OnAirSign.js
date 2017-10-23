@@ -3,9 +3,9 @@ const util = require('util');
 //process.env['DEBUG']="onair";
 var debug = require('debug')('onair');
 
-// SerialPort.list(function (err, ports) {
-// 	ports.forEach(function(_info) { console.log(util.inspect(_info)); });
-// });
+SerialPort.list(function (err, ports) {
+	ports.forEach(function(_info) { console.log(util.inspect(_info)); });
+});
 
 var OnAirSign = function(serial) {
 
@@ -59,7 +59,7 @@ var OnAirSign = function(serial) {
 
 	var on_data = function(buf) {
 		var data = buf.toString('utf8');
-		debug(data);
+		debug("data", data);
 	}
 
 	var on_close = function(data) {
@@ -102,4 +102,4 @@ var OnAirSign = function(serial) {
 }
 
 
-module.exports = new OnAirSign("85438333935351F071D2");
+module.exports = new OnAirSign("85438333935351019232");

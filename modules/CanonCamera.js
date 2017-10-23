@@ -125,7 +125,7 @@ var CanonCamera = function(id) {
 			proc.on('close', on_close);
 			//proc.send("stop");
 		}
-		if(!closed) setTimeout(done, 2000);
+		if(!closed) setTimeout(done, 10000);
 	}
 
 	async.forever(stay_connected, err => {

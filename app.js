@@ -24,8 +24,7 @@ var SpeechToText = require('./modules/SpeechToText');
 //var EntitiesList = require('./modules/EntitiesList');
 var postprocess = require("./modules/PostProcess");
 var CountdownTimer = require('./modules/CountdownTimer')
-var CanonCamera = require('./modules/CanonCamera')	
-var FootPedal = require('./modules/FootPedal');				// Singleton
+var CanonCamera = require('./modules/CanonCamera')
 var OnAirSign = require('./modules/OnAirSign');				// Singleton
 var StateManager = require('./modules/StateManager');
 
@@ -627,7 +626,9 @@ var on_pedal = function() {
 			break;
 	}
 }
-FootPedal.on("press", on_pedal);
+
+// var FootPedal = require('./modules/FootPedal');				// Singleton
+// FootPedal.on("press", on_pedal);
 
 
 

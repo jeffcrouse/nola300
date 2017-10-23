@@ -341,6 +341,8 @@ ui_socket.on("connection", function( client ) {
 			client.emit("user", user);
 	});
 
+	client.on("pedal", on_pedal);
+
 	client.on("cancel", () => {
 		end_session(true);
 	});
@@ -606,7 +608,7 @@ var end_session = function(cancel) {
 
 
 //-----------------------------------------------------------------------------------------
-FootPedal.on("press", function(date){
+var on_pedal = function() {
 	debug("footpedal pressed");
 
 	switch(state.get()) {
@@ -624,7 +626,8 @@ FootPedal.on("press", function(date){
 			start_session();
 			break;
 	}
-});
+}
+FootPedal.on("press", on_pedal);
 
 
 

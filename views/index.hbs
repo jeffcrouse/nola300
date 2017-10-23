@@ -42,6 +42,9 @@
 			
 			<p class="lead" id="session_state">Not Recording</p>
 
+			<p>
+				<a class="btn btn-lg btn-success disabled" href="#" role="button" id="pedal_button">Pedal</a>
+			</p>
 			<p><a class="btn btn-lg btn-success disabled" href="#" role="button" id="cancel_button">Cancel</a></p>
 		</div>
 		<!--
@@ -133,8 +136,12 @@
 			});
 
 			cancel_button.click(function(evt){
-				console.log("click");
+				console.log("cancel");
 				socket.emit("cancel");
+			});
+			pedal_button.click(function(evt){
+				console.log("pedal");
+				socket.emit("pedal");
 			});
 		</script>
 	</body>

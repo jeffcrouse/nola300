@@ -20,7 +20,7 @@ var on_close = function() {
 }
 
 const stt = new SpeechToTextV1();
-var recognizeStream = stt.createRecognizeStream({ content_type: 'audio/wav' });
+var recognizeStream = stt.createRecognizeStream({ content_type: 'audio/mp3' });
 recognizeStream.setEncoding('utf8');
 recognizeStream.on('listening', on_listening);
 recognizeStream.on('data', on_data);
@@ -30,7 +30,8 @@ recognizeStream.on('close', on_close);
 
 
   
-var proc = spawn('rec', ['-b', 16, '--endian', 'little', '-c', 1, '-r', 16000, '-e', 'signed-integer', '-t', 'wav', '-']);
+//var proc = spawn('rec', ['-b', 16, '--endian', 'little', '-c', 1, '-r', 16000, '-e', 'signed-integer', '-t', 'wav', '-']);
+var proc = spawn('rec', ['--endian', 'little', '-t', 'mp3', '-']);
 proc.on('exit', function(code, sig) {
 	console.log(`proc has exited with code = ${code}`);
 });

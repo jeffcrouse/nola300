@@ -586,6 +586,7 @@ var end_session = function(cancel) {
 	
 	var wait_5 = done => {
 		debug("wait_5");
+		video_socket.emit("idle");
 		setTimeout(done, 5000);
 	}
 

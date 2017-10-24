@@ -26,7 +26,7 @@ var SpeechToText = function() {
 	var recognizeStream = null;
 	var running = false;
 	var startTime = null;
-	var recProc = null;
+	var proc = null;
 
 
 	// --------------------------------------------------------------------
@@ -43,19 +43,17 @@ var SpeechToText = function() {
 
 		// TODO: Can I make this lower quality?
 		debug("spawning rec");
-		// '-c', 1, '-r', 16000,
-		var args = ['-b', 16, '--endian', 'little', '-e', 'signed-integer', '-t', 'wav', '-'];
-		debug("rec", args.join(" "));
 
-		recProc = spawn('rec', args);
-		recProc.on('exit', (code, sig) => {
-			debug(`rec has exited with code = ${code}`);
+		//proc = spawn('rec', ['-b', 16, '--endian', 'little', '-c', 1, '-r', 16000, '-e', 'signed-integer', '-t', 'wav', '-']);
+		var proc = spawn('rec', ['--endian', 'little', '-t', 'mp3', '-']);
+		proc.on('exit', (code, sig) => {
+			debug(`recProc has exited with code = ${code}`);
 		});
 
-		recProc.stderr.on('data', (data) => { 
+		proc.stderr.on('data', (data) => { 
 			//debug(data.toString());
 		});
-		recProc.stdout.pipe(recognizeStream);
+		proc.stdout.pipe(recognizeStream);
 
 		startTime = Date.now();
 		running = true;
@@ -75,7 +73,7 @@ var SpeechToText = function() {
 
 		debug("closing");
 
-		recProc.kill('SIGTERM');
+		proc.kill('SIGTERM');
 
 		recognizeStream.stop();
 

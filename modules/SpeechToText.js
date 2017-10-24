@@ -43,10 +43,13 @@ var SpeechToText = function() {
 
 		// TODO: Can I make this lower quality?
 		debug("spawning rec");
-		var args = ['-b', 16, '--endian', 'little', '-c', 1, '-r', 16000, '-e', 'signed-integer', '-t', 'wav', '-'];
+		// '-c', 1, '-r', 16000,
+		var args = ['-b', 16, '--endian', 'little', '-e', 'signed-integer', '-t', 'wav', '-'];
+		debug("rec", args.join(" "));
+
 		recProc = spawn('rec', args);
 		recProc.on('exit', (code, sig) => {
-			debug(`recProc has exited with code = ${code}`);
+			debug(`rec has exited with code = ${code}`);
 		});
 
 		recProc.stderr.on('data', (data) => { 

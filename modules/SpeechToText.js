@@ -39,6 +39,7 @@ var SpeechToText = function() {
 		recognizeStream.on('listening', on_listening);
 		recognizeStream.on('data', on_data);
 		recognizeStream.on('results', on_results);
+		recognizeStream.on('error', on_error);
 		recognizeStream.on('close', on_close);
 
 		// TODO: Can I make this lower quality?
@@ -119,7 +120,6 @@ var SpeechToText = function() {
 			});
 		}
 	}
-
 	
 	// --------------------------------------------------------------------
 	var on_results = function(data) {
@@ -129,6 +129,11 @@ var SpeechToText = function() {
 	// --------------------------------------------------------------------
 	var on_close = function() {
 		debug("on_close");
+	}
+
+	// --------------------------------------------------------------------
+	var on_error = function(err) {
+		debug("on_error", err);
 	}
 }
 

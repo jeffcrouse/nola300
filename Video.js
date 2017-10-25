@@ -181,7 +181,7 @@ VideoSchema.statics.setScores = function(terms, callback) {
 				var items = get_score(terms, doc.items);
 				var themes = get_score(terms, doc.themes);
 
-				doc.score = (places*3) + (items*2) + (themes);
+				doc.score = (items*3) + (places*2) + (themes);
 
 				doc.save(done);
 

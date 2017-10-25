@@ -34,7 +34,7 @@ var SpeechToText = function() {
 		callback = callback || function(){}
 		if(running) return callback("already running");
 
-		recognizeStream = stt.createRecognizeStream({content_type: 'audio/wav'});
+		recognizeStream = stt.createRecognizeStream({content_type: 'audio/mp3'});
 		recognizeStream.setEncoding('utf8');
 		recognizeStream.on('listening', on_listening);
 		recognizeStream.on('data', on_data);
@@ -46,7 +46,8 @@ var SpeechToText = function() {
 		debug("spawning rec");
 
 		//proc = spawn('rec', ['-b', 16, '--endian', 'little', '-c', 1, '-r', 16000, '-e', 'signed-integer', '-t', 'wav', '-']);
-		var proc = spawn('rec', ['--endian', 'little', '-t', 'mp3', '-']);
+		proc = spawn('rec', ['--endian', 'little', '-t', 'mp3', '-']);
+		debug(proc);
 		proc.on('exit', (code, sig) => {
 			debug(`recProc has exited with code = ${code}`);
 		});

@@ -681,7 +681,7 @@ fs.readFile('whitelist.txt', function(err, data) {
 */
 //SpeechToText.start();
 SpeechToText.on("sentence", (sentence) => {
-	//debug(util.inspect(sentence.toJson(), {depth: 10}));
+	debug(util.inspect(sentence.toJson(), {depth: 10}));
 
 	if(sentence.has_nlu()) {
 		// DO YOU FEEL THE EMOTION? if so, send it to the emotion_socket

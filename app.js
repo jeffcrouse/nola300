@@ -628,8 +628,8 @@ var on_pedal = function() {
 	}
 }
 
-// var FootPedal = require('./modules/FootPedal');				// Singleton
-// FootPedal.on("press", on_pedal);
+var FootPedal = require('./modules/FootPedal');				// Singleton
+FootPedal.on("press", on_pedal);
 
 
 

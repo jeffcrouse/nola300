@@ -33,7 +33,7 @@
 			<table class="table" id="myTable">
 				<thead>
 					<tr>
-						<!--<th>#</th>-->
+						<th>#</th>
 						<th>Name</th>
 						<th>Score</th>
 						<th>Places</th>
@@ -45,7 +45,7 @@
 
 					{{#each videos}}
 					<tr id="{{this._id}}" class="">
-						<!--<th scope="row">{{@index}}</th>-->
+						<td>{{@index}}</td>
 						<td>{{this.name}} ({{this.duration}})</td>
 						<td class="score">{{this.score}}</td>
 						<td>{{join this.places ", "}}</td>

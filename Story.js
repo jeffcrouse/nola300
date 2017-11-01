@@ -1,0 +1,181 @@
+require('dotenv').config({ silent: true }); 
+var debug = require('debug')('story');
+var mongoose = require('mongoose');
+const path = require('path');
+var Schema = mongoose.Schema;
+const async = require('async');
+const fs = require('fs');
+const exec = require("child_process").exec;
+var which = require('which');
+var shortid = require('shortid');
+var request = require('request');
+var _ = require('lodash');
+
+
+var INTRO = path.join(__dirname, "resources", "Intro_Card.mov");
+var OUTRO = path.join(__dirname, "resources", "End_Card.mov");
+
+var ffmpeg = "ffmpeg";
+which('ffmpeg', function (err, resolvedPath) {
+	if(err) throw err;
+	ffmpeg = resolvedPath;
+});
+
+
+var SentenceSchema = Schema({
+	text: 		{ type: String, required: true },
+	elapsed: 	{ type: Number, required: true },
+	//time: 		{ type: Number, required: true },
+	nlu: 		{ type: Schema.Types.Mixed, default: null }
+});
+
+var StorySchema = Schema({
+	active:  		{ type: Boolean, default: true },
+	createdAt:  	{ type: Date, default: Date.now },
+	firstName: 		{ type: String, required: true },
+	lastName: 		{ type: String, required: true },
+	email: 			{ type: String, required: false },
+	zipCode: 		{ type: Number },
+	emailList: 		{ type: Boolean, default: false },
+	shortid: 		{ type: String, default: shortid.generate },
+	location: 		{ type: String, default: "mobile" },
+	startTime: 		{ type: Date },
+	endTime: 		{ type: Date },
+	sentences: 		[ SentenceSchema ],
+	error: 			{ type: String, default: null },
+	readyForEdit: 	{ type: Boolean, default: false },
+	edited: 		{ type: Boolean, default: false },
+	uploaded: 		{ type: Boolean, default: false }
+});
+
+var lean = function(doc, ret, options) {
+	ret.id = ret._id;
+	delete ret._id;
+	delete ret.__v;
+	return ret;
+}
+
+if (!StorySchema.options.toObject) StorySchema.options.toObject = {};
+StorySchema.options.toObject.transform = lean;
+
+if (!StorySchema.options.toJSON) StorySchema.options.toJSON = {};
+StorySchema.options.toJSON.transform = lean;
+
+
+StorySchema.virtual('directory').get(function(){
+	return path.join(process.env.STORAGE_ROOT, this.shortid);
+});
+
+StorySchema.virtual('vid_00.path').get(function(){
+	return path.join(process.env.STORAGE_ROOT, this.shortid, "vid_00.mp4");
+});
+
+StorySchema.virtual('vid_01.path').get(function(){
+	return path.join(process.env.STORAGE_ROOT, this.shortid, "vid_01.mp4");
+});
+
+StorySchema.virtual('edit.path').get(function(){
+	return path.join(process.env.STORAGE_ROOT, this.shortid, "edit.mp4");
+});
+
+StorySchema.virtual('duration').get(function(){
+	return this.endTime - this.startTime;
+});
+
+
+// StorySchema.pre('save', function(next){
+// 	if (!this.isNew) return next(null);
+// });
+
+
+// --------------------------------------------------------------------------------------
+StorySchema.methods.do_edit = function(done) {
+	debug("do_edit", this.shortid);
+	var concat = [];
+	var filters = [];
+	var d = Math.min(this.duration/1000.0, 45);
+	var cam = 0;
+	var label = 0;
+	var start = 0;
+	
+	do {
+		var clip_length = 5 + (Math.random()*4);
+		var end = Math.min(start+clip_length, d);
+		filters.push(`[${cam}:v]trim=start=${start}:end=${end}, setpts=PTS-STARTPTS[v${label}]`);
+		filters.push(`[${cam}:a]atrim=start=${start}:end=${end}, asetpts=PTS-STARTPTS[a${label}]`);
+		concat.push(`[v${label}][a${label}]`);
+		label++;
+		cam = label % 2;
+		start = end;
+	} while(start < d);
+	
+	filters.push(`${concat.join("")}concat=n=${concat.length}:v=1:a=1[vedit1][aedit1]`);
+	filters.push(`[2:v]scale=1920:1080,fps=24,format=yuva420p,setpts=PTS+2/TB[intro]`);
+	filters.push(`[3:v]scale=1920:1080,fps=24,format=yuva420p,setpts=PTS+${d-4}/TB[outro]`);
+	filters.push(`[vedit1][intro]overlay=0:0[vedit2]`);
+	filters.push(`[vedit2][outro]overlay=0:0[vedit3]`);
+	filters.push(`[vedit3]fade=in:0:30[vedit4]`);
+	filters.push(`[aedit1]afade=t=in:st=0:d=2, afade=t=out:st=${d-4}:d=4[aedit2]`);
+
+	var cmd = `${ffmpeg} -y -i "${this.vid_00.path}" -i "${this.vid_01.path}" -i "${INTRO}" -i "${OUTRO}" `;
+    cmd += `-filter_complex "${filters.join(";")}" -map "[vedit4]" -map "[aedit2]" `;
+    cmd += `-c:v libx264 -preset medium -crf 18 -c:a aac "${this.edit.path}"`;
+    debug("command", cmd);
+
+	exec(cmd, {cwd: this.directory}, (error, stdout, stderr) => {
+		if(error) return done(error);
+		// console.log("stdout", stdout);
+		// console.log("stderr", stderr);
+
+		fs.access(this.edit.path, fs.R_OK | fs.W_OK, err => {
+			if(err) return done(err);
+			this.edited = true;
+			this.save(done)
+		});
+	});
+}
+
+// --------------------------------------------------------------------------------------
+StorySchema.methods.upload = function(done) {
+	
+	var fields = ['firstName', 'lastName', 'zipCode', 'emailList', 'createdAt', 'email', 
+		'shortid', 'location', 'startTime', 'endTime',  'sentences'];
+	var obj = _.pick(this.toObject(), fields);
+	debug("uploading", obj);
+
+	var formData = {
+		video: fs.createReadStream(this.edit.path),
+		data: JSON.stringify(obj)
+	};
+	request.post({url: process.env.UPLOAD_ENDPOINT, formData: formData}, (err, httpResponse, body) => {
+		if(err) 			return done(err);
+
+		debug("http response", body);
+		if(body != "OK") 	return done("unexpected response from server: "+body)
+		
+		this.uploaded = true;
+		this.save(done);
+	});
+}
+
+// ----------------------------------------------------------
+StorySchema.statics.scan = function(done) {
+	debug("scanning for unedited stories");
+	this.find({error: null, readyForEdit: true, uploaded: false}).exec((err, docs) => {
+		if( err ) return done( err );
+
+		debug("found", docs.length, "unedited docs");
+        async.eachSeries(docs, function(story, callback) {
+        	var tasks = [];
+        	if(!story.edited) 		tasks.push( story.do_edit.bind(story) );
+        	if(!story.uploaded) 	tasks.push( story.upload.bind(story) );
+        	async.series(tasks, callback);
+        }, done);
+	});
+}
+
+
+module.exports = mongoose.model('Story', StorySchema, 'stories' );
+
+
+

@@ -1,19 +1,20 @@
-var SpeechToText = require('./modules/SpeechToText');
-var FootPedal = require('./modules/FootPedal')
+var SpeechToText = require('../modules/SpeechToText');
+
 const util = require('util');
 
-var active = false;
+// var active = false;
+// var FootPedal = require('./modules/FootPedal')
+// FootPedal.on("press", function(date){
+// 	if(active) {
+// 		SpeechToText.stop();
+// 	} else {
+// 		SpeechToText.start();
+// 	}
+// });
 
-FootPedal.on("press", function(date){
-	if(active) {
-		SpeechToText.stop();
-	} else {
-		SpeechToText.start();
-	}
-});
 
-
-
+SpeechToText.start();
 SpeechToText.on("sentence", function(sentence){
-	console.log(util.inspect(sentence, {depth: 5}));
+	console.log(sentence.text);
+	//console.log(util.inspect(sentence, {depth: 5}));
 });

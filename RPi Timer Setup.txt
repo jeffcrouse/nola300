@@ -1,0 +1,32 @@
+Set up RPi with Noobs
+Change Hostname to 'nolatimer'
+Enable SSH access through Interfacing Options
+Change Boot Option > Desktop / CLI to "Desktop Autologin"
+sudo apt-get update
+sudo apt-get upgrade
+sudo apt-get install libnss-mdns netatalk
+sudo rm /etc/profile.d/sshpwd.sh  # remove annoying message about SSH
+mkdir ~/.config/autostart
+[ADD A FILE "chromium.desktop" WITH THE FOLLOWING]
+
+[Desktop Entry]
+Type=Application
+Exec=/usr/bin/chromium-browser --noerrdialogs --disable-session-crashed-bubble --disable-infobars --kiosk --incognito http://nola300.local:3000/timer
+Hidden=false
+X-GNOME-Autostart-enabled=true
+Name[en_US]=AutoChromium
+Name=AutoChromium
+Comment=Start Chromium when GNOME starts
+
+
+[DISABLE SCREEN BLACKING]
+http://www.geeks3d.com/hacklab/20160108/how-to-disable-the-blank-screen-on-raspberry-pi-raspbian/
+
+[HIDE CURSOR]
+https://stackoverflow.com/questions/41242383/hide-mouse-pointer-on-chromium-kiosk
+
+sudo apt-get install unclutter
+~/.config/lxsession/LXDE-pi/autostart
+ADD LINE:
+@unclutter -idle 0.1
+

@@ -16,6 +16,7 @@ var FootPedal = function(mfg) {
 	var options = { baudRate: 9600 };
 	var closed = false;					// this means INTENTIONALLY CLOSED by the user, not the default state of the port.
 	var re =  new RegExp(mfg);
+	var key = "manufacturer"; //"manufacturer";
 
 	var on_open = function() {
 		debug("opened");
@@ -58,7 +59,7 @@ var FootPedal = function(mfg) {
 			SerialPort.list().then((ports) => {
 				var comName = null;
 				ports.forEach(function(_info) {
-					if(_info.manufacturer && _info.manufacturer.match(re)) 
+					if(_info[key] && _info[key].match(re)) 
 						comName = _info.comName
 				});
 				if(comName==null) 
@@ -85,5 +86,5 @@ var FootPedal = function(mfg) {
 util.inherits(FootPedal, EventEmitter);
 
 
-module.exports = new FootPedal("Teensyduino");
+module.exports = new FootPedal("Teensyduino"); //("Teensyduino");
 

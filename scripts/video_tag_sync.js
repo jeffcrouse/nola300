@@ -18,29 +18,33 @@ mongoose.connect(db_url, {useMongoClient: true}, function(err){
 
 var proc = function(s){ return s.trim().toLowerCase() }
 
-Video.scan(err => {
-	doc.useServiceAccountAuth(creds, function (err) {
-		doc.getRows(1, function (err, rows) {
-			if(err) return console.log(err);
 
-			async.forEachSeries(rows, (row, done) => {
-				Video.findOne({name: row.filename}).exec((err, doc)=>{
-					if(err) return done(err)
-					if(!doc) return done(row.filename+" not found");
 
-					doc.places = row.places.split(",").map(proc);
-					doc.items = row.items.split(",").map(proc);
-					doc.themes = row.themes.split(",").map(proc);
+Video.remove({}, err => {
+	Video.scan(err => {
+		doc.useServiceAccountAuth(creds, function (err) {
+			doc.getRows(1, function (err, rows) {
+				if(err) return console.log(err);
 
-					doc.save(done);
+				async.forEachSeries(rows, (row, done) => {
+					Video.findOne({name: row.filename}).exec((err, doc)=>{
+						if(err) return done(err)
+						if(!doc) return done(row.filename+" not found");
+
+						doc.places = row.places.split(",").map(proc);
+						doc.items = row.items.split(",").map(proc);
+						doc.themes = row.themes.split(",").map(proc);
+
+						doc.save(done);
+					});
+				}, function(err){
+					if(err) console.log(err);
+
+					console.log("done")
+					process.exit();
 				});
-			}, function(err){
-				if(err) console.log(err);
-
-				console.log("done")
-				process.exit();
-			});
-		})
+			})
+		});
 	});
 });
 

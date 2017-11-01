@@ -86,7 +86,7 @@
 				countdown.text(data);
 			});
 
-			socket.on('user', function(story) {
+			socket.on('story', function(story) {
 				console.log("story", story);
 				user_name.text(story.firstName + " " + story.lastName);
 			});

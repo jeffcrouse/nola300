@@ -27366,7 +27366,8 @@ $(document).ready(function(){
 
 	$('.begin.btn').on('click',function (e) {
 		navIndex = 1
-		navScroll()
+		//navScroll()
+        navTransition()
 	});
 
     $('.validateForm').on('click',function (e) {
@@ -27375,7 +27376,8 @@ $(document).ready(function(){
             return
         
         navIndex++
-        navScroll()
+        //navScroll()
+        navTransition()
     })
 
     $('.btnContainer .btn').on('click',function (e) {
@@ -27386,9 +27388,16 @@ $(document).ready(function(){
     	}else if($(this).hasClass('back')){
     		navIndex--
     	}
-    	navScroll()
+    	//navScroll()
+        navTransition()
     });
 
+    //play videos on ipad
+
+    var videos = $('video')
+    for(var i =0; i<videos.length;i++){
+        videos[i].play();
+    }
 
     //test this, make a post request to check room status.
     // $('#instructions_2 .next').on('click', function(e){
@@ -27415,6 +27424,26 @@ function navScroll(){
 }
 console.log(output);
 
+function navTransition () {
+    console.log("this is navIndex", navElements.length)
+    for( var i = 0; i< navElements.length; i++){
+        console.log("hi",i)
+        if(i>navIndex){
+            console.log('navElements[i]', navElements[i])
+            $(navElements[i]).removeClass('selected')
+            $(navElements[i]).find('.container').removeClass('selected')
+            $(navElements[i]).find('.bg .color').removeClass('selected')
+            $(navElements[i]).find('.bg .video').removeClass('selected')
+        }    
+    }
+
+    $(navElements[navIndex]).addClass('selected')
+    $(navElements[navIndex]).find('.bg .video').addClass('selected')
+    setTimeout(()=>{
+        $(navElements[navIndex]).find('.container').addClass('selected')
+        $(navElements[navIndex]).find('.bg .color').addClass('selected')
+    },600)
+}
 
 //example
 function validateForm(){
@@ -27539,7 +27568,8 @@ socket.on('state', function(new_state){
         	waiting_room(false, false, true);
         	setTimeout(function(){
                 navIndex = 0;
-                navScroll();
+                //navScroll();
+                navTransition();
                 waiting_room(true, false, false);
                 form[0].reset();
             }, 3000);
@@ -27554,8 +27584,8 @@ socket.on('state', function(new_state){
     }
 });
 
-socket.on('user', function(user) {
-    console.log(user);
+socket.on('story', function(story) {
+    console.log(story);
 });
 
 

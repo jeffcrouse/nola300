@@ -7,6 +7,15 @@ var EventEmitter = require('events').EventEmitter;
 const spawn = require('child_process').spawn;
 var Sentence = require('./Sentence.js')
 var _ = require('lodash');
+var which = require('which');
+
+
+var rec = "rec";
+which('rec', function (err, resolvedPath) {
+	if(err) throw err;
+ 	rec = resolvedPath;
+});
+
 
 const stt = new SpeechToTextV1();
 var nlu = new NaturalLanguageUnderstandingV1({
@@ -46,9 +55,9 @@ var SpeechToText = function() {
 		debug("spawning rec");
 
 		//proc = spawn('rec', ['-b', 16, '--endian', 'little', '-c', 1, '-r', 16000, '-e', 'signed-integer', '-t', 'wav', '-']);
-		var args = ['--endian', 'little', '-t', 'mp3', '-'];
-		proc = spawn('rec', args);
-		debug('rec', args);
+		var args = ['--endian', 'little', '-t', 'mp3', '-C', '128', '-'];
+		proc = spawn(rec, args);
+		debug(rec, args);
 		proc.on('exit', (code, sig) => {
 			debug(`recProc has exited with code = ${code}`);
 		});

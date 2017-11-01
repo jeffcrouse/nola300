@@ -8,12 +8,21 @@ const async = require('async');
 const fs = require('fs');
 const exec = require("child_process").exec;
 var random = require('mongoose-simple-random');
+var which = require('which');
+
+var ffprobe = "ffprobe";
+which('ffprobe', function (err, resolvedPath) {
+	if(err) throw err;
+	ffprobe = resolvedPath;
+});
+
+
 
 var VideoSchema = Schema({
 	name: 			{ type: String, required: true },
 	file_present:   { type: Boolean, default: false },
-	duration:       { type: Number, default: null },
-	score:          { type: Number, default: 0 },
+	duration: 		{ type: Number, default: null },
+	score: 			{ type: Number, default: 0 },
 	places: 		[ { type: String } ],
 	items: 			[ { type: String } ],
 	themes: 		[ { type: String } ]
@@ -56,7 +65,7 @@ VideoSchema.methods.as_playlist = function() {
 
 // --------------------------------------------------------------------------------------
 VideoSchema.methods.set_duration = function(callback) {
-	var cmd = `ffprobe -i "${this.full_path}"`;
+	var cmd = `${ffprobe} -i "${this.full_path}"`;
 	debug(cmd);
 	exec(cmd, (err, stdout, stderr) => {
 		var matches = stderr.match(/Duration:\s{1}(\d+?):(\d+?):(\d+\.\d+?),/);
@@ -87,23 +96,22 @@ VideoSchema.statics.list = function(callback) {
 
 // --------------------------------------------------------------------------------------
 VideoSchema.statics.scanFiles = function(done) {
-	var self = this;
 
 	debug("scan_files", process.env.VIDEO_ROOT)
-	glob("*.mp4", {cwd: process.env.VIDEO_ROOT}, function(err, files){
+	glob("*.mp4", {cwd: process.env.VIDEO_ROOT}, (err, files) => {
 		if( err ) return done( err );
 
 		//debug("looping through mp4s", files)
-		async.eachSeries(files, function(item, callback){
+		async.eachSeries(files, (item, callback) => {
 			var _root = path.basename(item);
 			//debug("searching for", _root, "in database");
 
-			self.find({name: _root}).exec(function(err, docs) {
+			this.find({name: _root}).exec((err, docs) => {
 				if(err) return callback(err);
 
 				var video = null;
 				if(docs.length==0) {
-					video = new self({name: _root});
+					video = new this({name: _root});
 				} else {
 					video = docs[0]
 				}
@@ -116,17 +124,18 @@ VideoSchema.statics.scanFiles = function(done) {
 
 // --------------------------------------------------------------------------------------
 VideoSchema.statics.scanDatabase = function(done) {
+	
 	debug("scan_db")
-	var self = this;
-	this.find().exec( function( err, docs ) {
+
+	this.find().exec( ( err, docs ) => {
 		if( err ) return done( err );
 		//debug("looping through db documents")
 
-		async.eachSeries(docs, function(item, callback) {
+		async.eachSeries(docs, (item, callback) => {
 			var _path = path.join(process.env.VIDEO_ROOT, item.name)
 
 			//debug("looking for", _path, "in filesystem");
-			fs.stat(_path, function(err, stat) {
+			fs.stat(_path, (err, stat) => {
 				if(err == null) {
 					item.file_present = true;
 				} else if(err.code == 'ENOENT') {

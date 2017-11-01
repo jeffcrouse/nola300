@@ -9,14 +9,14 @@ const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 var socketio = require('socket.io');
 var mongoose = require('mongoose');
-var storage = require('node-persist');
 var _ = require('lodash');
 const { check, validationResult } = require('express-validator/check');
 const { matchedData } = require('express-validator/filter');
 var fs = require("fs");
 const mkdirp = require('mkdirp');
-var shortid = require('shortid');
+
 var Video = require('./Video')
+var Story = require('./Story')
 const async = require('async');
 var hbs = require('hbs');
 const randomWord = require('random-word');
@@ -48,12 +48,6 @@ connect to the database.
 
 
 /*
-┬┌┐┌┬┌┬┐┬┌─┐┬  ┬┌─┐┌─┐
-│││││ │ │├─┤│  │┌─┘├┤ 
-┴┘└┘┴ ┴ ┴┴ ┴┴─┘┴└─┘└─┘
-*/
-
-/*
 ┌─┐┌┬┐┌─┐┌┬┐┌─┐  ┌┬┐┌─┐┌┬┐┌┬┐
 └─┐ │ ├─┤ │ ├┤   ││││ ┬│││ │ 
 └─┘ ┴ ┴ ┴ ┴ └─┘  ┴ ┴└─┘┴ ┴ ┴ 
@@ -76,19 +70,18 @@ state.on("state_change", (old_state, new_state) => {
 
 
 
+/*
+┬┌┐┌┬┌┬┐┬┌─┐┬  ┬┌─┐┌─┐
+│││││ │ │├─┤│  │┌─┘├┤ 
+┴┘└┘┴ ┴ ┴┴ ┴┴─┘┴└─┘└─┘
+*/
+
+
 async.each([process.env.STORAGE_ROOT, process.env.VIDEO_ROOT], mkdirp, function(err){
 	if(err) debug(err);
 })
 
-storage.initSync({dir: "persist"});
-storage.getItem("user", (err, user) => {
-	if(err) 
-		throw new Error(err);
-	if(user) 
-		state.set(STATE.SUBMITTED);
-	else 
-		state.set(STATE.IDLE);
-});
+
 
 /*
 ┌┬┐┌─┐┌┬┐┌─┐┌┐ ┌─┐┌─┐┌─┐
@@ -101,15 +94,15 @@ var db_url = 'mongodb://localhost:27017/nola300-client';
 mongoose.connect(db_url, {useMongoClient: true}, function(err){
 	if(err) throw("couldn't connect to", db_url);
 	else debug("connected to", db_url);
+
+	Story.findOne({active:true}).exec((err, item) => {
+		if(err) throw new Error(err);
+		if(item) state.set(STATE.SUBMITTED);
+		else  state.set(STATE.IDLE);
+	});
+
+	Video.scan(function(err) { if(err) debug(err); });
 });
-
-
-/*
-┬  ┬┬┌┬┐┌─┐┌─┐  ┌┬┐┬┬─┐┌─┐┌─┐┌┬┐┌─┐┬─┐┬ ┬  ┌─┐┌─┐┌─┐┌┐┌
-└┐┌┘│ ││├┤ │ │   │││├┬┘├┤ │   │ │ │├┬┘└┬┘  └─┐│  ├─┤│││
- └┘ ┴─┴┘└─┘└─┘  ─┴┘┴┴└─└─┘└─┘ ┴ └─┘┴└─ ┴   └─┘└─┘┴ ┴┘└┘
-*/
-Video.scan(function(err) { if(err) debug(err); });
 
 
 
@@ -195,6 +188,9 @@ app.get('/onboard', function(req, res, next) {
 	res.render('onboard', data);
 });
 
+
+
+// TODO: Move validation to Mongoose schema???
 var valid = [
 	check('firstName').exists().isLength({ min: 2, max: 20 }).withMessage('Please provide a valid first name'), 
 	check('lastName').exists().isLength({ min: 2, max: 30 }).withMessage('Please provide a valid last name'), 
@@ -208,32 +204,33 @@ app.post(['/onboard', '/submiteEndPoint'], valid, function(req, res, next) {
 	debug("req.body", req.body);
 
 	try {
-		storage.getItem("user", (err, item) => {
-			if(item) throw "user still in progress.";
+		Story.findOne({active:true}).exec((err, doc) => {
 
-			// Validate post request
+			if(doc) throw "story still in progress.";
+
 			const errors = validationResult(req);
-			if(!errors.isEmpty()) {
+			if(!errors.isEmpty())
 				throw errors.array().map(item => { return item.msg; }).join(",");
-			}
 
-			var user = matchedData(req); 
-			//user.emailList = (req.body.emailList) ? true : false;
-			debug(user);
+			var data = matchedData(req); 
 
-			storage.setItem("user", user, (err) => {
+			var story = new Story(data);
+			story.active = true;
+
+			story.save((err, doc) => {
 				if(err) throw err;
 
 				state.set(STATE.SUBMITTED);
-				ui_socket.emit("user", user);
+				
+				ui_socket.emit("story", doc);
 
 				res.json({status: "OK"});
 			});
-		});
+		});	
 	} catch(e) {
 		debug("catch", e);
 		return res.status(422).send(e);
-	}	
+	}
 });
 
 app.get('/videos', function(req, res, next) {
@@ -334,10 +331,10 @@ ui_socket.on("connection", function( client ) {
 
 	client.emit("state", state.get());
 
-	storage.getItem("user", (err, user) => {
+	Story.findOne({active:true}).exec((err, doc) => {
 		if(err) throw new Error(err);
-		if(user) 
-			client.emit("user", user);
+		if(doc) 
+			client.emit("story", doc);
 	});
 
 	client.on("pedal", on_pedal);
@@ -459,7 +456,6 @@ happen:
 When the user hits the foot pedal again (or the timer
 runs out), the session ends. This includes a bunch of 
 actions:
-- A "shortID" is generated
 - Cameras stop recording 
 - ...
 ******************************************************************************************/
@@ -469,6 +465,16 @@ actions:
 
 var cam0 = new CanonCamera("0");
 var cam1 = new CanonCamera("1");
+
+
+// var cam_status = (done) => {
+// 	ui_socket.emit("cam_status", 0, cam0.getIsOpened());
+// 	ui_socket.emit("cam_status", 1, cam1.getIsOpened());
+// 	setTimeout(done, 1000);
+// }
+// async.forever(cam_status, err => {
+// 	debug("cam_status exited", err);
+// });
 
 var timer = new CountdownTimer();
 timer.on("done", function() {
@@ -489,38 +495,31 @@ var start_session = function() {
 
 	state.set(STATE.STARTING);
 
-	var user = null;
-
-	var get_user = done => {
-		storage.getItem("user", (err, item) => {
+	var update_story = done => {
+		Story.findOne({active:true}).exec((err, doc) => {
 			if(err) return done(err);
-			if(!item) return done("no user present. ignoring.");
-			user = item;
-			done(null);
+			if(!doc) return done("no user present. ignoring.");
+			
+			doc.sentences = [];	// reset the sentences in case this is a re-record
+			doc.startTime = Date.now();
+			doc.location = process.env.NOLA_LOCATION;
+			doc.save(done);
 		});
 	}
-
-	var update_user = done => {
-		user.start = Date.now();
-		user.sentences = [];
-		user.location = process.env.NOLA_LOCATION;
-		storage.setItem("user", user, done);
-	}
-
 
 	var start_devices = done => {
 		async.parallel([
 			cam0.record.bind(cam0, null), 
-			cam1.record.bind(cam0, null), 
+			cam1.record.bind(cam1, null), 
 			SpeechToText.start, 
 			OnAirSign.on
 		], done); 
 	}
 
-	async.series([get_user, update_user, send_random_videos, start_devices], err => {
+	async.series([update_story, send_random_videos, start_devices], err => {
 		if(err) return debug(err);
 
-		timer.begin(120000);
+		timer.begin(45000);
 		
 		state.set(STATE.IN_PROGRESS);
 	});
@@ -529,36 +528,43 @@ var start_session = function() {
 //-----------------------------------------------------------------------------------------
 var end_session = function(cancel) {
 	debug("end_session");
-	timer.stop();
 
+	// If we're under 5 seconds, end the session after 5 seconds
+	if(timer.elapsed() < 5000) {
+		var wait = 5000 - timer.elapsed();
+		setTimeout(() => { end_session(cancel); }, wait);
+		return;
+	}
+
+	timer.stop();
 	state.set(STATE.STOPPING);
 
 	blacklist = [];
 	video_socket.emit("blacklist", []);
+	video_socket.emit("idle");
 
+	var story = null;
 
-	var user = null;
-	var directory = null;
+	var wait_2 = done => {
+		setTimeout(done, 2000);
+	}
 
 	var get_user = done => {
 		debug("get_user");
-		storage.getItem("user", (err, item) => {
+
+		Story.findOne({active: true}).exec((err, doc) => {
 			if(err) return done(err);
-			if(!item) return done("no user present. ignoring.");
+			if(!doc) return done("no story present. ignoring.");
 
-			user = item;
-			user.id = shortid.generate();
-			user.end = Date.now();
-			user.duration = user.end - user.start;
-
-			directory = path.join(process.env.STORAGE_ROOT, user.id);
-			done(null);
+			doc.endTime = Date.now();
+			story = doc;
+			doc.save(done);
 		});
 	}
 	
 	var mkdir = done => {
-		debug("mkdir", directory);
-		mkdirp(directory, done);
+		debug("mkdir", story.directory);
+		mkdirp(story.directory, done);
 	}
 
 	var cancel_devices = done => {
@@ -567,34 +573,26 @@ var end_session = function(cancel) {
 
 	var stop_devices = done => {
 		debug("stop_devices");
-		var stop_0 = (cb) => {  cam0.stop(`${directory}/vid_00.mp4`, cb); }
-		var stop_1 = (cb) => {  cam1.stop(`${directory}/vid_01.mp4`, cb); }
+		var stop_0 = (cb) => {  cam0.stop(`${story.directory}/vid_00.mp4`, cb); }
+		var stop_1 = (cb) => {  cam1.stop(`${story.directory}/vid_01.mp4`, cb); }
 		async.parallel([stop_0, stop_1, SpeechToText.stop, OnAirSign.off], done);
 	}
 
-	var save_to_file = done => {
-		debug("save_to_file");
-		var data_file = path.join(directory, "info.json");
-		var data = JSON.stringify(user, null, 4);
-		return fs.writeFile(data_file, data, 'utf8', done);
+	var mark_ready = done => {
+		story.readyForEdit = true;
+		story.save(done);
 	}
 
-	var remove_from_storage = done => {
-		debug("remove_from_storage");
-		storage.removeItem("user", done);
-	}
-	
-	var wait_5 = done => {
-		debug("wait_5");
-		video_socket.emit("idle");
-		setTimeout(done, 5000);
+	var clear_active = done => {
+		debug("clear_active");
+		Story.update({}, {$set: {'active' : false}}, {multi: true}, done);
 	}
 
 	var tasks = [];
 	if(cancel){
-		tasks = [cancel_devices, remove_from_storage, wait_5];
+		tasks = [cancel_devices, clear_active];
 	} else {
-		tasks = [get_user, mkdir, stop_devices, save_to_file, remove_from_storage, wait_5];
+		tasks = [wait_2, get_user, mkdir, stop_devices, mark_ready, clear_active];
 	}
 
 	async.series(tasks, (err) => {
@@ -702,14 +700,12 @@ SpeechToText.on("sentence", (sentence) => {
 		});
 	}
 
-	storage.getItem("user", (err, user) => {
+	Story.findOne({active:true}).exec((err, doc) => {
 		if(err) throw new Error(err);
-		if(!user) return debug("Warning: SpeechToText result with no user to add to.")
+		if(!doc) return debug("Warning: SpeechToText result with no user to add to.")
 
-		user.sentences.push( sentence.toJson() );
-		storage.setItem("user", user).catch(err => {
-			debug("Warning: error saving user after adding sentence.")
-		});
+		doc.sentences.push( sentence.toJson() );
+		doc.save();
 	});
 });
 
@@ -740,16 +736,17 @@ SpeechToText.on("sentence", (sentence) => {
 ██║     ╚██████╔╝███████║   ██║   ██║     ██║  ██║╚██████╔╝╚██████╗███████╗███████║███████║
 ╚═╝      ╚═════╝ ╚══════╝   ╚═╝   ╚═╝     ╚═╝  ╚═╝ ╚═════╝  ╚═════╝╚══════╝╚══════╝╚══════╝
 
-Every 10 seconds, scan process.env.STORAGE_ROOT for completed recordings (defined as any
-folder inside STORAGE_ROOT that has an "info.json" file inside). See the Postprocess 
-module for more information about what happens next. 
+Every 10 seconds...
 
 ******************************************************************************************/
 
-async.forever(postprocess, err => {
-	debug("postprocess returned an error:", err);
-});
 
+async.forever((done) => {
+	Story.scan(err => {
+		if(err) debug(err);
+		setTimeout(done, 10000);
+	})
+}, debug);
 
 
 

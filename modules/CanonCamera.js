@@ -24,29 +24,41 @@ var CanonCamera = function(id) {
 	var args = ['--id', id, '--delete-after-download', "--debug", "--overwrite", "--default-dir", process.env.STORAGE_ROOT];
 	var download_callback = null;
 	var exit_callback = null;
-	var closed = false;
+	var closeRequested = false;
+	var isOpened = false;
+	var serial = null;
+
+	this.getIsOpened = function() {
+		return isOpened;
+	}
 
 	var on_stdout_data = function(data) {
 		data = data.toString().trim();
 		debug(data);
 
-		var words = data.split(" ");
-		if(words[0]=="[status]" || words[0]=="[warning]") {
-			//debug(data);
+		var matches = data.match(/opened session with ([0-9]+)/);
+		if(matches) {
+			isOpened = true;
+			serial = matches[1];
+			return;
+		}
 
-			if(words[1]=="downloaded") {
-				if(download_callback) {
-					download_callback(null, words[2]);
-					download_callback = null;
-				}
+		matches = data.match(/downloaded ([^ ]+)/);
+		if(matches) {
+			var filename = matches[1];
+			if(download_callback) {
+				download_callback(null, filename);
+				download_callback = null;
 			}
+			return;
+		}
 
-			if(words[1]=="done") {
-				if(exit_callback) {
-					exit_callback();
-					exit_callback = null;
-				}
+		if(data.match(/exiting/)) {
+			if(exit_callback) {
+				exit_callback();
+				exit_callback = null;
 			}
+			return;
 		}
 	}
 
@@ -62,6 +74,7 @@ var CanonCamera = function(id) {
 
 	var on_close = function(code) {
 		debug("child process exited with code "+code);
+		isOpened = false;
 		proc = null;
 	}
 	
@@ -102,7 +115,7 @@ var CanonCamera = function(id) {
 	this.close = function(callback) {
 		if(!proc || !proc.connected) return callback();
 
-		closed = true;
+		closeRequested = true;
 		var command = "exit";
 		debug(command);
 		proc.send(command, err => {
@@ -114,7 +127,7 @@ var CanonCamera = function(id) {
 
 
 	var stay_connected = function(done) {
-		if(closed) return;
+		if(closeRequested) return;
 
 		if(!proc || !proc.connected) {
 			debug("canon-cli "+args.join(" "));
@@ -125,7 +138,7 @@ var CanonCamera = function(id) {
 			proc.on('close', on_close);
 			//proc.send("stop");
 		}
-		if(!closed) setTimeout(done, 2000);
+		if(!closeRequested) setTimeout(done, 2000);
 	}
 
 	async.forever(stay_connected, err => {

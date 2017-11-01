@@ -3,9 +3,9 @@ const util = require('util');
 //process.env['DEBUG']="onair";
 var debug = require('debug')('onair');
 
-SerialPort.list(function (err, ports) {
-	ports.forEach(function(_info) { console.log(util.inspect(_info)); });
-});
+// SerialPort.list(function (err, ports) {
+// 	ports.forEach(function(_info) { console.log(util.inspect(_info)); });
+// });
 
 var OnAirSign = function(serial) {
 
@@ -14,6 +14,7 @@ var OnAirSign = function(serial) {
 	var options = { baudRate: 9600 };
 	var closed = false;
 	var re =  new RegExp(serial);
+	var key = "serialNumber";
 	var on = false;
 
 	// ---------------------------
@@ -77,7 +78,7 @@ var OnAirSign = function(serial) {
 			SerialPort.list().then((ports) => {
 				var comName = null;
 				ports.forEach(function(_info) {
-					if(_info.serialNumber && _info.serialNumber.match(re)) 
+					if(_info[key] && _info[key].match(re)) 
 						comName = _info.comName
 				});
 				if(comName==null) 
@@ -102,4 +103,4 @@ var OnAirSign = function(serial) {
 }
 
 
-module.exports = new OnAirSign("85438333935351019232");
+module.exports = new OnAirSign("85438333935351A02251");

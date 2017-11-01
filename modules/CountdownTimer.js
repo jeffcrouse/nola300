@@ -38,6 +38,11 @@ var CountdownTimer = function() {
 		}
 	}
 
+	this.elapsed = function() {
+		return Date.now() - start_time;
+	}
+
+
 	var tick = function() {
 		if(start_time) self.emit("tick", self.get_time_str());
 		setTimeout(tick, 100);

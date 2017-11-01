@@ -59,7 +59,6 @@
 		<script>
 			var socket = io.connect("/ui");
 			var container = $("#main");
-			var user = null;
 
 			socket.on('countdown', function (data) {
 				container.addClass("timer");
@@ -67,10 +66,10 @@
 				container.text( data );
 			});
 
-			socket.on('user', function(_user) {
-				user = _user;
-				console.log(user);
-				container.html( "Welcome<br />"+user.firstName + " "+user.lastName );			
+			socket.on('story', function(story) {
+
+				console.log(story);
+				container.html( "Welcome<br />"+story.firstName + " "+story.lastName );			
 				container.removeClass("timer");
 				container.addClass("welcome");
 			});

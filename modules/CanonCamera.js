@@ -90,7 +90,6 @@ var CanonCamera = function(id) {
 		});
 	}
 
-
 	// This shouldn't return until the resulting video is completely done downloading.
 	this.stop = function(filename, callback){
 		callback = callback || function(){};

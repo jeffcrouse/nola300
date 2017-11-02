@@ -29,7 +29,7 @@ var CountdownTimer = function() {
 		clearTimeout(timeout);
 	}
 
-	this.get_time_str = function() {
+	this.get_time = function() {
 		if(start_time) {
 			var elapsed = Date.now() - start_time;
 			return msToTime(countdown_from - elapsed);
@@ -44,12 +44,10 @@ var CountdownTimer = function() {
 
 
 	var tick = function() {
-		if(start_time) self.emit("tick", self.get_time_str());
+		if(start_time) self.emit("tick", self.get_time());
 		setTimeout(tick, 100);
 	}
 	tick();
-	
-
 
 	var msToTime = function(duration) {
 	    var milliseconds = parseInt((duration%1000)/100)
@@ -61,7 +59,7 @@ var CountdownTimer = function() {
 	    minutes = (minutes < 10) ? "0" + minutes : minutes;
 	    seconds = (seconds < 10) ? "0" + seconds : seconds;
 
-	    return minutes + ":" + seconds;
+	    return [hours, minutes, seconds];
 	}
 }
 

@@ -27452,13 +27452,14 @@ function validateForm(){
     var fail_log = '';
 
     form.find( 'select, textarea, input' ).each(function(){
+    	var name = $( this ).attr( 'name' );
         if( ! $( this ).prop( 'required' )){
 
         } else {
             if ( ! $( this ).val() ) {
                 fail = true;
                 $( this ).addClass("required");
-                name = $( this ).attr( 'name' );
+                
                 fail_log += name + " is required \n";
             }
 

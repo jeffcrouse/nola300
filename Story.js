@@ -25,17 +25,16 @@ which('ffmpeg', function (err, resolvedPath) {
 var SentenceSchema = Schema({
 	text: 		{ type: String, required: true },
 	elapsed: 	{ type: Number, required: true },
-	//time: 		{ type: Number, required: true },
 	nlu: 		{ type: Schema.Types.Mixed, default: null }
 });
 
 var StorySchema = Schema({
 	active:  		{ type: Boolean, default: true },
 	createdAt:  	{ type: Date, default: Date.now },
-	firstName: 		{ type: String, required: true },
-	lastName: 		{ type: String, required: true },
+	firstName: 		{ type: String, required: true, min: 2, max: 20 },
+	lastName: 		{ type: String, required: true, min: 2, max: 30 },
 	email: 			{ type: String, required: false },
-	zipCode: 		{ type: Number },
+	zipCode: 		{ type: Number, required: true },
 	emailList: 		{ type: Boolean, default: false },
 	shortid: 		{ type: String, default: shortid.generate },
 	location: 		{ type: String, default: "mobile" },
@@ -48,6 +47,7 @@ var StorySchema = Schema({
 	uploaded: 		{ type: Boolean, default: false }
 });
 
+/*
 var lean = function(doc, ret, options) {
 	ret.id = ret._id;
 	delete ret._id;
@@ -60,7 +60,7 @@ StorySchema.options.toObject.transform = lean;
 
 if (!StorySchema.options.toJSON) StorySchema.options.toJSON = {};
 StorySchema.options.toJSON.transform = lean;
-
+*/
 
 StorySchema.virtual('directory').get(function(){
 	return path.join(process.env.STORAGE_ROOT, this.shortid);
@@ -81,6 +81,10 @@ StorySchema.virtual('edit.path').get(function(){
 StorySchema.virtual('duration').get(function(){
 	return this.endTime - this.startTime;
 });
+
+StorySchema.path('email').validate = function(email) {
+	return /^[a-zA-Z0-9.!#$%&’*+\/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/.test(email)
+};
 
 
 // StorySchema.pre('save', function(next){
@@ -160,11 +164,11 @@ StorySchema.methods.upload = function(done) {
 
 // ----------------------------------------------------------
 StorySchema.statics.scan = function(done) {
-	debug("scanning for unedited stories");
+	//debug("scanning for unedited stories");
 	this.find({error: null, readyForEdit: true, uploaded: false}).exec((err, docs) => {
 		if( err ) return done( err );
 
-		debug("found", docs.length, "unedited docs");
+		//debug("found", docs.length, "unedited docs");
         async.eachSeries(docs, function(story, callback) {
         	var tasks = [];
         	if(!story.edited) 		tasks.push( story.do_edit.bind(story) );

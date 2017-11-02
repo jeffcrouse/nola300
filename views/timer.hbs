@@ -7,47 +7,35 @@
 		<title>Nola300 Timer</title>
 		<!-- Bootstrap CSS -->
 		<link rel="stylesheet" href="/css/bootstrap.min.css">
-		<link rel="stylesheet" href="/fonts/digital-7/stylesheet.css" type="text/css" charset="utf-8" />
-		<style>
-		body {
-			color: red;
-			background: black;
-			overflow: hidden;
-			cursor: none;
-		}
-		.container-fluid {
-			font-family: 'digital-7_monomono';
-			text-align: center;
-		}
-		.message {
-			position:absolute;
-			top: 50%;
-			width: 100%;
-
-		}
-		.welcome{
-			font-size: 15vw;
-			line-height: 15vw;
-
-			height: 30vw;
-			margin-top:-15vw;
-		}
-		.timer {
-			font-size: 40vw;
-			line-height: 40vw;
-
-			height: 40vw;
-			margin-top:-20vw;
-		}
-		</style>
-
+		<link rel="stylesheet" href="/css/timer.css">
 	</head>
 	<body>
 
 		<div class="container-fluid">
-			<div id="main" class="message timer">
-				00:00
-			</div>
+			
+			<div id="main" class="valign">
+
+				<div id="timer">:00</div>
+
+				<div id="thanks">
+					<div class="header">Thanks!</div>
+					<div class="footer">
+						We’ll email your story after <br />
+						moderation within 24 hours.
+					</div>
+				</div> <!-- #thanks -->
+
+				<div id="welcome">
+					<div class="header">
+						<div id="firstName">John</div>
+						<div id="lastName">Doe</div>
+					</div>
+					<img class="pedal" src="/images/footpedal.png" />
+					<div class="footer">Tap foot pedal to start recording.</div>
+				</div> <!-- #welcome -->
+
+			</div> <!-- #main -->
+
 		</div>
 
 		<!-- Optional JavaScript -->
@@ -58,28 +46,34 @@
 		<script src="/socket.io/socket.io.js"></script>
 		<script>
 			var socket = io.connect("/ui");
-			var container = $("#main");
+			var timer = $("#timer");
+			var welcome = $("#welcome");
+			var thanks = $("#thanks");
 
 			socket.on('countdown', function (data) {
-				container.addClass("timer");
-				container.removeClass("welcome");
-				container.text( data );
+				timer.text( ":"+data[2] );
+				welcome.hide();
+				thanks.hide();
+				timer.show();
 			});
 
 			socket.on('story', function(story) {
-
 				console.log(story);
-				container.html( "Welcome<br />"+story.firstName + " "+story.lastName );			
-				container.removeClass("timer");
-				container.addClass("welcome");
+				welcome.show();
+				thanks.hide();
+				timer.hide();
+				$("#firstName").text(story.firstName);
+				$("#lastName").text(story.lastName);		
 			});
 
 			socket.on('state', function(state){
+				console.log(state, Date.now());
 				switch(state) {
 					case "idle":
-						container.text("00:00");
-						container.addClass("timer");
-						container.removeClass("welcome");
+						timer.text(":00");
+						welcome.hide();
+						thanks.hide();
+						timer.hide();
 						break;
 					case "submitted":
 						break;
@@ -88,9 +82,9 @@
 					case "in progress":
 						break;
 					case "stopping":
-						container.removeClass("timer");
-						container.addClass("welcome");
-						container.text( "Thanks!" );
+						thanks.show();
+						welcome.hide();
+						timer.hide();
 						break;
 				}
 			});

@@ -14,9 +14,9 @@ var FootPedal = function(mfg) {
 	var self = this;
 	var port = null;
 	var options = { baudRate: 9600 };
-	var closed = false;					// this means INTENTIONALLY CLOSED by the user, not the default state of the port.
+	var closeRequested = false;					// this means INTENTIONALLY CLOSED by the user, not the default state of the port.
 	var re =  new RegExp(mfg);
-	var key = "manufacturer"; //"manufacturer";
+	var key = "manufacturer"; 
 
 	var on_open = function() {
 		debug("opened");
@@ -37,12 +37,14 @@ var FootPedal = function(mfg) {
 
 	var on_close = function(data) {
 		debug("on_close");
-		closed = true;
+
 		port = null;
 	}
 
 	this.close = function(callback) {
+		closeRequested = true;
 		if(!port) return callback(null);
+
 		
 		debug("closing");
 		callback();
@@ -51,7 +53,7 @@ var FootPedal = function(mfg) {
 
 
 	var stay_connected = function() {
-		if(closed) return;
+		if(closeRequested) return;
 
 		if(port==null)  {
 			debug("port closed. attemping to open")
@@ -77,7 +79,7 @@ var FootPedal = function(mfg) {
 				port.on('close', on_close);
 			})
 		}
-		if(!closed) setTimeout( stay_connected, 1000 );
+		if(!closeRequested) setTimeout( stay_connected, 1000 );
 	};
 
 	stay_connected();

@@ -1,0 +1,93 @@
+@font-face {
+  font-family: "F37Bolton-Regular";
+  src: url("../assets/fonts/F37Bolton-Regular.svg#F37Bolton-Regular") format("svg");
+  src: url("../assets/fonts/F37Bolton-Regular.otf") format("opentype");
+  src: url("../assets/fonts/F37Bolton-Regular.woff") format("woff");
+  src: url("../assets/fonts/F37Bolton-Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal; }
+
+@font-face {
+  font-family: "F37Bolton-Bold";
+  src: url("../assets/fonts/F37Bolton-Bold.svg#F37Bolton-Bold") format("svg");
+  src: url("../assets/fonts/F37Bolton-Bold.otf") format("opentype");
+  src: url("../assets/fonts/F37Bolton-Bold.woff") format("woff");
+  src: url("../assets/fonts/F37Bolton-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal; }
+
+@font-face {
+  font-family: "F37Bolton-Light";
+  src: url("../assets/fonts/F37Bolton-Light.svg#F37Bolton-Light") format("svg");
+  src: url("../assets/fonts/F37Bolton-Light.otf") format("opentype");
+  src: url("../assets/fonts/F37Bolton-Light.woff") format("woff");
+  src: url("../assets/fonts/F37Bolton-Light.ttf") format("truetype");
+  font-weight: lighter;
+  font-style: normal; }
+
+@font-face {
+  font-family: "F37Bolton-Thin";
+  src: url("../assets/fonts/F37Bolton-Thin.svg#F37Bolton-Thin") format("svg");
+  src: url("../assets/fonts/F37Bolton-Thin.otf") format("opentype");
+  src: url("../assets/fonts/F37Bolton-Thin.woff") format("woff");
+  src: url("../assets/fonts/F37Bolton-Thin.ttf") format("truetype");
+  font-weight: 100;
+  font-style: normal; }
+
+
+body {
+	color: white;
+	background: black;
+	overflow: hidden;
+	cursor: none;
+	text-align: center;
+}
+.valign {
+	position:absolute;
+	top: 50%;
+	width: 100%;
+}
+#timer {
+	font-family: 'F37Bolton-Thin';
+	font-size: 50vw;
+	line-height: 50vw;
+	height: 50vw;
+	margin-top:-30vw;
+	display: none;
+}
+#welcome {
+	height: 60vw;
+	margin-top:-30vw;
+	display: none;
+}
+#welcome .header {
+	font-family: 'F37Bolton-Bold';
+	font-size: 15vw;
+	line-height: 15vw;
+	margin-bottom: 2vw;
+}
+#welcome .footer {
+	font-family: 'F37Bolton-Regular';
+	font-size: 4vw;
+	margin-top: 3vw;
+}
+#thanks {
+	height: 50vw;
+	margin-top:-25vw;
+	display: none;
+}
+#thanks .header {
+	font-family: 'F37Bolton-Thin';
+	font-size: 15vw;
+	line-height: 15vw;
+	margin-bottom: 2vw;
+}
+#thanks .footer {
+	font-family: 'F37Bolton-Light';
+	font-size: 4.5vw;
+	line-height: 5.5vw;
+}
+img.pedal {
+	width: 30vw; 
+	height: auto;
+}

@@ -10,11 +10,10 @@ const bodyParser = require('body-parser');
 var socketio = require('socket.io');
 var mongoose = require('mongoose');
 var _ = require('lodash');
-const { check, validationResult } = require('express-validator/check');
-const { matchedData } = require('express-validator/filter');
 var fs = require("fs");
 const mkdirp = require('mkdirp');
-
+const { check, validationResult } = require('express-validator/check');
+// const { matchedData } = require('express-validator/filter');
 var Video = require('./Video')
 var Story = require('./Story')
 const async = require('async');
@@ -148,14 +147,6 @@ hbs.registerHelper('json', function(obj) {
 
 
 
-
-
-
-
-
-
-
-
 /******************************************************************************************
 ██████╗  ██████╗ ██╗   ██╗████████╗███████╗███████╗
 ██╔══██╗██╔═══██╗██║   ██║╚══██╔══╝██╔════╝██╔════╝
@@ -190,7 +181,6 @@ app.get('/onboard', function(req, res, next) {
 
 
 
-// TODO: Move validation to Mongoose schema???
 var valid = [
 	check('firstName').exists().isLength({ min: 2, max: 20 }).withMessage('Please provide a valid first name'), 
 	check('lastName').exists().isLength({ min: 2, max: 30 }).withMessage('Please provide a valid last name'), 
@@ -199,38 +189,37 @@ var valid = [
 	check('acceptTerms').exists().withMessage('Please accept terms and conditions'),
 	check('emailList').exists()
 ];
-
-app.post(['/onboard', '/submiteEndPoint'], valid, function(req, res, next) {
+app.post('/onboard', valid, function(req, res, next) {
 	debug("req.body", req.body);
 
-	try {
-		Story.findOne({active:true}).exec((err, doc) => {
+	Story.findOne({active:true}).exec((err, doc) => {
 
-			if(doc) throw "story still in progress.";
+		if(doc) 
+			return res.status(422).send("story still in progress.");
 
-			const errors = validationResult(req);
-			if(!errors.isEmpty())
-				throw errors.array().map(item => { return item.msg; }).join(",");
+		const errors = validationResult(req);
+		if(!errors.isEmpty()) {
+			var message = errors.array().map(item => { return item.msg; }).join(",");
+			return res.status(422).send(message);
+		}
 
-			var data = matchedData(req); 
 
-			var story = new Story(data);
-			story.active = true;
+		var data = _.pick(req.body, ["firstName", "lastName", "zipCode", "email", "acceptTerms", "emailList"]);
+		var story = new Story(data);
+		story.active = true;
 
-			story.save((err, doc) => {
-				if(err) throw err;
+		story.save((err, doc) => {
+			if(err) {
+				debug("mongoose error", err);
+				return res.status(422).send(err);
+			}
 
-				state.set(STATE.SUBMITTED);
-				
-				ui_socket.emit("story", doc);
+			state.set(STATE.SUBMITTED);
+			ui_socket.emit("story", doc);
 
-				res.json({status: "OK"});
-			});
-		});	
-	} catch(e) {
-		debug("catch", e);
-		return res.status(422).send(e);
-	}
+			res.json({status: "OK"});
+		});
+	});	
 });
 
 app.get('/videos', function(req, res, next) {
@@ -467,14 +456,14 @@ var cam0 = new CanonCamera("0");
 var cam1 = new CanonCamera("1");
 
 
-// var cam_status = (done) => {
-// 	ui_socket.emit("cam_status", 0, cam0.getIsOpened());
-// 	ui_socket.emit("cam_status", 1, cam1.getIsOpened());
-// 	setTimeout(done, 1000);
-// }
-// async.forever(cam_status, err => {
-// 	debug("cam_status exited", err);
-// });
+var cam_status = (done) => {
+	ui_socket.emit("cam_status", 0, cam0.getIsOpened());
+	ui_socket.emit("cam_status", 1, cam1.getIsOpened());
+	setTimeout(done, 1000);
+}
+async.forever(cam_status, err => {
+	debug("cam_status exited", err);
+});
 
 var timer = new CountdownTimer();
 timer.on("done", function() {
@@ -482,8 +471,8 @@ timer.on("done", function() {
 	if(state.is(STATE.IN_PROGRESS)) 
 		end_session(false);
 });
-timer.on("tick", (str) => {
-	ui_socket.emit('countdown', str);
+timer.on("tick", (t) => {
+	ui_socket.emit('countdown', t);
 });
 
 
@@ -532,6 +521,7 @@ var end_session = function(cancel) {
 	// If we're under 5 seconds, end the session after 5 seconds
 	if(timer.elapsed() < 5000) {
 		var wait = 5000 - timer.elapsed();
+		debug("too short!  stopping automatically in", wait);
 		setTimeout(() => { end_session(cancel); }, wait);
 		return;
 	}

@@ -42,7 +42,7 @@
 		-->
 
 		<div class="jumbotron">
-			<h1 class="display-3" id="countdown">00:00</h1>
+			<h1 class="display-3" id="countdown">00:00:00</h1>
 			<h1 class="display-4" id="user_name">No User</h1>
 			
 			<p class="lead" id="session_state">Not Recording</p>
@@ -51,6 +51,10 @@
 				<a class="btn btn-lg btn-success" href="#" role="button" id="pedal_button">Pedal</a>
 			</p>
 			<p><a class="btn btn-lg btn-success disabled" href="#" role="button" id="cancel_button">Cancel</a></p>
+
+			<div>
+				<span id="cam0">cam0</span> | <span id="cam1">cam1</span>
+			</div>
 		</div>
 		<!--			
 		<footer class="footer">
@@ -81,20 +85,24 @@
 			var session_state = $("#session_state");
 
 
-			socket.on('countdown', function (data) {
+			socket.on('countdown',  (data) => {
 				//console.log('countdown', data );
-				countdown.text(data);
+				countdown.text( data.join(":") );
 			});
 
-			socket.on('story', function(story) {
+			socket.on('cam_status', (num, opened) => {
+				$("#cam"+num).css('color', opened ? "green": "red");
+				console.log(num, opened);
+			});
+
+			socket.on('story', (story) => {
 				console.log("story", story);
 				user_name.text(story.firstName + " " + story.lastName);
 			});
 
-
-			socket.on('state', function(new_state){
-				console.log("new_state", new_state);
-				switch(new_state) {
+			socket.on('state', (state) => {
+				console.log("state", state);
+				switch(state) {
 					case APP_STATE.IDLE:
 						session_state.text("Idle");
 						countdown.text("00:00");

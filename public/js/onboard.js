@@ -1,4 +1,36 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+"use strict";
+
+var tester = /^[-!#$%&'*+\/0-9=?A-Z^_a-z{|}~](\.?[-!#$%&'*+\/0-9=?A-Z^_a-z`{|}~])*@[a-zA-Z0-9](-?\.?[a-zA-Z0-9])*\.[a-zA-Z](-?[a-zA-Z0-9])+$/;
+// Thanks to:
+// http://fightingforalostcause.net/misc/2006/compare-email-regex.php
+// http://thedailywtf.com/Articles/Validating_Email_Addresses.aspx
+// http://stackoverflow.com/questions/201323/what-is-the-best-regular-expression-for-validating-email-addresses/201378#201378
+exports.validate = function(email)
+{
+	if (!email)
+		return false;
+		
+	if(email.length>254)
+		return false;
+
+	var valid = tester.test(email);
+	if(!valid)
+		return false;
+
+	// Further checking of some things regex can't handle
+	var parts = email.split("@");
+	if(parts[0].length>64)
+		return false;
+
+	var domainParts = parts[1].split(".");
+	if(domainParts.some(function(part) { return part.length>63; }))
+		return false;
+
+	return true;
+}
+
+},{}],2:[function(require,module,exports){
 /*!
  * jQuery JavaScript Library v3.2.1
  * https://jquery.com/
@@ -10253,7 +10285,7 @@ if ( !noGlobal ) {
 return jQuery;
 } );
 
-},{}],2:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 (function (global){
 /**
  * @license
@@ -27341,9 +27373,10 @@ return jQuery;
 }.call(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],3:[function(require,module,exports){
-var lodash = require('lodash');
-var $ = require('jquery');
+},{}],4:[function(require,module,exports){
+const lodash = require('lodash');
+const $ = require('jquery');
+const validator = require("email-validator");
 
 var output = lodash.without([1, 2, 3], 1);
 
@@ -27352,6 +27385,7 @@ var navIndex=0;
 var navElements = []
 var form;
 var formIsValid=false;
+var time= 1;
 
 $(document).ready(function(){
 
@@ -27359,7 +27393,7 @@ $(document).ready(function(){
 	form = $('.formContainer form');
 	
 	submitForm();
-
+    recordingControl();
 	$('.submitForm').on('click',function (e) {
 		form.trigger("submit");
 	})
@@ -27424,6 +27458,32 @@ function navScroll(){
 }
 console.log(output);
 
+
+
+function recordingControl(){
+    let control
+    $('.startRecording').click(()=>{
+        $('.timmerContainer .lineCircle').removeClass("paused")
+        $('.go.hidden').removeClass('hidden')
+        //centesimas++;
+        control = setInterval(()=>{
+            time++;
+            if(time<10){
+                $('.time')[0].innerHTML="00:0"+time;
+            }else{
+                $('.time')[0].innerHTML="00:"+time;
+            }
+        },1000);
+
+    })
+    $('.stopRecording').click(()=>{
+        $('.timmerContainer .lineCircle').addClass("paused")
+        clearInterval(control);
+        //to do, stop recording
+    })
+}
+
+
 function navTransition () {
     console.log("this is navIndex", navElements.length)
     for( var i = 0; i< navElements.length; i++){
@@ -27452,14 +27512,13 @@ function validateForm(){
     var fail_log = '';
 
     form.find( 'select, textarea, input' ).each(function(){
-    	var name = $( this ).attr( 'name' );
         if( ! $( this ).prop( 'required' )){
 
         } else {
             if ( ! $( this ).val() ) {
                 fail = true;
                 $( this ).addClass("required");
-                
+                name = $( this ).attr( 'name' );
                 fail_log += name + " is required \n";
             }
 
@@ -27471,6 +27530,18 @@ function validateForm(){
             }
         }
     });
+
+    if(!validator.validate(form[0].email.value)){
+        console.log("not an email", form[0].email.value)
+        fail=true;
+        $(form[0].email).addClass('required')
+    }
+    
+    if(form[0].zipCode.value.length!=5){
+        console.log("not varlid zip code")
+        fail=true;
+        $(form[0].zipCode).addClass('required')
+    }
 
     //submit if fail never got set to true
     if ( ! fail ) {
@@ -27585,9 +27656,9 @@ socket.on('state', function(new_state){
     }
 });
 
-socket.on('story', function(story) {
-    console.log(story);
+socket.on('user', function(user) {
+    console.log(user);
 });
 
 
-},{"jquery":1,"lodash":2}]},{},[3]);
+},{"email-validator":1,"jquery":2,"lodash":3}]},{},[4]);

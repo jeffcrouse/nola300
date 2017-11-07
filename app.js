@@ -170,13 +170,9 @@ app.get('/timer', function(req, res, next) {
 });
 
 app.get('/onboard', function(req, res, next) {
-	var data = {
-		layout: false,
-		// places: EntitiesList.places,
-		// items: EntitiesList.items,
-		// themes: EntitiesList.themes
-	}
-	res.render('onboard', data);
+	var data = { layout: false };
+	var template = "mobile";
+	res.render(template, data);
 });
 
 
@@ -531,7 +527,6 @@ var end_session = function(cancel) {
 
 	blacklist = [];
 	video_socket.emit("blacklist", []);
-	video_socket.emit("idle");
 
 	var story = null;
 

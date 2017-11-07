@@ -515,6 +515,92 @@ body {
         body #waiting_room .container .ready .circularButton h1 {
           font-size: 38rem;
           font-weight: normal; }
+    body #waiting_room .container.air_port .ready, body #waiting_room .container.air_port .go {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end; }
+      body #waiting_room .container.air_port .ready.hidden, body #waiting_room .container.air_port .go.hidden {
+        display: none; }
+      body #waiting_room .container.air_port .ready h1, body #waiting_room .container.air_port .go h1 {
+        text-decoration: underline;
+        font-size: 54rem;
+        letter-spacing: 3rem;
+        font-family: 'F37Bolton-regular';
+        font-weight: 100;
+        margin: 0 auto; }
+    body #waiting_room .container.air_port .ready .circularButton {
+      position: relative;
+      -moz-transform: translate(0, 0);
+      -o-transform: translate(0, 0);
+      -ms-transform: translate(0, 0);
+      -webkit-transform: translate(0, 0);
+      transform: translate(0, 0);
+      margin: 0 auto;
+      margin-bottom: 70rem;
+      left: auto;
+      top: auto;
+      width: 320rem;
+      height: 320rem; }
+    body #waiting_room .container.air_port .ready p {
+      letter-spacing: 1rem; }
+    body #waiting_room .container.air_port .ready .letteringContainer {
+      width: 250rem;
+      margin: 35rem auto;
+      margin-bottom: 60rem; }
+      body #waiting_room .container.air_port .ready .letteringContainer svg .st0, body #waiting_room .container.air_port .ready .letteringContainer svg .st3, body #waiting_room .container.air_port .ready .letteringContainer svg .st5 {
+        fill: #FFFFFF; }
+    body #waiting_room .container.air_port .ready .btnContainer {
+      -moz-transform: translate(0, 0);
+      -o-transform: translate(0, 0);
+      -ms-transform: translate(0, 0);
+      -webkit-transform: translate(0, 0);
+      transform: translate(0, 0);
+      left: auto;
+      bottom: auto;
+      position: relative;
+      margin-bottom: 100rem; }
+      body #waiting_room .container.air_port .ready .btnContainer .btn {
+        width: 190rem;
+        height: 60rem; }
+        body #waiting_room .container.air_port .ready .btnContainer .btn p {
+          letter-spacing: 5rem;
+          font-family: 'F37Bolton';
+          font-weight: 500; }
+    body #waiting_room .container.air_port .go .timmerContainer {
+      display: flex;
+      justify-content: center;
+      flex-direction: column;
+      color: #FF1F4E;
+      margin: 0 auto;
+      margin-bottom: 70rem;
+      width: 320rem;
+      height: 320rem; }
+      body #waiting_room .container.air_port .go .timmerContainer p {
+        font-size: 35rem;
+        font-family: 'F37Bolton-regular', sans-serif, arial;
+        margin: 0 auto;
+        margin-top: 20rem; }
+      body #waiting_room .container.air_port .go .timmerContainer .dottedCircle, body #waiting_room .container.air_port .go .timmerContainer .lineCircle {
+        border-radius: 300rem;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%; }
+      body #waiting_room .container.air_port .go .timmerContainer .dottedCircle svg g {
+        opacity: 0.9; }
+      body #waiting_room .container.air_port .go .timmerContainer .lineCircle svg {
+        stroke-dasharray: 910;
+        stroke-dashoffset: 910;
+        transform: rotate(-90deg);
+        animation: filled 46s linear forwards; }
+      body #waiting_room .container.air_port .go .timmerContainer .lineCircle.paused svg {
+        -webkit-animation-play-state: paused;
+        animation-play-state: paused; }
+
+@keyframes filled {
+  to {
+    stroke-dashoffset: 0; } }
   body #instructions_1 .bg .color, body #instructions_1 .bg .video {
     background-color: #2BC3E7; }
   body #instructions_2 .bg .color {

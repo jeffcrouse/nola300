@@ -44,10 +44,11 @@ var StorySchema = Schema({
 	error: 			{ type: String, default: null },
 	readyForEdit: 	{ type: Boolean, default: false },
 	edited: 		{ type: Boolean, default: false },
-	uploaded: 		{ type: Boolean, default: false }
+	uploaded: 		{ type: Boolean, default: false },
+	infoed: 		{ type: Boolean, default: false }
 });
 
-/*
+
 var lean = function(doc, ret, options) {
 	ret.id = ret._id;
 	delete ret._id;
@@ -60,7 +61,7 @@ StorySchema.options.toObject.transform = lean;
 
 if (!StorySchema.options.toJSON) StorySchema.options.toJSON = {};
 StorySchema.options.toJSON.transform = lean;
-*/
+
 
 StorySchema.virtual('directory').get(function(){
 	return path.join(process.env.STORAGE_ROOT, this.shortid);
@@ -78,6 +79,10 @@ StorySchema.virtual('edit.path').get(function(){
 	return path.join(process.env.STORAGE_ROOT, this.shortid, "edit.mp4");
 });
 
+StorySchema.virtual('info.path').get(function(){
+	return path.join(process.env.STORAGE_ROOT, this.shortid, "info.txt");
+});
+
 StorySchema.virtual('duration').get(function(){
 	return this.endTime - this.startTime;
 });
@@ -90,6 +95,7 @@ StorySchema.path('email').validate = function(email) {
 // StorySchema.pre('save', function(next){
 // 	if (!this.isNew) return next(null);
 // });
+
 
 
 // --------------------------------------------------------------------------------------
@@ -162,21 +168,29 @@ StorySchema.methods.upload = function(done) {
 	});
 }
 
+// --------------------------------------------------------------------------------------
+StorySchema.methods.export = function(done) {
+	fs.writeFile(this.info.path, this.toJSON(), done); 
+}
+
 // ----------------------------------------------------------
 StorySchema.statics.scan = function(done) {
 	//debug("scanning for unedited stories");
-	this.find({error: null, readyForEdit: true, uploaded: false}).exec((err, docs) => {
+	this.find({error: null, readyForEdit: true,uploaded: false}).exec((err, docs) => {
 		if( err ) return done( err );
 
 		//debug("found", docs.length, "unedited docs");
         async.eachSeries(docs, function(story, callback) {
-        	var tasks = [];
-        	if(!story.edited) 		tasks.push( story.do_edit.bind(story) );
-        	if(!story.uploaded) 	tasks.push( story.upload.bind(story) );
+			var tasks = [];
+			if(!story.edited) 		tasks.push( story.do_edit.bind(story) );
+			if(!story.infoed) 		tasks.push( story.export.bind(story) );
+			if(!story.uploaded) 	tasks.push( story.upload.bind(story) );
         	async.series(tasks, callback);
         }, done);
 	});
 }
+
+
 
 
 module.exports = mongoose.model('Story', StorySchema, 'stories' );

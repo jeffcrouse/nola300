@@ -27394,13 +27394,14 @@ $(document).ready(function(){
 	
 	submitForm();
     recordingControl();
+    termsConditionsOverlay();
+
 	$('.submitForm').on('click',function (e) {
 		form.trigger("submit");
 	})
 
 	$('.begin.btn').on('click',function (e) {
 		navIndex = 1
-		//navScroll()
         navTransition()
 	});
 
@@ -27410,7 +27411,6 @@ $(document).ready(function(){
             return
         
         navIndex++
-        //navScroll()
         navTransition()
     })
 
@@ -27422,7 +27422,6 @@ $(document).ready(function(){
     	}else if($(this).hasClass('back')){
     		navIndex--
     	}
-    	//navScroll()
         navTransition()
     });
 
@@ -27433,18 +27432,7 @@ $(document).ready(function(){
         videos[i].play();
     }
 
-    //test this, make a post request to check room status.
-    // $('#instructions_2 .next').on('click', function(e){
-    //     checkForRoomReady()
-    // })
-
-    //TEMPORAL JUST DEBUGGING, if click on lettering, it enables the submit button
-    // $('#waiting_room .letteringContainer').on('click', function(){
-    //     waitingDone();
-    // })
 });
-
-//TODO real navigation and transitions.
 
 //Placeholder navigation
 function navScroll(){
@@ -27456,16 +27444,47 @@ function navScroll(){
         //window.location.hash = target;
     });
 }
+
 console.log(output);
 
+function termsConditionsOverlay(){
+    let termsOverlay = $('.termsAndConditions.popup')
+    
+    $('.termsConditionsLink').click(()=>{
+        termsOverlay.removeClass('hidden')
+        setTimeout(()=>{
+            termsOverlay.addClass('transitionIn')
+        },10)
+    })
+    //close overlay
+    termsOverlay.find('.xBtn').click(()=>{
+        termsOverlay.removeClass('transitionIn')
+        setTimeout(()=>{
+            termsOverlay.addClass('hidden')
+        },290)
+        
+    })
 
+    scrollTermsConditions();
+}
+
+function scrollTermsConditions(){
+    let termsOverlay = $('.termsAndConditions.popup')
+    termsOverlay.find('.goDownArrow figure').click(()=>{
+        let scrollAmount = termsOverlay.find('.termsContainer')[0].scrollTop
+        scrollAmount += termsOverlay.find('.termsContainer').height() - 50;
+        termsOverlay.find('.termsContainer').stop().animate({
+            'scrollTop': scrollAmount
+        }, 600, 'swing', function () {
+        });
+    })
+}
 
 function recordingControl(){
     let control
     $('.startRecording').click(()=>{
         $('.timmerContainer .lineCircle').removeClass("paused")
         $('.go.hidden').removeClass('hidden')
-        //centesimas++;
         control = setInterval(()=>{
             time++;
             if(time<10){
@@ -27487,9 +27506,7 @@ function recordingControl(){
 function navTransition () {
     console.log("this is navIndex", navElements.length)
     for( var i = 0; i< navElements.length; i++){
-        console.log("hi",i)
         if(i>navIndex){
-            console.log('navElements[i]', navElements[i])
             $(navElements[i]).removeClass('selected')
             $(navElements[i]).find('.container').removeClass('selected')
             $(navElements[i]).find('.bg .color').removeClass('selected')
@@ -27505,7 +27522,6 @@ function navTransition () {
     },600)
 }
 
-//example
 function validateForm(){
     //validate fields
     var fail = false;
@@ -27546,14 +27562,12 @@ function validateForm(){
     //submit if fail never got set to true
     if ( ! fail ) {
         //process form here.
-        //if(this.validateEmail(this.nomineeForm.find('input[name=Nominee_email]')[0].value)){
         $('.required').each(function(){
             $(this).removeClass('required');
         })
 		//submitData()
         formIsValid=true;
             
-        //}
     } else {
          formIsValid=false;
         //alert( fail_log );
@@ -27640,7 +27654,6 @@ socket.on('state', function(new_state){
         	waiting_room(false, false, true);
         	setTimeout(function(){
                 navIndex = 0;
-                //navScroll();
                 navTransition();
                 waiting_room(true, false, false);
                 form[0].reset();

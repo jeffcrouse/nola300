@@ -28,7 +28,7 @@ var OnAirSign = require('./modules/OnAirSign');				// Singleton
 var StateManager = require('./modules/StateManager');
 
 
-
+fs.statSync(process.env.STORAGE_ROOT).isDirectory();
 
 
 /******************************************************************************************

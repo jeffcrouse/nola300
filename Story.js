@@ -10,16 +10,27 @@ var which = require('which');
 var shortid = require('shortid');
 var request = require('request');
 var _ = require('lodash');
+var glob = require('glob');
 
 
 var INTRO = path.join(__dirname, "resources", "Intro_Card.mov");
 var OUTRO = path.join(__dirname, "resources", "End_Card.mov");
+var LUT = path.join(__dirname, "resources", "Testing_Color_1_3.C0046.cube");
 
 var ffmpeg = "ffmpeg";
 which('ffmpeg', function (err, resolvedPath) {
 	if(err) throw err;
 	ffmpeg = resolvedPath;
 });
+
+var soundtracks = [];
+var pattern = path.join(__dirname, "resources", "Soundtracks", "*.wav");
+debug(pattern);
+glob(pattern, function (err, files) {
+	if(err) debug(err);
+	debug(files);
+	soundtracks = files;
+})
 
 
 var SentenceSchema = Schema({
@@ -97,10 +108,20 @@ StorySchema.path('email').validate = function(email) {
 // });
 
 
+// --------------------------------------------------------------------------------------
+function getRandomInt(min, max) {
+	min = Math.ceil(min);
+	max = Math.floor(max);
+	return Math.floor(Math.random() * (max - min)) + min; 
+}
 
 // --------------------------------------------------------------------------------------
 StorySchema.methods.do_edit = function(done) {
 	debug("do_edit", this.shortid);
+
+	var n = getRandomInt(0, soundtracks.length);
+	var song = soundtracks[n];
+
 	var concat = [];
 	var filters = [];
 	var d = Math.min(this.duration/1000.0, 45);
@@ -111,7 +132,7 @@ StorySchema.methods.do_edit = function(done) {
 	do {
 		var clip_length = 5 + (Math.random()*4);
 		var end = Math.min(start+clip_length, d);
-		filters.push(`[${cam}:v]trim=start=${start}:end=${end}, setpts=PTS-STARTPTS[v${label}]`);
+		filters.push(`[${cam}:v]lut3d=${LUT}, trim=start=${start}:end=${end}, setpts=PTS-STARTPTS[v${label}]`);
 		filters.push(`[${cam}:a]atrim=start=${start}:end=${end}, asetpts=PTS-STARTPTS[a${label}]`);
 		concat.push(`[v${label}][a${label}]`);
 		label++;
@@ -126,10 +147,12 @@ StorySchema.methods.do_edit = function(done) {
 	filters.push(`[vedit2][outro]overlay=0:0[vedit3]`);
 	filters.push(`[vedit3]fade=in:0:30[vedit4]`);
 	filters.push(`[aedit1]afade=t=in:st=0:d=2, afade=t=out:st=${d-4}:d=4[aedit2]`);
+	filters.push(`[4:a]atrim=start=0:end=${d}, afade=t=out:st=${d-4}:d=4, volume=0.75[soundtrack]`);
+	filters.push(`[soundtrack][aedit2]amix[aedit3]`);
 
-	var cmd = `${ffmpeg} -y -i "${this.vid_00.path}" -i "${this.vid_01.path}" -i "${INTRO}" -i "${OUTRO}" `;
-    cmd += `-filter_complex "${filters.join(";")}" -map "[vedit4]" -map "[aedit2]" `;
-    cmd += `-c:v libx264 -preset medium -crf 18 -c:a aac "${this.edit.path}"`;
+	var cmd = `${ffmpeg} -y -i "${this.vid_00.path}" -i "${this.vid_01.path}" -i "${INTRO}" -i "${OUTRO}" -i "${song}" `;
+    cmd += `-filter_complex "${filters.join(";")}" -map "[vedit4]" -map "[aedit3]" `;
+    cmd += `-c:v libx264 -preset medium -crf 18 -c:a aac -pix_fmt yuv420p "${this.edit.path}"`;
     debug("command", cmd);
 
 	exec(cmd, {cwd: this.directory}, (error, stdout, stderr) => {
@@ -170,13 +193,20 @@ StorySchema.methods.upload = function(done) {
 
 // --------------------------------------------------------------------------------------
 StorySchema.methods.export = function(done) {
-	fs.writeFile(this.info.path, this.toJSON(), done); 
+	var fields = ['shortid', 'firstName', 'lastName', 'zipCode', 'emailList', 'createdAt', 
+		'email', 'location', 'startTime', 'endTime'];
+	var lines = [];
+	fields.forEach(field => {
+		lines.push(field + ": " + this[field]);
+	});
+	
+	fs.writeFile(this.info.path, lines.join("\n"), done); 
 }
 
 // ----------------------------------------------------------
 StorySchema.statics.scan = function(done) {
 	//debug("scanning for unedited stories");
-	this.find({error: null, readyForEdit: true,uploaded: false}).exec((err, docs) => {
+	this.find({error: null, readyForEdit: true, uploaded: false}).exec((err, docs) => {
 		if( err ) return done( err );
 
 		//debug("found", docs.length, "unedited docs");
@@ -189,9 +219,6 @@ StorySchema.statics.scan = function(done) {
         }, done);
 	});
 }
-
-
-
 
 module.exports = mongoose.model('Story', StorySchema, 'stories' );
 

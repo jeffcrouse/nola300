@@ -28,6 +28,8 @@ var OnAirSign = require('./modules/OnAirSign');				// Singleton
 var StateManager = require('./modules/StateManager');
 
 
+
+// Throw an error if STORAGE_ROOT isn't present
 fs.statSync(process.env.STORAGE_ROOT).isDirectory();
 
 

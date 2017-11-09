@@ -149,10 +149,23 @@ VideoSchema.statics.scanDatabase = function(done) {
 	});
 }
 
+// --------------------------------------------------------------------------------------
+VideoSchema.statics.minCount = function(done) {
+	this.find().exec( ( err, docs ) => {
+		if(err) return done(err);
+		if(docs.length < 100) return done("not enough videos in database");
+		done(null);
+	});
+}
 
 // --------------------------------------------------------------------------------------
 VideoSchema.statics.scan = function(callback) {
-	return async.series([this.scanFiles.bind(this), this.scanDatabase.bind(this)], callback);
+	var tasks = [
+		this.scanFiles.bind(this), 
+		this.scanDatabase.bind(this),
+		this.minCount.bind(this)
+	];
+	return async.series(tasks, callback);
 }
 
 

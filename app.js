@@ -29,8 +29,74 @@ var StateManager = require('./modules/StateManager');
 
 
 
-// Throw an error if STORAGE_ROOT isn't present
-fs.statSync(process.env.STORAGE_ROOT).isDirectory();
+
+
+
+/****************************************************************************************
+┌─┐┌┬┐┌─┐┌┬┐┌─┐  ┌┬┐┌─┐┌┬┐┌┬┐
+└─┐ │ ├─┤ │ ├┤   ││││ ┬│││ │ 
+└─┘ ┴ ┴ ┴ ┴ └─┘  ┴ ┴└─┘┴ ┴ ┴ 
+This StateManager is used across the app to keep track of the current state
+Whenever the state is changed, "state" fires off a state_change event 
+We use this to notify anyone listening to the ui socket to the "state_change" event.
+****************************************************************************************/
+
+const APPSTATES = {
+	IDLE: 			"idle",
+	SUBMITTED: 		"submitted",
+	STARTING: 		"starting",
+	IN_PROGRESS: 	"in progress",
+	STOPPING: 		"stopping",
+}
+var state = new StateManager(APPSTATES.IDLE);
+
+state.on("state_change", (old_state, new_state) => {
+	if(ui_socket)
+		ui_socket.emit("state", new_state);
+});
+
+
+
+
+/****************************************************************************************
+┬┌┐┌┬┌┬┐┬┌─┐┬  ┬┌─┐┌─┐
+│││││ │ │├─┤│  │┌─┘├┤ 
+┴┘└┘┴ ┴ ┴┴ ┴┴─┘┴└─┘└─┘
+****************************************************************************************/
+
+async.each([process.env.STORAGE_ROOT, process.env.VIDEO_ROOT], mkdirp, function(err){
+	if(err) debug(err);
+})
+
+
+
+/****************************************************************************************
+┌┬┐┌─┐┌┬┐┌─┐┌┐ ┌─┐┌─┐┌─┐
+ ││├─┤ │ ├─┤├┴┐├─┤└─┐├┤ 
+─┴┘┴ ┴ ┴ ┴ ┴└─┘┴ ┴└─┘└─┘
+- If there is an active story, set the state to SUBMITTED.
+- Otherwise,  set the state to IDLE
+- Video.scan: check the database against the filesystem, and check filesystem against
+database.
+****************************************************************************************/
+
+mongoose.Promise = global.Promise;
+var db_url = 'mongodb://localhost:27017/nola300-client';
+mongoose.connect(db_url, {useMongoClient: true}, function(err){
+	if(err) throw("couldn't connect to", db_url);
+	else debug("connected to", db_url);
+
+	Story.findOne({active:true}).exec((err, item) => {
+		if(err) throw new Error(err);
+		if(item) state.set(APPSTATES.SUBMITTED);
+		else state.set(APPSTATES.IDLE);
+	});
+
+	Video.scan(function(err) { if(err) debug(err); });
+});
+
+
+
 
 
 /******************************************************************************************
@@ -45,75 +111,6 @@ Pretty standard stuff, just a few Handlebars helpers
 We also make sure required directories exist, initialize persistent storiage, and 
 connect to the database.
 ******************************************************************************************/
-
-
-
-/*
-┌─┐┌┬┐┌─┐┌┬┐┌─┐  ┌┬┐┌─┐┌┬┐┌┬┐
-└─┐ │ ├─┤ │ ├┤   ││││ ┬│││ │ 
-└─┘ ┴ ┴ ┴ ┴ └─┘  ┴ ┴└─┘┴ ┴ ┴ 
-*/
-
-const STATE = {
-	IDLE: 			"idle",
-	SUBMITTED: 		"submitted",
-	STARTING: 		"starting",
-	IN_PROGRESS: 	"in progress",
-	STOPPING: 		"stopping",
-}
-var state = new StateManager(STATE.IDLE);
-
-state.on("state_change", (old_state, new_state) => {
-	if(ui_socket)
-		ui_socket.emit("state", new_state);
-});
-
-
-
-
-/*
-┬┌┐┌┬┌┬┐┬┌─┐┬  ┬┌─┐┌─┐
-│││││ │ │├─┤│  │┌─┘├┤ 
-┴┘└┘┴ ┴ ┴┴ ┴┴─┘┴└─┘└─┘
-*/
-
-
-async.each([process.env.STORAGE_ROOT, process.env.VIDEO_ROOT], mkdirp, function(err){
-	if(err) debug(err);
-})
-
-
-
-/*
-┌┬┐┌─┐┌┬┐┌─┐┌┐ ┌─┐┌─┐┌─┐
- ││├─┤ │ ├─┤├┴┐├─┤└─┐├┤ 
-─┴┘┴ ┴ ┴ ┴ ┴└─┘┴ ┴└─┘└─┘
-*/
-
-mongoose.Promise = global.Promise;
-var db_url = 'mongodb://localhost:27017/nola300-client';
-mongoose.connect(db_url, {useMongoClient: true}, function(err){
-	if(err) throw("couldn't connect to", db_url);
-	else debug("connected to", db_url);
-
-	Story.findOne({active:true}).exec((err, item) => {
-		if(err) throw new Error(err);
-		if(item) state.set(STATE.SUBMITTED);
-		else  state.set(STATE.IDLE);
-	});
-
-	Video.scan(function(err) { if(err) debug(err); });
-});
-
-
-
-
-
-/*
-┌─┐─┐ ┬┌─┐┬─┐┌─┐┌─┐┌─┐  ┌─┐┌─┐┌┬┐┬ ┬┌─┐
-├┤ ┌┴┬┘├─┘├┬┘├┤ └─┐└─┐  └─┐├┤  │ │ │├─┘
-└─┘┴ └─┴  ┴└─└─┘└─┘└─┘  └─┘└─┘ ┴ └─┘┴  
-*/
 
 var app = express();
 
@@ -156,21 +153,33 @@ hbs.registerHelper('json', function(obj) {
 ██╔══██╗██║   ██║██║   ██║   ██║   ██╔══╝  ╚════██║
 ██║  ██║╚██████╔╝╚██████╔╝   ██║   ███████╗███████║
 ╚═╝  ╚═╝ ╚═════╝  ╚═════╝    ╚═╝   ╚══════╝╚══════╝
-- /  This will be the admin debug screen
-- /timer
-- /onboard GET
-- /onboard POST
-- /videos
+
 ******************************************************************************************/
 
+/**
+*	Brand Ambassador interface
+*	Provides a cancel button, and various status information
+*/
 app.get('/', function(req, res, next) {
 	res.render('index', { layout: false, title: 'NOLA300 Admin' });
 });
 
+
+/**
+*	Timer Interface
+*	This is loaded on a Raspberry Pi in the booth, and does 3 things:
+*	1. Welcomes the user into the booth by name
+*	2. Counts down the timer
+*	3. Thanks the user and asks them to leave the booth
+*	All of this is accomplished through the "ui" socket
+*/
 app.get('/timer', function(req, res, next) {
 	res.render('timer', { layout: false });
 });
 
+/**
+*	Onboarding form 
+*/
 app.get('/onboard', function(req, res, next) {
 	var data = { layout: false };
 	var template = "mobile";
@@ -178,7 +187,14 @@ app.get('/onboard', function(req, res, next) {
 });
 
 
-
+/**
+*	POST endpoint for the onboarding form submission.
+*	1. First check to see if there is currently an active user. If so, send an error.
+*	2. Then validate the form
+*	3. Then make a new story (it is the active one by default)
+*	4. Set the APPSTATE to "SUBMITTED"
+*	5. Tell all of the "ui" socket listeners about the new user.
+*/
 var valid = [
 	check('firstName').exists().isLength({ min: 2, max: 20 }).withMessage('Please provide a valid first name'), 
 	check('lastName').exists().isLength({ min: 2, max: 30 }).withMessage('Please provide a valid last name'), 
@@ -212,7 +228,7 @@ app.post('/onboard', valid, function(req, res, next) {
 				return res.status(422).send(err);
 			}
 
-			state.set(STATE.SUBMITTED);
+			state.set(APPSTATES.SUBMITTED);
 			ui_socket.emit("story", doc);
 
 			res.json({status: "OK"});
@@ -220,6 +236,9 @@ app.post('/onboard', valid, function(req, res, next) {
 	});	
 });
 
+/**
+*	Mostly for debugging purposes -- just a way to see all of the videos in the datbase
+*/
 app.get('/videos', function(req, res, next) {
 
 	Video.scan(function(err) {
@@ -233,34 +252,14 @@ app.get('/videos', function(req, res, next) {
 	});
 });
 
+
+/**
+*	Shows which videos were last sent by the "videos" socket
+*/
 app.get('/playlist', function(req, res, next) {
 	var data = { layout: false };
 	res.render('playlist', data);
 });
-
-/*
-app.post('/videos', valid, function(req, res, next){
-	console.log(req.body);
-
-	if(["places", "items", "themes"].indexOf(req.body.entity) == -1) {
-		return res.status(422).json({ status: "ERROR", errors: "invalid entity name" });
-	}
-
-	Video.findById(req.body.video, (err, video) => {
-		if(err) return res.status(422).json({ status: "ERROR", errors: err });	
-
-		if(!req.body.video || !mongoose.Types.ObjectId.isValid(req.body.video)) 
-			return res.status(422).json({ status: "ERROR", errors: "invalid or missing video ID" });
-
-		video[req.body.entity] = req.body.values;
-		video.save(function(err, doc){
-			if(err) return res.status(422).json({ status: "ERROR", errors: err });
-			else res.json({status: "OK"});
-		});
-	});
-});
-*/
-
 
 
 
@@ -291,15 +290,18 @@ app.post('/videos', valid, function(req, res, next){
 These are the socket namespaces that front-end apps connect to for real-time updates.
 
 - /ui: Communicate with the web interfaces: onboarding, booth interface, and admin index
-	- SEND state 						one of the STATEs
-	- SEND user 						a user object, emitted at the correct times (mostly during state changes)
-	- SEND countdown 					sent frequently while a session is in progress with time remaining string
-	- RCV cancel 						cancel's the current user's sesssion
+	- SEND state 				one of the STATEs
+	- SEND user 				a user object, emitted at the correct times (mostly during state changes)
+	- SEND countdown 			sent frequently while a session is in progress with time remaining string
+	- SEND cam_status 			
+	- RCV cancel 				cancel's the current user's sesssion
+	- RCV pedal 				fakes a footpedal press
 - /video: 
-	- SEND playlist: an array of video objs (with path,id), sorted by relevance
-	- RCV blacklist: the ID of a video that shouldn't be played again in this session
+	- SEND playlist 			an array of video objs (with path,id), sorted by relevance
+	- RCV blacklist 			the ID of a video that shouldn't be played again in this session
+	- RCV get_random			request for a random set of videos
 - /emotion
-	- SEND emotion: a JSON object of emotions and their current values coming from SpeechToText
+	- SEND emotion 				a JSON object of emotions and their current values coming from SpeechToText
 
 ******************************************************************************************/                                                  
 
@@ -310,7 +312,6 @@ app.io = io;
 var ui_socket = io.of('/ui');	
 var video_socket = io.of('/video');
 var emotion_socket = io.of('/emotion')
-
 
 //-----------------------------------------------------------------------------------------
 ui_socket.on("connection", function( client ) {
@@ -386,19 +387,6 @@ emotion_socket.on("connection", function( client ) {
 	client.on('disconnect', () => {
 		debug("/emotion client left")
 	});
-
-	/*
-	var send_word = function(done) {
-		if(texture_words.length==0) return setTimeout(done, 500);
-
-		var w = texture_words.shift();
-		client.emit("text", { text: w });
-
-		var t = 1000 + Math.random() * 1000;
-		setTimeout(done, t);
-	}
-	send_word();
-	*/
 });
 
 
@@ -428,23 +416,8 @@ emotion_socket.on("connection", function( client ) {
 ███████║███████╗███████║███████║██║╚██████╔╝██║ ╚████║
 ╚══════╝╚══════╝╚══════╝╚══════╝╚═╝ ╚═════╝ ╚═╝  ╚═══╝
 
-This is a storytelling session. It is started by the foot pedal
-It is possible to start a session once a user has submitted the onboarding form.
-
-A storytelling session is started by pressing the 
-Footpedal. When you start a session, a bunch of things
-happen:
-- Cameras start recording
-- "ON AIR" sign goes on
-- Speech to Text starts
-- The "user" persistent object gets updated
-- Countdown Timer starts from 120,000 millis
-
-When the user hits the foot pedal again (or the timer
-runs out), the session ends. This includes a bunch of 
-actions:
-- Cameras stop recording 
-- ...
+This is a storytelling session. It is started by the foot pedal. It is possible to start 
+a session once a user has submitted the onboarding form.
 ******************************************************************************************/
 
 
@@ -453,20 +426,29 @@ actions:
 var cam0 = new CanonCamera("0");
 var cam1 = new CanonCamera("1");
 
-
-var cam_status = (done) => {
+/**
+* 	Continually send the status of the 2 cameras to any ui socket that is listening
+*/
+async.forever((done) => {
 	ui_socket.emit("cam_status", 0, cam0.getIsOpened());
 	ui_socket.emit("cam_status", 1, cam1.getIsOpened());
 	setTimeout(done, 1000);
-}
-async.forever(cam_status, err => {
+}, err => {
 	debug("cam_status exited", err);
 });
 
+
+
+/**
+*	Create a CountdownTimer object.  
+*	This object responds to  timer.begin(millis) and begins a countdown
+*   - "tick"  	Fired every 100 millis with the remaining time
+* 	- "done"  	Fired when the timer is done.
+*/
 var timer = new CountdownTimer();
 timer.on("done", function() {
 	debug("TIMER DONE!");
-	if(state.is(STATE.IN_PROGRESS)) 
+	if(state.is(APPSTATES.IN_PROGRESS)) 
 		end_session(false);
 });
 timer.on("tick", (t) => {
@@ -475,12 +457,20 @@ timer.on("tick", (t) => {
 
 
 
-//-----------------------------------------------------------------------------------------
+/**
+* 	A storytelling session is started by pressing the  Footpedal. When you start a session, 
+*	a bunch of things happen:
+* 	1. Set the state to "STARTING"
+* 	2. Find and update the active story
+* 	3. Start the 2 cameras, TTS, and turn the OnAir sign on
+* 	4. Start the CountdownTimer at 45 seconds 
+* 	5. Set the state to "IN_PROGRESS"
+*/
 var start_session = function() {
 
 	debug("start_session");
 
-	state.set(STATE.STARTING);
+	state.set(APPSTATES.STARTING);
 
 	var update_story = done => {
 		Story.findOne({active:true}).exec((err, doc) => {
@@ -508,11 +498,26 @@ var start_session = function() {
 
 		timer.begin(45000);
 		
-		state.set(STATE.IN_PROGRESS);
+		state.set(APPSTATES.IN_PROGRESS);
 	});
 }
 
-//-----------------------------------------------------------------------------------------
+/**
+*	When the user hits the foot pedal again (or the countdown timer runs out), 
+* 	the session ends.  This includes a bunch of actions:
+* 	1. If the elapsed time is less than 5 seconds, wait until we have reached 5 seconds
+* 		and then automatically end.
+* 	2. Stop the timer.
+* 	3. Set the state to "STOPPING"
+* 	4. Wait a second (this is because of the fadeout in the final video edit)
+*	5. Get the current active story so we can update it. Add an endTime
+* 	6. Make a directory where we can save all of the videos
+*	7. stop the cameras, turn of STT, and turn off OnAir sign
+* 	8. Mark the story as "readyToEdit"
+*	9. Clear the "active" flag from all stories
+*	10. Clear the blacklist of videos
+*	11. Finally, set the APPSTATE to "IDLE"
+*/
 var end_session = function(cancel) {
 	debug("end_session");
 
@@ -523,20 +528,17 @@ var end_session = function(cancel) {
 		setTimeout(() => { end_session(cancel); }, wait);
 		return;
 	}
-
+	
 	timer.stop();
-	state.set(STATE.STOPPING);
-
-	blacklist = [];
-	video_socket.emit("blacklist", []);
+	state.set(APPSTATES.STOPPING);
 
 	var story = null;
 
-	var wait_2 = done => {
-		setTimeout(done, 2000);
+	var wait = done => {
+		setTimeout(done, 1000);
 	}
 
-	var get_user = done => {
+	var get_story = done => {
 		debug("get_user");
 
 		Story.findOne({active: true}).exec((err, doc) => {
@@ -579,35 +581,41 @@ var end_session = function(cancel) {
 	if(cancel){
 		tasks = [cancel_devices, clear_active];
 	} else {
-		tasks = [wait_2, get_user, mkdir, stop_devices, mark_ready, clear_active];
+		tasks = [wait, get_story, mkdir, stop_devices, mark_ready, clear_active];
 	}
 
 	async.series(tasks, (err) => {
 		ending = false;
 		if(err) return debug(err);
 
-		state.set(STATE.IDLE);
+		blacklist = [];
+		video_socket.emit("blacklist", []);
+
+		state.set(APPSTATES.IDLE);
 	});
 }
 
 
 
-//-----------------------------------------------------------------------------------------
+/**
+*	FootPedal fires a "press" event any time the pedal is pressed.
+* 	Depending on the current APPSTATE, do something...
+*/
 var on_pedal = function() {
 	debug("footpedal pressed");
 
 	switch(state.get()) {
-		case STATE.STARTING:
-		case STATE.ENDING:
+		case APPSTATES.STARTING:
+		case APPSTATES.ENDING:
 			debug("ignoring pedal press. events in progress.");
 			return;
-		case STATE.IDLE:
+		case APPSTATES.IDLE:
 			debug("ignoring pedal press. no user present.");
 			return;
-		case STATE.IN_PROGRESS:
+		case APPSTATES.IN_PROGRESS:
 			end_session(false);
 			break;
-		case STATE.SUBMITTED:
+		case APPSTATES.SUBMITTED:
 			start_session();
 			break;
 	}
@@ -652,21 +660,24 @@ this handler is fired with an object with the following keys:
 - nlu (Object): If present, this is the Watson Natural Language Understanding object with a
 	complex set of keys and values.
 
+If there is an active story, add the sentence to that story.
+
+If the sentence has NLU, we use it for 2 things:
+1. Send the emotion to the "emotion" socket for use by the overlay video player
+2. Use the "search terms" (concepts, entities, keywords) to rank all of the videos
+3. Get a set of 20 videos that rank the highest based on that search.
 ******************************************************************************************/                                                                            
 
-/*
-var whitelist = [];
-fs.readFile('whitelist.txt', function(err, data) {
-	if(err) throw err;
-	var array = data.toString().split("\n");
-	whitelist = array.map((str) => { 
-		return str.toLowerCase().trim();
-	});
-});
-*/
-//SpeechToText.start();
 SpeechToText.on("sentence", (sentence) => {
 	debug(util.inspect(sentence.toJson(), {depth: 10}));
+
+	Story.findOne({active:true}).exec((err, doc) => {
+		if(err) throw new Error(err);
+		if(!doc) return debug("Warning: SpeechToText result with no user to add to.")
+
+		doc.sentences.push( sentence.toJson() );
+		doc.save();
+	});
 
 	if(sentence.has_nlu()) {
 		// DO YOU FEEL THE EMOTION? if so, send it to the emotion_socket
@@ -686,14 +697,6 @@ SpeechToText.on("sentence", (sentence) => {
 			video_socket.emit("playlist", playlist);
 		});
 	}
-
-	Story.findOne({active:true}).exec((err, doc) => {
-		if(err) throw new Error(err);
-		if(!doc) return debug("Warning: SpeechToText result with no user to add to.")
-
-		doc.sentences.push( sentence.toJson() );
-		doc.save();
-	});
 });
 
 
@@ -723,7 +726,8 @@ SpeechToText.on("sentence", (sentence) => {
 ██║     ╚██████╔╝███████║   ██║   ██║     ██║  ██║╚██████╔╝╚██████╗███████╗███████║███████║
 ╚═╝      ╚═════╝ ╚══════╝   ╚═╝   ╚═╝     ╚═╝  ╚═╝ ╚═════╝  ╚═════╝╚══════╝╚══════╝╚══════╝
 
-Every 10 seconds...
+Every 10 seconds, run the "scan" static function on the Story model.
+This function looks for any videos that haven't been edited and uploaded edits/uploads them
 
 ******************************************************************************************/
 

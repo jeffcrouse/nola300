@@ -5,11 +5,10 @@ const path = require('path');
 const async = require('async');
 
 
-// String.prototype.trim = function() {
-//   return this.replace(/^\s+|\s+$/g, "");
-// };
-
-
+/**
+*	This godawful class is basically nothing more than an interface to "canon-cli", a 
+*	command line program that takes commands to feed to a canon camera.
+*/
 var CanonCamera = function(id) {
 
 	var debug = require('debug')('camera'+id);
@@ -23,10 +22,76 @@ var CanonCamera = function(id) {
 	var isOpened = false;
 	var serial = null;
 
+
+	/**
+	* Do we currently have an open connection to the camera?
+	*/
 	this.getIsOpened = function() {
 		return isOpened;
 	}
 
+
+	/**
+	* 	Tell the camera to start recording
+	*/
+	this.record = function(filename, callback){
+		callback = callback || function(){};
+		
+		var command = "record";
+		if(filename) command += " "+filename;
+		debug(command);
+		proc.send(command, err => {
+			callback(err)
+		});
+	}
+
+
+	/**
+	* 	Tell the camera to stop recording, and give it the path where it should save the resulting video
+	*/
+	this.stop = function(filename, callback){
+		callback = callback || function(){};
+
+		var command = "stop";
+		if(filename) command += " "+filename;
+		debug(command);
+
+		proc.send(command, err => {
+			if(err) callback(err);
+			else download_callback = callback;
+		});
+	}
+
+	/**
+	*	Cancel recording and delete the video file
+	*/
+	this.cancel = function(callback) {
+		callback = callback || function(){};
+		if(proc) proc.send("cancel", err => {
+			callback(err)
+		});
+	}
+
+
+	/**
+	*	Gracefully close the camera
+	*/
+	this.close = function(callback) {
+		if(!proc || !proc.connected) return callback();
+
+		closeRequested = true;
+		var command = "exit";
+		debug(command);
+		proc.send(command, err => {
+			if(err) debug(err);
+			debug("exit command sent");
+			exit_callback = callback;
+		});
+	}
+
+	/**
+	*	CALLBACK: Called whenever canon-cli spits anything out of stdout
+	*/
 	var on_stdout_data = function(data) {
 		data = data.toString().trim();
 		debug(data);
@@ -58,6 +123,10 @@ var CanonCamera = function(id) {
 		}
 	}
 
+
+	/**
+	*  	CALLBACK: Called ehenever canon-cli spits anything out of stderr
+	*/
 	var on_stderr_data = function(data) {
 		data = data.toString().trim();
 		//debug(data);
@@ -68,59 +137,20 @@ var CanonCamera = function(id) {
 		}
 	}
 
+
+	/**
+	*	CALLBACK: Called when the canon-cli process closes
+	*/
 	var on_close = function(code) {
 		debug("child process exited with code "+code);
 		isOpened = false;
 		proc = null;
 	}
-	
-
-	this.record = function(filename, callback){
-		callback = callback || function(){};
-		
-		var command = "record";
-		if(filename) command += " "+filename;
-		debug(command);
-		proc.send(command, err => {
-			callback(err)
-		});
-	}
-
-	// This shouldn't return until the resulting video is completely done downloading.
-	this.stop = function(filename, callback){
-		callback = callback || function(){};
-
-		var command = "stop";
-		if(filename) command += " "+filename;
-		debug(command);
-
-		proc.send(command, err => {
-			if(err) callback(err);
-			else download_callback = callback;
-		});
-	}
-
-	this.cancel = function(callback) {
-		callback = callback || function(){};
-		if(proc) proc.send("cancel", err => {
-			callback(err)
-		});
-	}
-
-	this.close = function(callback) {
-		if(!proc || !proc.connected) return callback();
-
-		closeRequested = true;
-		var command = "exit";
-		debug(command);
-		proc.send(command, err => {
-			if(err) debug(err);
-			debug("exit command sent");
-			exit_callback = callback;
-		});
-	}
 
 
+	/**
+	* 	NOT CURRENTLY USED - IGNORE
+	*/
 	var find_body = function(body, done) {
 		debug("looking for "+body);
 		var cmd = `${exe} --list-devices`;
@@ -139,6 +169,10 @@ var CanonCamera = function(id) {
 		});
 	}
 	
+
+	/**
+	*  Called continually to ensure that a connection is maintained with the camera
+	*/
 	var stay_connected = function(done) {
 		if(closeRequested) return;
 

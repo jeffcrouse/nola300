@@ -38,7 +38,11 @@ var SpeechToText = function() {
 	var proc = null;
 
 
-	// --------------------------------------------------------------------
+	/**
+	*	"rec" is a program that comes with "sox"
+	*	This function opens a websocket stream to Watson, and then spawns a process of "rec", 
+	*	which we then pipe directly into the websocket 
+	*/
 	this.start = function(callback) {
 		callback = callback || function(){}
 		if(running) return callback("already running");
@@ -47,14 +51,12 @@ var SpeechToText = function() {
 		recognizeStream.setEncoding('utf8');
 		recognizeStream.on('listening', on_listening);
 		recognizeStream.on('data', on_data);
-		recognizeStream.on('results', on_results);
+		//recognizeStream.on('results', on_results);
 		recognizeStream.on('error', on_error);
 		recognizeStream.on('close', on_close);
 
 		// TODO: Can I make this lower quality?
 		debug("spawning rec");
-
-		//proc = spawn('rec', ['-b', 16, '--endian', 'little', '-c', 1, '-r', 16000, '-e', 'signed-integer', '-t', 'wav', '-']);
 		var args = ['--endian', 'little', '-t', 'mp3', '-C', '128', '-'];
 		proc = spawn(rec, args);
 		debug(rec, args);
@@ -62,9 +64,7 @@ var SpeechToText = function() {
 			debug(`recProc has exited with code = ${code}`);
 		});
 
-		proc.stderr.on('data', (data) => { 
-			//debug(data.toString());
-		});
+		//proc.stderr.on('data', (data) => {  });
 		proc.stdout.pipe(recognizeStream);
 
 		startTime = Date.now();
@@ -103,7 +103,9 @@ var SpeechToText = function() {
 	}
 	
 
-	// --------------------------------------------------------------------
+	/**
+	*	THis function gets called whenever Watson returns word data from the recognizeStream
+	*/
 	var on_data = function(data) {
 		var now = Date.now();
 

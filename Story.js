@@ -12,6 +12,16 @@ var request = require('request');
 var _ = require('lodash');
 var glob = require('glob');
 
+/****************************************************************************************
+██████╗ ███████╗███████╗ ██████╗ ██╗   ██╗██████╗  ██████╗███████╗███████╗
+██╔══██╗██╔════╝██╔════╝██╔═══██╗██║   ██║██╔══██╗██╔════╝██╔════╝██╔════╝
+██████╔╝█████╗  ███████╗██║   ██║██║   ██║██████╔╝██║     █████╗  ███████╗
+██╔══██╗██╔══╝  ╚════██║██║   ██║██║   ██║██╔══██╗██║     ██╔══╝  ╚════██║
+██║  ██║███████╗███████║╚██████╔╝╚██████╔╝██║  ██║╚██████╗███████╗███████║
+╚═╝  ╚═╝╚══════╝╚══════╝ ╚═════╝  ╚═════╝ ╚═╝  ╚═╝ ╚═════╝╚══════╝╚══════╝
+
+Various paths that are needed for a Story, mostly for the video edit.
+****************************************************************************************/                                                                    
 
 var INTRO = path.join(__dirname, "resources", "Intro_Card.mov");
 var OUTRO = path.join(__dirname, "resources", "End_Card.mov");
@@ -32,6 +42,16 @@ glob(pattern, function (err, files) {
 	soundtracks = files;
 })
 
+
+
+/****************************************************************************************
+███████╗ ██████╗██╗  ██╗███████╗███╗   ███╗ █████╗ 
+██╔════╝██╔════╝██║  ██║██╔════╝████╗ ████║██╔══██╗
+███████╗██║     ███████║█████╗  ██╔████╔██║███████║
+╚════██║██║     ██╔══██║██╔══╝  ██║╚██╔╝██║██╔══██║
+███████║╚██████╗██║  ██║███████╗██║ ╚═╝ ██║██║  ██║
+╚══════╝ ╚═════╝╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝╚═╝  ╚═╝
+****************************************************************************************/  
 
 var SentenceSchema = Schema({
 	text: 		{ type: String, required: true },
@@ -60,19 +80,18 @@ var StorySchema = Schema({
 });
 
 
-var lean = function(doc, ret, options) {
-	ret.id = ret._id;
-	delete ret._id;
-	delete ret.__v;
-	return ret;
-}
 
-if (!StorySchema.options.toObject) StorySchema.options.toObject = {};
-StorySchema.options.toObject.transform = lean;
 
-if (!StorySchema.options.toJSON) StorySchema.options.toJSON = {};
-StorySchema.options.toJSON.transform = lean;
 
+
+/****************************************************************************************
+██╗   ██╗██╗██████╗ ████████╗██╗   ██╗ █████╗ ██╗     ███████╗
+██║   ██║██║██╔══██╗╚══██╔══╝██║   ██║██╔══██╗██║     ██╔════╝
+██║   ██║██║██████╔╝   ██║   ██║   ██║███████║██║     ███████╗
+╚██╗ ██╔╝██║██╔══██╗   ██║   ██║   ██║██╔══██║██║     ╚════██║
+ ╚████╔╝ ██║██║  ██║   ██║   ╚██████╔╝██║  ██║███████╗███████║
+  ╚═══╝  ╚═╝╚═╝  ╚═╝   ╚═╝    ╚═════╝ ╚═╝  ╚═╝╚══════╝╚══════╝
+****************************************************************************************/
 
 StorySchema.virtual('directory').get(function(){
 	return path.join(process.env.STORAGE_ROOT, this.shortid);
@@ -103,21 +122,44 @@ StorySchema.path('email').validate = function(email) {
 };
 
 
-// StorySchema.pre('save', function(next){
-// 	if (!this.isNew) return next(null);
-// });
 
-
-// --------------------------------------------------------------------------------------
-function getRandomInt(min, max) {
-	min = Math.ceil(min);
-	max = Math.floor(max);
-	return Math.floor(Math.random() * (max - min)) + min; 
+var lean = function(doc, ret, options) {
+	ret.id = ret._id;
+	delete ret._id;
+	delete ret.__v;
+	return ret;
 }
 
-// --------------------------------------------------------------------------------------
+if (!StorySchema.options.toObject) StorySchema.options.toObject = {};
+StorySchema.options.toObject.transform = lean;
+
+if (!StorySchema.options.toJSON) StorySchema.options.toJSON = {};
+StorySchema.options.toJSON.transform = lean;
+
+
+
+/****************************************************************************************
+███╗   ███╗███████╗████████╗██╗  ██╗ ██████╗ ██████╗ ███████╗
+████╗ ████║██╔════╝╚══██╔══╝██║  ██║██╔═══██╗██╔══██╗██╔════╝
+██╔████╔██║█████╗     ██║   ███████║██║   ██║██║  ██║███████╗
+██║╚██╔╝██║██╔══╝     ██║   ██╔══██║██║   ██║██║  ██║╚════██║
+██║ ╚═╝ ██║███████╗   ██║   ██║  ██║╚██████╔╝██████╔╝███████║
+╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚══════╝
+****************************************************************************************/
+
+
+/**
+*	Run the FFMPEG command that turns the 2 videos, intro overlays, and audio into a single 
+* 	edit. This is pretty gnarly, but that's how FFMPEG is.
+*/
 StorySchema.methods.do_edit = function(done) {
 	debug("do_edit", this.shortid);
+
+	function getRandomInt(min, max) {
+		min = Math.ceil(min);
+		max = Math.floor(max);
+		return Math.floor(Math.random() * (max - min)) + min; 
+	}
 
 	var n = getRandomInt(0, soundtracks.length);
 	var song = soundtracks[n];
@@ -168,7 +210,10 @@ StorySchema.methods.do_edit = function(done) {
 	});
 }
 
-// --------------------------------------------------------------------------------------
+
+/**
+*	Upload the file and all data to the process.env.UPLOAD_ENDPOINT
+*/
 StorySchema.methods.upload = function(done) {
 	
 	var fields = ['firstName', 'lastName', 'zipCode', 'emailList', 'createdAt', 'email', 
@@ -191,7 +236,10 @@ StorySchema.methods.upload = function(done) {
 	});
 }
 
-// --------------------------------------------------------------------------------------
+
+/**
+*	Save this database entry as a text file in its directory.
+*/
 StorySchema.methods.export = function(done) {
 	var fields = ['shortid', 'firstName', 'lastName', 'zipCode', 'emailList', 'createdAt', 
 		'email', 'location', 'startTime', 'endTime'];
@@ -203,7 +251,25 @@ StorySchema.methods.export = function(done) {
 	fs.writeFile(this.info.path, lines.join("\n"), done); 
 }
 
-// ----------------------------------------------------------
+
+
+
+
+
+/****************************************************************************************
+███████╗████████╗ █████╗ ████████╗██╗ ██████╗███████╗
+██╔════╝╚══██╔══╝██╔══██╗╚══██╔══╝██║██╔════╝██╔════╝
+███████╗   ██║   ███████║   ██║   ██║██║     ███████╗
+╚════██║   ██║   ██╔══██║   ██║   ██║██║     ╚════██║
+███████║   ██║   ██║  ██║   ██║   ██║╚██████╗███████║
+╚══════╝   ╚═╝   ╚═╝  ╚═╝   ╚═╝   ╚═╝ ╚═════╝╚══════╝
+****************************************************************************************/
+
+
+/**
+*	Look for any videos that aren't edited or uploaded, and take care of that.
+*	This is called repeatedly (forever) from the main app
+*/
 StorySchema.statics.scan = function(done) {
 	//debug("scanning for unedited stories");
 	this.find({error: null, readyForEdit: true, uploaded: false}).exec((err, docs) => {
@@ -219,6 +285,12 @@ StorySchema.statics.scan = function(done) {
         }, done);
 	});
 }
+
+
+
+
+
+
 
 module.exports = mongoose.model('Story', StorySchema, 'stories' );
 

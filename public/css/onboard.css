@@ -282,7 +282,7 @@ body {
     flex-direction: column; }
     body #landing .container .images {
       margin: 0 auto;
-      margin-top: 220rem;
+      margin-top: 300rem;
       text-align: center;
       width: 75%; }
       body #landing .container .images figure {
@@ -324,7 +324,7 @@ body {
       width: 370rem;
       cursor: pointer; }
       body #landing .container .full.btn.bottomBtn p {
-        font-size: 16rem;
+        font-size: 22rem;
         font-weight: bold;
         letter-spacing: 2rem;
         margin: 0 auto;
@@ -378,7 +378,7 @@ body {
       /* Create the checkmark/indicator (hidden when not checked) */
       /* Show the checkmark when checked */
       /* Style the checkmark/indicator */ }
-      body #about_you .container .content .formContainer .check .emailList, body #about_you .container .content .formContainer .check .termsAndConditions {
+      body #about_you .container .content .formContainer .check .emailList, body #about_you .container .content .formContainer .check .termsAndConditions, body #about_you .container .content .formContainer .check .tourismPolicy {
         display: block;
         margin: 30rem 0; }
       body #about_you .container .content .formContainer .check input, body #about_you .container .content .formContainer .check .label {
@@ -500,7 +500,7 @@ body {
       padding-right: 150rem;
       overflow-y: scroll; }
       body #about_you .container .termsAndConditions.popup .termsContainer * {
-        font-size: 17rem;
+        font-size: 15rem;
         font-family: 'F37Bolton';
         font-weight: normal;
         line-height: 22rem; }
@@ -676,6 +676,8 @@ body {
     background-color: #2BC3E7; }
   body #instructions_2 .bg .color {
     background-color: #E23E7E; }
+  body .instructions.view .container .rightBar, body .instructions.view .container .leftBar {
+    padding-top: 95rem; }
   body .instructions.view .container .rightBar {
     padding-right: 0; }
     body .instructions.view .container .rightBar .content .instructionsContainer .instruction {

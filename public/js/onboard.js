@@ -27395,7 +27395,8 @@ $(document).ready(function(){
 	submitForm();
     recordingControl();
     termsConditionsOverlay();
-
+    waiting_room(false, true, false);
+    
 	$('.submitForm').on('click',function (e) {
 		form.trigger("submit");
 	})
@@ -27589,7 +27590,8 @@ function submitData(){
         email: form[0].email.value,
         zipCode: form[0].zipCode.value,
         emailList: form[0].emailList.checked,
-        acceptTerms: form[0].termsAndConditions.checked
+        acceptTerms: form[0].termsAndConditions.checked,
+        acceptPrivacyPolice: form[0].privacyPolicy.checked
     };
     $.ajax({
         type: "POST",

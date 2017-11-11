@@ -1,16 +1,10 @@
 require('dotenv').config({ silent: true }); 
 const spawn = require('child_process').spawn;
+const exec = require('child_process').exec;
 const path = require('path');
 const async = require('async');
 
-//
-//	TO DO
-//	Throw some kind of error when something comes from canon-video-capture stderr
-//	Timestamp sentences beginning and end
-// 	DO NOT ALLOW RECORDING WHILE A DOWNLOAD IS IN PROGRESS!!!!
-//
 
-var canon = path.join(__dirname, "..", "bin", "canon-cli");
 // String.prototype.trim = function() {
 //   return this.replace(/^\s+|\s+$/g, "");
 // };
@@ -19,9 +13,10 @@ var canon = path.join(__dirname, "..", "bin", "canon-cli");
 var CanonCamera = function(id) {
 
 	var debug = require('debug')('camera'+id);
-	var self = this;
+
+
+	var exe = path.join(__dirname, "..", "bin", "canon-cli");
 	var proc = null;
-	var args = ['--id', id, '--delete-after-download', "--debug", "--overwrite", "--default-dir", process.env.STORAGE_ROOT];
 	var download_callback = null;
 	var exit_callback = null;
 	var closeRequested = false;
@@ -40,6 +35,7 @@ var CanonCamera = function(id) {
 		if(matches) {
 			isOpened = true;
 			serial = matches[1];
+			debug("found camera", serial)
 			return;
 		}
 
@@ -64,11 +60,11 @@ var CanonCamera = function(id) {
 
 	var on_stderr_data = function(data) {
 		data = data.toString().trim();
-		
-		// TODO: what do we do on error?  Close the process, no?
-
-		if(data.indexOf("[error]")==0) {
-			debug(data);
+		//debug(data);
+		var matches = data.match(/\[error\] ([^ ]+)/);
+		if(matches) {
+			debug("ERROR", matches[1])
+			proc.send("exit");
 		}
 	}
 
@@ -125,17 +121,35 @@ var CanonCamera = function(id) {
 	}
 
 
+	var find_body = function(body, done) {
+		debug("looking for "+body);
+		var cmd = `${exe} --list-devices`;
+		exec(cmd, (error, stdout, stderr) => {	
+			try {
+				var cameras = JSON.parse(stdout);
+				//debug(cameras);
+				var id = null;
+				for(var i=0; i<cameras.length; i++) {
+					if(cameras[i].body==body) id = cameras[i].port; 
+				}
+				done(null, id);
+			} catch(e) {
+				done(e);
+			}
+		});
+	}
+	
 	var stay_connected = function(done) {
 		if(closeRequested) return;
 
-		if(!proc || !proc.connected) {
-			debug("canon-cli "+args.join(" "));
-			proc = spawn(canon, args, {stdio: ["ipc"]});
+		if(!proc || !proc.connected) {				
+			var args = ['--id', id, '--delete-after-download', "--debug", "--overwrite", "--default-dir", process.env.STORAGE_ROOT];
+			debug(exe, args.join(" "));
 
+			proc = spawn(exe, args, {stdio: ["ipc"]});
 			proc.stdout.on('data', on_stdout_data);
 			proc.stderr.on('data', on_stderr_data);
 			proc.on('close', on_close);
-			//proc.send("stop");
 		}
 		if(!closeRequested) setTimeout(done, 2000);
 	}

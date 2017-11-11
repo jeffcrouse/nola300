@@ -1,0 +1,6 @@
+/* Localized versions of Info.plist keys */
+{
+    CFBundleName = "ColorGear CMM C";
+    CFBundleShortVersionString = "ColorGearCMMC 3.1.6";
+    CFBundleGetInfoString = "3.1.6, Copyright CANON INC. 2011";
+}

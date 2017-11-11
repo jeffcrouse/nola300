@@ -153,7 +153,6 @@ hbs.registerHelper('json', function(obj) {
 ██╔══██╗██║   ██║██║   ██║   ██║   ██╔══╝  ╚════██║
 ██║  ██║╚██████╔╝╚██████╔╝   ██║   ███████╗███████║
 ╚═╝  ╚═╝ ╚═════╝  ╚═════╝    ╚═╝   ╚══════╝╚══════╝
-
 ******************************************************************************************/
 
 /**
@@ -217,7 +216,6 @@ app.post('/onboard', valid, function(req, res, next) {
 			return res.status(422).send(message);
 		}
 
-
 		var data = _.pick(req.body, ["firstName", "lastName", "zipCode", "email", "acceptTerms", "emailList"]);
 		var story = new Story(data);
 		story.active = true;
@@ -229,7 +227,8 @@ app.post('/onboard', valid, function(req, res, next) {
 			}
 
 			state.set(APPSTATES.SUBMITTED);
-			ui_socket.emit("story", doc);
+			if(ui_socket) 
+				ui_socket.emit("story", doc);
 
 			res.json({status: "OK"});
 		});
@@ -289,9 +288,9 @@ app.get('/playlist', function(req, res, next) {
 
 These are the socket namespaces that front-end apps connect to for real-time updates.
 
-- /ui: Communicate with the web interfaces: onboarding, booth interface, and admin index
+- /ui: Communicate with the web interfaces: onboarding, timer interface, and admin index
 	- SEND state 				one of the STATEs
-	- SEND user 				a user object, emitted at the correct times (mostly during state changes)
+	- SEND story 				a story object, emitted at the correct times (mostly during state changes)
 	- SEND countdown 			sent frequently while a session is in progress with time remaining string
 	- SEND cam_status 			
 	- RCV cancel 				cancel's the current user's sesssion
@@ -601,6 +600,8 @@ var end_session = function(cancel) {
 *	FootPedal fires a "press" event any time the pedal is pressed.
 * 	Depending on the current APPSTATE, do something...
 */
+
+var FootPedal = require('./modules/FootPedal');				// Singleton
 var on_pedal = function() {
 	debug("footpedal pressed");
 
@@ -620,8 +621,6 @@ var on_pedal = function() {
 			break;
 	}
 }
-
-var FootPedal = require('./modules/FootPedal');				// Singleton
 FootPedal.on("press", on_pedal);
 
 
@@ -662,10 +661,11 @@ this handler is fired with an object with the following keys:
 
 If there is an active story, add the sentence to that story.
 
-If the sentence has NLU, we use it for 2 things:
+If the sentence has NLU, we use it for 3 things:
 1. Send the emotion to the "emotion" socket for use by the overlay video player
 2. Use the "search terms" (concepts, entities, keywords) to rank all of the videos
 3. Get a set of 20 videos that rank the highest based on that search.
+
 ******************************************************************************************/                                                                            
 
 SpeechToText.on("sentence", (sentence) => {
@@ -728,9 +728,7 @@ SpeechToText.on("sentence", (sentence) => {
 
 Every 10 seconds, run the "scan" static function on the Story model.
 This function looks for any videos that haven't been edited and uploaded edits/uploads them
-
 ******************************************************************************************/
-
 
 async.forever((done) => {
 	Story.scan(err => {
@@ -782,7 +780,6 @@ app.use(function(err, req, res, next) {
 	res.status(err.status || 500);
 	res.render('error');
 });
-
 
 // Close function to be called from the graceful shutdown procedure in app/www
 app.close = function(done) {

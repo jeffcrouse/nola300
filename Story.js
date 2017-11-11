@@ -80,6 +80,9 @@ var StorySchema = Schema({
 });
 
 
+StorySchema.path('email').validate = function(email) {
+	return /^[a-zA-Z0-9.!#$%&’*+\/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/.test(email)
+};
 
 
 
@@ -117,9 +120,6 @@ StorySchema.virtual('duration').get(function(){
 	return this.endTime - this.startTime;
 });
 
-StorySchema.path('email').validate = function(email) {
-	return /^[a-zA-Z0-9.!#$%&’*+\/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/.test(email)
-};
 
 
 
@@ -193,7 +193,7 @@ StorySchema.methods.do_edit = function(done) {
 	filters.push(`[soundtrack][aedit2]amix[aedit3]`);
 
 	var cmd = `${ffmpeg} -y -i "${this.vid_00.path}" -i "${this.vid_01.path}" -i "${INTRO}" -i "${OUTRO}" -i "${song}" `;
-    cmd += `-threads 1 -filter_complex "${filters.join(";")}" -map "[vedit4]" -map "[aedit3]" `;
+    cmd += `-threads 2 -filter_complex "${filters.join(";")}" -map "[vedit4]" -map "[aedit3]" `;
     cmd += `-c:v libx264 -preset medium -crf 18 -c:a aac -pix_fmt yuv420p "${this.edit.path}"`;
     debug("command", cmd);
 
@@ -252,7 +252,30 @@ StorySchema.methods.export = function(done) {
 }
 
 
+/**
+*	
+*/
+StorySchema.methods.process = function(done) {
+	var tasks = [];
 
+	if(!this.edited) 		
+		tasks.push( this.do_edit.bind(this) );
+
+	if(!this.infoed) 	
+		tasks.push( this.export.bind(this) );
+
+	if(!this.uploaded) 	
+		tasks.push( this.upload.bind(this) );
+
+	async.series(tasks, (err) =>  {
+		if(err) {
+			this.error = err;
+			this.save(done);
+		} else {
+			done();
+		}
+	});
+}
 
 
 
@@ -275,13 +298,9 @@ StorySchema.statics.scan = function(done) {
 	this.find({error: null, readyForEdit: true, uploaded: false}).exec((err, docs) => {
 		if( err ) return done( err );
 
-		//debug("found", docs.length, "unedited docs");
-        async.eachSeries(docs, function(story, callback) {
-			var tasks = [];
-			if(!story.edited) 		tasks.push( story.do_edit.bind(story) );
-			if(!story.infoed) 		tasks.push( story.export.bind(story) );
-			if(!story.uploaded) 	tasks.push( story.upload.bind(story) );
-        	async.series(tasks, callback);
+		if(docs.length>0) debug("found", docs.length, "unedited stories");
+        async.eachSeries(docs, (doc, callback) => {
+        	doc.process(callback);
         }, done);
 	});
 }

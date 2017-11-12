@@ -40,8 +40,8 @@ var VLCPlayer = function(folder) {
 		targetVolume = 0;
 	}
 
-	this.quit = function() {
-		if(proc) proc.stdin.write("quit");
+	this.quit = function(done) {
+		if(proc) proc.stdin.write("quit", done);
 	}
 
 	async.forever((done) => {

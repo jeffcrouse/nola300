@@ -36,11 +36,12 @@ var VDMX = function() {
 		var emo = keys[Math.floor(Math.random()*keys.length)];
 		var n = Math.ceil(Math.random()*textures[emo]);
 		var address = `/${emo}${n}`;
-		client.send(address, 0,  () => { });
+		debug(address);
+		client.send(address, 1,  () => { });
 		var delay = 2000 + (Math.random()*3000);
 		setTimeout(done, delay);
 	});
 }
 
 
-modules.exports = new VDMX();
+module.exports = new VDMX();

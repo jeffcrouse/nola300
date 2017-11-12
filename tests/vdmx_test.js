@@ -48,12 +48,12 @@ async.forever(done => {
 
 
 
-async.forever(done => {
-	var n = Math.ceil(Math.random() * 4);
-	console.log('/vid'+n);
-	client.send('/vid'+n, n, () => { });
-	setTimeout(done, 1000);
-});
+// async.forever(done => {
+// 	var n = Math.ceil(Math.random() * 4);
+// 	console.log('/vid'+n);
+// 	client.send('/vid'+n, n, () => { });
+// 	setTimeout(done, 1000);
+// });
 
 
 

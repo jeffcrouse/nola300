@@ -194,7 +194,7 @@ StorySchema.methods.do_edit = function(done) {
 	filters.push(`[soundtrack][aedit2]amix[aedit3]`);
 
 	var cmd = `${ffmpeg} -y -i "${this.vid_00.path}" -i "${this.vid_01.path}" -i "${INTRO}" -i "${OUTRO}" -i "${song}" `;
-    cmd += `-threads 1 -filter_complex "${filters.join(";")}" -map "[vedit4]" -map "[aedit3]" `;
+    cmd += `-filter_complex "${filters.join(";")}" -map "[vedit4]" -map "[aedit3]" `;
     cmd += `-c:v libx264 -preset medium -crf 18 -c:a aac -pix_fmt yuv420p "${this.edit.path}"`;
     debug("command", cmd);
 

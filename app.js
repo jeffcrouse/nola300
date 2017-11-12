@@ -53,16 +53,14 @@ state.on("state_change", (old_state, new_state) => {
 		ui_socket.emit("state", new_state);
 
 	switch(new_state) {
-		case APPSTATES.STARTING: 		VDMX.fadeIn(); break;
-		case APPSTATES.IDLE: 			VDMX.fadeOut(); break;
-		case APPSTATES.STOPPING:  		VDMX.fadeOut(); break;
+		case APPSTATES.STARTING: 		 break;
+		case APPSTATES.IDLE: 			 VDMX.fadeOut(); break;
+		case APPSTATES.STOPPING:  		 break;
 		case APPSTATES.IN_PROGRESS: 	break;
 		case APPSTATES.SUBMITTED: 		break;
 		default: debug("UNKNOWN STATE"); break;
 	}
 });
-
-
 
 
 /****************************************************************************************
@@ -495,7 +493,8 @@ var start_session = function() {
 			cam0.record.bind(cam0, null), 
 			cam1.record.bind(cam1, null), 
 			SpeechToText.start, 
-			OnAirSign.on
+			OnAirSign.on,
+			VDMX.fadeIn
 		], done); 
 	}
 
@@ -537,11 +536,12 @@ var end_session = function(cancel) {
 	
 	timer.stop();
 	state.set(APPSTATES.STOPPING);
+	
 
 	var story = null;
 
 	var wait = done => {
-		setTimeout(done, 1000);
+		setTimeout(done, 2000);
 	}
 
 	var get_story = done => {
@@ -563,14 +563,14 @@ var end_session = function(cancel) {
 	}
 
 	var cancel_devices = done => {
-		async.parallel([cam0.cancel, cam1.cancel, SpeechToText.stop, OnAirSign.off], done);
+		async.parallel([cam0.cancel, cam1.cancel, SpeechToText.stop, OnAirSign.off, VDMX.fadeOut], done);
 	}
 
 	var stop_devices = done => {
 		debug("stop_devices");
 		var stop_0 = (cb) => {  cam0.stop(`${story.directory}/vid_00.mp4`, cb); }
 		var stop_1 = (cb) => {  cam1.stop(`${story.directory}/vid_01.mp4`, cb); }
-		async.parallel([stop_0, stop_1, SpeechToText.stop, OnAirSign.off], done);
+		async.parallel([stop_0, stop_1, SpeechToText.stop, OnAirSign.off, VDMX.fadeOut], done);
 	}
 
 	var mark_ready = done => {
@@ -600,6 +600,8 @@ var end_session = function(cancel) {
 		state.set(APPSTATES.IDLE);
 	});
 }
+
+
 
 
 

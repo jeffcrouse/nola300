@@ -8,6 +8,7 @@ var VDMX = function() {
 	var client = new osc.Client('127.0.0.1', 1234);
 	var opacity = 1;
 	var targetOpacity = 0;
+	var closeRequested = false;
 
 	var textures = {
 		anger: 4,
@@ -17,20 +18,29 @@ var VDMX = function() {
 		sadness: 6,
 	};
 
-	this.fadeOut = function() {
+	this.fadeOut = function(done) {
+		done = done || function(){};
 		debug("fadeOut")
 		targetOpacity=0;
+		done();
 	}
 
-	this.fadeIn = function() {
+	this.fadeIn = function(done) {
+		done = done || function(){};
 		debug("fadeIn")
 		targetOpacity=1;
+		done();
+	}
+
+	this.close = function() {
+		closeRequested = true;
 	}
 
 	async.forever(done => {
 		opacity += (targetOpacity-opacity) * 0.05;
 		client.send('/opacity', opacity,  () => { });
-		setTimeout(done, 10);
+		if(closeRequested) return done("closing");
+		else setTimeout(done, 10);
 	});
 
 	async.forever(done => {
@@ -41,7 +51,8 @@ var VDMX = function() {
 		//debug(address);
 		client.send(address, 1,  () => { });
 		var delay = 5000 + (Math.random()*5000);
-		setTimeout(done, delay);
+		if(closeRequested) return done("closing");
+		else setTimeout(done, delay);
 	});
 }
 

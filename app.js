@@ -26,10 +26,7 @@ var CountdownTimer = require('./modules/CountdownTimer')
 var CanonCamera = require('./modules/CanonCamera')
 var OnAirSign = require('./modules/OnAirSign');				// Singleton
 var StateManager = require('./modules/StateManager');
-
-
-
-
+var VLCPlayer = require('./modules/VLCPlayer');
 
 
 /****************************************************************************************
@@ -50,9 +47,19 @@ const APPSTATES = {
 }
 var state = new StateManager(APPSTATES.IDLE);
 
+var playlist = new VLCPlayer(process.env.MUSIC_FOLDER);
+
 state.on("state_change", (old_state, new_state) => {
 	if(ui_socket)
 		ui_socket.emit("state", new_state);
+
+	switch(new_state) {
+		case APPSTATES.STARTING: playlist.fadeOut(); break;
+		case APPSTATES.IDLE: playlist.fadeIn(); break;
+		case APPSTATES.ENDING: playlist.fadeIn(); break;
+		case APPSTATES.IN_PROGRESS: break;
+		case APPSTATES.SUBMITTED: break;
+	}
 });
 
 
@@ -784,7 +791,7 @@ app.use(function(err, req, res, next) {
 // Close function to be called from the graceful shutdown procedure in app/www
 app.close = function(done) {
 	debug("closing");
-	async.parallel([FootPedal.close, OnAirSign.close, cam0.close, cam1.close], done);
+	async.parallel([FootPedal.close, OnAirSign.close, playlist.quit, cam0.close, cam1.close], done);
 }
 
 module.exports = app;

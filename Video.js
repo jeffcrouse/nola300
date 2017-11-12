@@ -174,10 +174,9 @@ var get_score = function(terms, tags) {
 	var results = [];
 
 	terms.forEach((t) => {
-		var i = tags.indexOf( t.text.toLowerCase() ); 
-		if(i > -1) {
-			//debug("found", t.text, "with relevance", t.relevance)
-			results.push(t);
+		if(t.text) {
+			var i = tags.indexOf( t.text.toLowerCase() ); 
+			if(i > -1) results.push(t);
 		}
 	});
 

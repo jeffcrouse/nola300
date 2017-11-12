@@ -24,12 +24,12 @@ var Sentence = function(text) {
 		return sliced.map( w => { return w.text });
 	}
 
-
 	this.get_search_terms = () => {
-		var words = _.concat(this.nlu.keywords, this.nlu.entities, this.nlu.concepts);
+		var keywords = this.nlu.keywords || [];
+		var entities = this.nlu.entities || [];
+		var concepts = this.nlu.concepts || [];
+		var words = _.concat(keywords, entities, concepts);
 		return words;
-		// TODO: Allow duplicates here?
-		//return _.uniqBy(words, 'text');
 	}
 
 	this.wordcount = () => {

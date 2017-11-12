@@ -18,7 +18,7 @@ mkdir ~/.config/autostart
 “””
 [Desktop Entry]
 Type=Application
-Exec=/usr/bin/chromium-browser --noerrdialogs --disable-session-crashed-bubble --disable-infobars --kiosk --incognito http://cheese.local:3000/timer
+Exec=/usr/bin/chromium-browser --noerrdialogs --disable-session-crashed-bubble --disable-infobars --kiosk --incognito http://nola300.local:3000/timer
 Hidden=false
 X-GNOME-Autostart-enabled=true
 Name[en_US]=AutoChromium

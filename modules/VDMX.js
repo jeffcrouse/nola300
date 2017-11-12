@@ -38,9 +38,9 @@ var VDMX = function() {
 		var emo = keys[Math.floor(Math.random()*keys.length)];
 		var n = Math.ceil(Math.random()*textures[emo]);
 		var address = `/${emo}${n}`;
-		debug(address);
+		//debug(address);
 		client.send(address, 1,  () => { });
-		var delay = 2000 + (Math.random()*3000);
+		var delay = 5000 + (Math.random()*5000);
 		setTimeout(done, delay);
 	});
 }

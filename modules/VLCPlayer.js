@@ -33,10 +33,12 @@ var VLCPlayer = function(folder) {
 	proc.stdin.write("help\n")
 
 	this.fadeIn = function() {
+		debug("fadeIn");
 		targetVolume = 100;
 	}
 
 	this.fadeOut = function() {
+		debug("fadeOut");
 		targetVolume = 0;
 	}
 

@@ -12,7 +12,7 @@ sudo apt-get install libnss-mdns netatalk
 [NOW REMOTE IN!]
 sudo rm /etc/profile.d/sshpwd.sh  # remove annoying message about SSH
 mkdir ~/.config/autostart
-[ADD A FILE "chromium.desktop" WITH THE FOLLOWING]
+nano ~/.config/autostart/chromium.desktop
 
 
 “””

@@ -27,7 +27,7 @@ var CanonCamera = require('./modules/CanonCamera')
 var OnAirSign = require('./modules/OnAirSign');				// Singleton
 var StateManager = require('./modules/StateManager');
 var VLCPlayer = require('./modules/VLCPlayer');
-
+var VDMX = require('./modules/VDMX');
 
 /****************************************************************************************
 ┌─┐┌┬┐┌─┐┌┬┐┌─┐  ┌┬┐┌─┐┌┬┐┌┬┐
@@ -54,9 +54,17 @@ state.on("state_change", (old_state, new_state) => {
 		ui_socket.emit("state", new_state);
 
 	switch(new_state) {
-		case APPSTATES.STARTING: playlist.fadeOut(); break;
-		case APPSTATES.IDLE: playlist.fadeIn(); break;
-		case APPSTATES.ENDING: playlist.fadeIn(); break;
+		case APPSTATES.STARTING: 
+			playlist.fadeOut(); 
+			VDMX.fadeIn();
+			break;
+		case APPSTATES.IDLE: 
+			playlist.fadeIn(); 
+			break;
+		case APPSTATES.ENDING: 
+			playlist.fadeIn(); 
+			VDMX.fadeOut();
+			break;
 		case APPSTATES.IN_PROGRESS: break;
 		case APPSTATES.SUBMITTED: break;
 	}

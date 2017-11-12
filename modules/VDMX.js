@@ -6,7 +6,7 @@ const async = require('async');
 
 var VDMX = function() {
 	var client = new osc.Client('127.0.0.1', 1234);
-	var opacity = 0;
+	var opacity = 1;
 	var targetOpacity = 0;
 
 	var textures = {
@@ -17,7 +17,7 @@ var VDMX = function() {
 		sadness: 6,
 	};
 
-	this.fadeOut= function() {
+	this.fadeOut = function() {
 		debug("fadeOut")
 		targetOpacity=0;
 	}

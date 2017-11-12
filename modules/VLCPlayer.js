@@ -43,7 +43,8 @@ var VLCPlayer = function(folder) {
 	}
 
 	this.quit = function(done) {
-		if(proc) proc.stdin.write("quit", done);
+		if(proc) proc.stdin.write("quit");
+		done();
 	}
 
 	async.forever((done) => {

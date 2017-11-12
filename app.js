@@ -26,8 +26,8 @@ var CountdownTimer = require('./modules/CountdownTimer')
 var CanonCamera = require('./modules/CanonCamera')
 var OnAirSign = require('./modules/OnAirSign');				// Singleton
 var StateManager = require('./modules/StateManager');
-var VLCPlayer = require('./modules/VLCPlayer');
 var VDMX = require('./modules/VDMX');
+
 
 /****************************************************************************************
 ┌─┐┌┬┐┌─┐┌┬┐┌─┐  ┌┬┐┌─┐┌┬┐┌┬┐
@@ -46,27 +46,19 @@ const APPSTATES = {
 	STOPPING: 		"stopping",
 }
 var state = new StateManager(APPSTATES.IDLE);
-
-var playlist = new VLCPlayer(process.env.MUSIC_FOLDER);
-
 state.on("state_change", (old_state, new_state) => {
+	debug("state_change", old_state, "=>", new_state);
+	
 	if(ui_socket)
 		ui_socket.emit("state", new_state);
 
 	switch(new_state) {
-		case APPSTATES.STARTING: 
-			playlist.fadeOut(); 
-			VDMX.fadeIn();
-			break;
-		case APPSTATES.IDLE: 
-			playlist.fadeIn(); 
-			break;
-		case APPSTATES.ENDING: 
-			playlist.fadeIn(); 
-			VDMX.fadeOut();
-			break;
-		case APPSTATES.IN_PROGRESS: break;
-		case APPSTATES.SUBMITTED: break;
+		case APPSTATES.STARTING: 		VDMX.fadeIn(); break;
+		case APPSTATES.IDLE: 			VDMX.fadeOut(); break;
+		case APPSTATES.STOPPING:  		VDMX.fadeOut(); break;
+		case APPSTATES.IN_PROGRESS: 	break;
+		case APPSTATES.SUBMITTED: 		break;
+		default: debug("UNKNOWN STATE"); break;
 	}
 });
 
@@ -622,7 +614,7 @@ var on_pedal = function() {
 
 	switch(state.get()) {
 		case APPSTATES.STARTING:
-		case APPSTATES.ENDING:
+		case APPSTATES.STOPPING:
 			debug("ignoring pedal press. events in progress.");
 			return;
 		case APPSTATES.IDLE:
@@ -634,6 +626,7 @@ var on_pedal = function() {
 		case APPSTATES.SUBMITTED:
 			start_session();
 			break;
+		default: debug("UNKNOWN STATE"); break;
 	}
 }
 FootPedal.on("press", on_pedal);
@@ -799,7 +792,7 @@ app.use(function(err, req, res, next) {
 // Close function to be called from the graceful shutdown procedure in app/www
 app.close = function(done) {
 	debug("closing");
-	async.parallel([FootPedal.close, OnAirSign.close, playlist.quit, cam0.close, cam1.close], done);
+	async.parallel([FootPedal.close, OnAirSign.close, cam0.close, cam1.close], done);
 }
 
 module.exports = app;

@@ -18,10 +18,12 @@ var VDMX = function() {
 	};
 
 	this.fadeOut= function() {
+		debug("fadeOut")
 		targetOpacity=0;
 	}
 
 	this.fadeIn = function() {
+		debug("fadeIn")
 		targetOpacity=1;
 	}
 

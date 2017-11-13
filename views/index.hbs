@@ -15,32 +15,6 @@
 
  	<body>
 
- 		<!--
-		<div class="container">
-			<div class="header clearfix">
-			<nav>
-				<ul class="nav nav-pills float-right">
-					<li class="nav-item">
-						<a class="nav-link active" href="#">Home <span class="sr-only">(current)</span></a>
-					</li>
-					<li class="nav-item">
-						<a class="nav-link" target="_blank" href="/videos">Videos</a>
-					</li>
-					<li class="nav-item">
-						<a class="nav-link" target="_blank" href="/playlist">Playlist</a>
-					</li>
-					<li class="nav-item">
-						<a class="nav-link" target="_blank" href="/onboard">Onboard</a>
-					</li>
-					<li class="nav-item">
-						<a class="nav-link" target="_blank" href="/timer">Timer</a>
-					</li>
-				</ul>
-			</nav>
-			<h3 class="text-muted">NOLA300 Storybooth</h3>
-		</div>
-		-->
-
 		<div class="jumbotron">
 			<h1 class="display-3" id="countdown">00:00:00</h1>
 			<h1 class="display-4" id="user_name">No User</h1>
@@ -56,6 +30,9 @@
 				<span id="cam0">cam0</span> | <span id="cam1">cam1</span>
 			</div>
 		</div>
+
+		<div id="recent"></div>
+
 		<!--			
 		<footer class="footer">
 			<p>May the force be with you</p>
@@ -83,7 +60,6 @@
 			var cancel_button = $("#cancel_button");
 			var pedal_button = $("#pedal_button");
 			var session_state = $("#session_state");
-
 
 			socket.on('countdown',  (data) => {
 				//console.log('countdown', data );
@@ -133,6 +109,13 @@
 				console.log("pedal");
 				socket.emit("pedal");
 			});
+
+			setInterval(function load_recent(){
+				$("#recent").load("/recent", function(err){
+					console.log(err);
+				});
+			}, 5000);
+			
 		</script>
 	</body>
 </html>

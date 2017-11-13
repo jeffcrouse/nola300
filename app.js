@@ -170,6 +170,17 @@ app.get('/', function(req, res, next) {
 
 
 /**
+*	Gets some HTML with the most recent videos and their state
+*/
+app.get('/recent', , function(req, res, next) {
+	Story.find({}).sort({createdAt: -1}).limit(5).exec((err, docs) => {
+		if(err) debug(err);
+		res.render('recent', {"stories", docs});
+	});
+});
+
+
+/**
 *	Timer Interface
 *	This is loaded on a Raspberry Pi in the booth, and does 3 things:
 *	1. Welcomes the user into the booth by name

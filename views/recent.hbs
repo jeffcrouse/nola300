@@ -1,0 +1,20 @@
+<table style="width:100%">
+	<thead>
+	<tr>
+		<th>ID</th> 
+		<th>Name</th> 
+		<th>Date</th>
+		<th width="200">Status</th>
+	</tr>
+	</thead>
+	<tbody>
+	{{#each stories}}
+	<tr>
+		<td>{{this.shortid}}</td> 
+		<td>{{this.firstName}} {{this.lastName}}</td> 
+		<td>{{dateFormat this.endTime "MMM Do, h:mma"}}</td>
+		<td>{{this.status}}</td>
+	</tr>
+	{{/each}}
+	</tbody>
+</table>

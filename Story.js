@@ -120,6 +120,9 @@ StorySchema.virtual('duration').get(function(){
 	return this.endTime - this.startTime;
 });
 
+StorySchema.virtual('status').get(function(){
+	return "good";
+});
 
 
 

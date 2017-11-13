@@ -121,7 +121,12 @@ StorySchema.virtual('duration').get(function(){
 });
 
 StorySchema.virtual('status').get(function(){
-	return "good";
+	if(this.uploaded) return "UPLOADED";
+	if(this.active) return "ACTIVE";
+	if(this.error) return this.error;
+	if(this.edited) return "EDITED";
+	if(this.readyForEdit) return "EDITING";
+	return "UNKNOWN";
 });
 
 
@@ -198,18 +203,26 @@ StorySchema.methods.do_edit = function(done) {
 
 	var cmd = `${ffmpeg} -y -i "${this.vid_00.path}" -i "${this.vid_01.path}" -i "${INTRO}" -i "${OUTRO}" -i "${song}" `;
     cmd += `-filter_complex "${filters.join(";")}" -map "[vedit4]" -map "[aedit3]" `;
-    cmd += `-c:v libx264 -preset medium -crf 18 -c:a aac -pix_fmt yuv420p "${this.edit.path}"`;
+    cmd += `-threads 2 -c:v libx264 -crf 23 -preset fast -c:a aac -pix_fmt yuv420p "${this.edit.path}"`;
     debug("command", cmd);
 
+    var start = new Date();
 	exec(cmd, {cwd: this.directory}, (error, stdout, stderr) => {
 		if(error) return done(error);
 		// console.log("stdout", stdout);
 		// console.log("stderr", stderr);
 
-		fs.access(this.edit.path, fs.R_OK | fs.W_OK, err => {
-			if(err) return done(err);
-			this.edited = true;
-			this.save(done)
+		fs.stat(this.edit.path, (err, stat) => {
+			if(err == null) {
+				var elapsed = new Date() - start;
+				var mb = stat.size / 1000000.0;
+				debug("filesize", mb, "edit time", elapsed);
+
+				this.edited = true;
+				this.save(done);
+			} else {
+				done("couldn't find edited file", err.code);
+			}
 		});
 	});
 }
@@ -223,7 +236,7 @@ StorySchema.methods.upload = function(done) {
 	var fields = ['firstName', 'lastName', 'zipCode', 'emailList', 'createdAt', 'email', 
 		'shortid', 'location', 'startTime', 'endTime',  'sentences'];
 	var obj = _.pick(this.toObject(), fields);
-	debug("uploading", obj);
+	debug("uploading", this.shortid);
 
 	var formData = {
 		video: fs.createReadStream(this.edit.path),

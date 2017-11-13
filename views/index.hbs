@@ -30,9 +30,8 @@
 				<span id="cam0">cam0</span> | <span id="cam1">cam1</span>
 			</div>
 		</div>
-
-		<div id="recent"></div>
-
+		<div id="recent" class="container">
+		</div>
 		<!--			
 		<footer class="footer">
 			<p>May the force be with you</p>
@@ -47,6 +46,7 @@
 		<script src="/js/bootstrap.min.js"></script>
 		<script src="/socket.io/socket.io.js"></script>
 		<script>
+		$(document).ready(function() {
 			const APP_STATE = {
 				IDLE: 			"idle",
 				SUBMITTED: 		"submitted",
@@ -68,7 +68,7 @@
 
 			socket.on('cam_status', (num, opened) => {
 				$("#cam"+num).css('color', opened ? "green": "red");
-				console.log(num, opened);
+				//console.log(num, opened);
 			});
 
 			socket.on('story', (story) => {
@@ -110,12 +110,17 @@
 				socket.emit("pedal");
 			});
 
-			setInterval(function load_recent(){
-				$("#recent").load("/recent", function(err){
-					console.log(err);
+			var load_recent = function() {
+				$("#recent").load("/recent", function(response, status, xhr){
+					if ( status == "error" ) {
+    					
+    				}
+					setTimeout(load_recent, 2000);
 				});
-			}, 5000);
-			
+			}
+
+			load_recent();
+		});
 		</script>
 	</body>
 </html>

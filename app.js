@@ -28,6 +28,7 @@ var CanonCamera = require('./modules/CanonCamera')
 var OnAirSign = require('./modules/OnAirSign');				// Singleton
 var StateManager = require('./modules/StateManager');
 var VDMX = require('./modules/VDMX');						// Singleton
+var moment = require('moment');
 
 
 
@@ -84,9 +85,6 @@ Make sure all of the required directories exist
 async.each([process.env.STORAGE_ROOT, process.env.VIDEO_ROOT], mkdirp, function(err){
 	if(err) debug(err);
 })
-
-
-
 
 
 
@@ -160,7 +158,12 @@ hbs.registerHelper('json', function(obj) {
 	return JSON.stringify(obj);
 });
 
-
+hbs.registerHelper("dateFormat", function( date, format ) {
+    return moment(date).format(format);
+});
+hbs.registerHelper("firstLetter", function( str ) {
+    return str.charAt(0);
+});
 
 
 
@@ -191,10 +194,10 @@ app.get('/', function(req, res, next) {
 /**
 *	Gets an HTML table with the most recent videos and their state
 */
-app.get('/recent', , function(req, res, next) {
+app.get('/recent', function(req, res, next) {
 	Story.find({}).sort({createdAt: -1}).limit(5).exec((err, docs) => {
 		if(err) debug(err);
-		res.render('recent', {"stories", docs});
+		res.render('recent', {layout: false, stories: docs});
 	});
 });
 
@@ -839,14 +842,14 @@ async.forever(send_texture);
 ██║     ╚██████╔╝███████║   ██║   ██║     ██║  ██║╚██████╔╝╚██████╗███████╗███████║███████║
 ╚═╝      ╚═════╝ ╚══════╝   ╚═╝   ╚═╝     ╚═╝  ╚═╝ ╚═════╝  ╚═════╝╚══════╝╚══════╝╚══════╝
 
-Every 10 seconds, run the "scan" static function on the Story model.
+Every 5 seconds, run the "scan" static function on the Story model.
 This function looks for any videos that haven't been edited and uploaded edits/uploads them
 ******************************************************************************************/
 
 async.forever((done) => {
 	Story.scan(err => {
 		if(err) debug(err);
-		setTimeout(done, 10000);
+		setTimeout(done, 5000);
 	})
 }, debug);
 

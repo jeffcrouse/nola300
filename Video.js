@@ -23,6 +23,7 @@ var VideoSchema = Schema({
 	file_present:   { type: Boolean, default: false },
 	duration: 		{ type: Number, default: null },
 	score: 			{ type: Number, default: 0 },
+	blacklisted: 	{ type: Boolean, default: false },
 	places: 		[ { type: String } ],
 	items: 			[ { type: String } ],
 	themes: 		[ { type: String } ]
@@ -43,9 +44,18 @@ VideoSchema.options.toObject.transform = lean;
 if (!VideoSchema.options.toJSON) VideoSchema.options.toJSON = {};
 VideoSchema.options.toJSON.transform = lean;
 
+
+
+
+
 // --------------------------------------------------------------------------------------
 VideoSchema.virtual('full_path').get(function(){
 	return path.join(process.env.VIDEO_ROOT, this.name);
+});
+
+// --------------------------------------------------------------------------------------
+VideoSchema.virtual('osc_address').get(function(){
+	return '/'+path.basename(this.name, path.extname(this.name));
 });
 
 // --------------------------------------------------------------------------------------

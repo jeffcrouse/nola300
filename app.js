@@ -10,23 +10,28 @@ const bodyParser = require('body-parser');
 var socketio = require('socket.io');
 var mongoose = require('mongoose');
 var _ = require('lodash');
+const exec = require("child_process").exec;
 var fs = require("fs");
 const mkdirp = require('mkdirp');
+var storage = require('node-persist');	
+storage.initSync();
 const { check, validationResult } = require('express-validator/check');
-// const { matchedData } = require('express-validator/filter');
 var Video = require('./Video')
 var Story = require('./Story')
 const async = require('async');
 var hbs = require('hbs');
 const randomWord = require('random-word');
 var SpeechToText = require('./modules/SpeechToText');
-//var EntitiesList = require('./modules/EntitiesList');
 var postprocess = require("./modules/PostProcess");
 var CountdownTimer = require('./modules/CountdownTimer')
 var CanonCamera = require('./modules/CanonCamera')
 var OnAirSign = require('./modules/OnAirSign');				// Singleton
 var StateManager = require('./modules/StateManager');
-var VDMX = require('./modules/VDMX');
+var VDMX = require('./modules/VDMX');						// Singleton
+
+
+
+
 
 
 /****************************************************************************************
@@ -52,26 +57,36 @@ state.on("state_change", (old_state, new_state) => {
 	if(ui_socket)
 		ui_socket.emit("state", new_state);
 
-	switch(new_state) {
-		case APPSTATES.STARTING: 		 break;
-		case APPSTATES.IDLE: 			 VDMX.fadeOut(); break;
-		case APPSTATES.STOPPING:  		 break;
-		case APPSTATES.IN_PROGRESS: 	break;
-		case APPSTATES.SUBMITTED: 		break;
-		default: debug("UNKNOWN STATE"); break;
-	}
+	// switch(new_state) {
+	// 	case APPSTATES.STARTING: 		 break;
+	// 	case APPSTATES.IDLE: 			  break;
+	// 	case APPSTATES.STOPPING:  		 break;
+	// 	case APPSTATES.IN_PROGRESS: 	break;
+	// 	case APPSTATES.SUBMITTED: 		break;
+	// 	default: debug("UNKNOWN STATE"); break;
+	// }
 });
 
 
+
+
+
+
+
 /****************************************************************************************
-┬┌┐┌┬┌┬┐┬┌─┐┬  ┬┌─┐┌─┐
-│││││ │ │├─┤│  │┌─┘├┤ 
-┴┘└┘┴ ┴ ┴┴ ┴┴─┘┴└─┘└─┘
+╔╦╗┬┬─┐┌─┐┌─┐┌┬┐┌─┐┬─┐┬ ┬  ╔═╗┬ ┬┌─┐┌─┐┬┌─
+ ║║│├┬┘├┤ │   │ │ │├┬┘└┬┘  ║  ├─┤├┤ │  ├┴┐
+═╩╝┴┴└─└─┘└─┘ ┴ └─┘┴└─ ┴   ╚═╝┴ ┴└─┘└─┘┴ ┴
+Make sure all of the required directories exist
 ****************************************************************************************/
+
 
 async.each([process.env.STORAGE_ROOT, process.env.VIDEO_ROOT], mkdirp, function(err){
 	if(err) debug(err);
 })
+
+
+
 
 
 
@@ -91,6 +106,7 @@ mongoose.connect(db_url, {useMongoClient: true}, function(err){
 	if(err) throw("couldn't connect to", db_url);
 	else debug("connected to", db_url);
 
+	// Check for an active story!
 	Story.findOne({active:true}).exec((err, item) => {
 		if(err) throw new Error(err);
 		if(item) state.set(APPSTATES.SUBMITTED);
@@ -104,6 +120,11 @@ mongoose.connect(db_url, {useMongoClient: true}, function(err){
 
 
 
+
+
+
+
+
 /******************************************************************************************
  █████╗ ██████╗ ██████╗     ███████╗███████╗████████╗██╗   ██╗██████╗ 
 ██╔══██╗██╔══██╗██╔══██╗    ██╔════╝██╔════╝╚══██╔══╝██║   ██║██╔══██╗
@@ -112,9 +133,7 @@ mongoose.connect(db_url, {useMongoClient: true}, function(err){
 ██║  ██║██║     ██║         ███████║███████╗   ██║   ╚██████╔╝██║     
 ╚═╝  ╚═╝╚═╝     ╚═╝         ╚══════╝╚══════╝   ╚═╝    ╚═════╝ ╚═╝                                                              
 
-Pretty standard stuff, just a few Handlebars helpers
-We also make sure required directories exist, initialize persistent storiage, and 
-connect to the database.
+Pretty standard Express.js (https://expressjs.com/) stuff, and just a few Handlebars helpers
 ******************************************************************************************/
 
 var app = express();
@@ -170,7 +189,7 @@ app.get('/', function(req, res, next) {
 
 
 /**
-*	Gets some HTML with the most recent videos and their state
+*	Gets an HTML table with the most recent videos and their state
 */
 app.get('/recent', , function(req, res, next) {
 	Story.find({}).sort({createdAt: -1}).limit(5).exec((err, docs) => {
@@ -271,15 +290,18 @@ app.get('/videos', function(req, res, next) {
 /**
 *	Shows which videos were last sent by the "videos" socket
 */
+/*
 app.get('/playlist', function(req, res, next) {
 	var data = { layout: false };
 	res.render('playlist', data);
 });
+*/
 
 
-
-
-
+/**
+*	Open a browser window with the app status 
+*/
+exec(`open http://127.0.0.1:3000`);
 
 
 
@@ -325,8 +347,8 @@ app.io = io;
 
 // Set up socket namespaces
 var ui_socket = io.of('/ui');	
-var video_socket = io.of('/video');
-var emotion_socket = io.of('/emotion')
+//var video_socket = io.of('/video');
+//var emotion_socket = io.of('/emotion')
 
 //-----------------------------------------------------------------------------------------
 ui_socket.on("connection", function( client ) {
@@ -340,6 +362,10 @@ ui_socket.on("connection", function( client ) {
 			client.emit("story", doc);
 	});
 
+	storage.getItem("emotion", (err, value) => {
+		client.emit("emotion", value);
+	});
+
 	client.on("pedal", on_pedal);
 
 	client.on("cancel", () => {
@@ -351,7 +377,8 @@ ui_socket.on("connection", function( client ) {
 	});
 });
 
-var blacklist = [];
+
+/*
 var send_random_videos = done => {
 	var query = { file_present: true,  _id: { $nin: blacklist } };
 	Video.findRandom(query, {}, {limit: 40}, (err, docs) => {
@@ -395,6 +422,7 @@ video_socket.on("connection", function( client ) {
 	});
 });
 
+
 //-----------------------------------------------------------------------------------------
 emotion_socket.on("connection", function( client ) {
 	debug("/emotion client joined")
@@ -403,7 +431,7 @@ emotion_socket.on("connection", function( client ) {
 		debug("/emotion client left")
 	});
 });
-
+*/
 
 
 
@@ -433,7 +461,7 @@ emotion_socket.on("connection", function( client ) {
 
 This is a storytelling session. It is started by the foot pedal. It is possible to start 
 a session once a user has submitted the onboarding form.
-******************************************************************************************/
+*****************************************************************************************/
 
 
 
@@ -513,10 +541,12 @@ var start_session = function() {
 		if(err) return debug(err);
 
 		timer.begin(45000);
-		
+		Video.update({}, {$set: {'blacklisted' : false}}, {multi: true});
+
 		state.set(APPSTATES.IN_PROGRESS);
 	});
 }
+
 
 /**
 *	When the user hits the foot pedal again (or the countdown timer runs out), 
@@ -605,9 +635,9 @@ var end_session = function(cancel) {
 		ending = false;
 		if(err) return debug(err);
 
-		blacklist = [];
-		video_socket.emit("blacklist", []);
-
+		// video_socket.emit("blacklist", []);
+		Video.update({}, {$set: {'blacklisted' : false}}, {multi: true});
+		storage.removeItem("emotion");
 		state.set(APPSTATES.IDLE);
 	});
 }
@@ -663,7 +693,6 @@ FootPedal.on("press", on_pedal);
 
 
 /******************************************************************************************
-
 ███████╗██████╗ ███████╗███████╗ ██████╗██╗  ██╗
 ██╔════╝██╔══██╗██╔════╝██╔════╝██╔════╝██║  ██║
 ███████╗██████╔╝█████╗  █████╗  ██║     ███████║
@@ -689,6 +718,8 @@ If the sentence has NLU, we use it for 3 things:
 
 ******************************************************************************************/                                                                            
 
+
+
 SpeechToText.on("sentence", (sentence) => {
 	debug(util.inspect(sentence.toJson(), {depth: 10}));
 
@@ -701,24 +732,85 @@ SpeechToText.on("sentence", (sentence) => {
 	});
 
 	if(sentence.has_nlu()) {
-		// DO YOU FEEL THE EMOTION? if so, send it to the emotion_socket
-		if(sentence.has_emotion()) {
-			var emo = sentence.get_emotion();
-			debug("emotion", emo);
-			emotion_socket.emit("emotion", emo);
-		}
- 
-		var terms = sentence.get_search_terms();
-		debug( "search terms",  terms )
 
+		var terms = sentence.get_search_terms();
+		debug("search terms",  terms);
+		Video.setScores( terms );
+
+
+		if(sentence.has_emotion()) {
+			var emo = sentence.get_top_emotion();
+			debug("emotion", emo);
+			storage.setItem('emotion', emo);
+			ui_socket.emmit('emotion', emo);
+		}
+
+		/*
+		// DO YOU FEEL THE EMOTION? if so, send it to the emotion_socket
 		video_socket.emit("query", terms);
 		Video.getPlaylist(terms, blacklist, 20, (err, playlist) => {
 			if(err) return debug(err);
 			playlist = 	playlist.map(d => { return d.as_playlist(); });
 			video_socket.emit("playlist", playlist);
 		});
+		*/
 	}
 });
+
+
+
+
+
+
+
+
+
+
+
+/******************************************************************************************
+██╗   ██╗██████╗ ███╗   ███╗██╗  ██╗    ███████╗████████╗██╗   ██╗███████╗███████╗
+██║   ██║██╔══██╗████╗ ████║╚██╗██╔╝    ██╔════╝╚══██╔══╝██║   ██║██╔════╝██╔════╝
+██║   ██║██║  ██║██╔████╔██║ ╚███╔╝     ███████╗   ██║   ██║   ██║█████╗  █████╗  
+╚██╗ ██╔╝██║  ██║██║╚██╔╝██║ ██╔██╗     ╚════██║   ██║   ██║   ██║██╔══╝  ██╔══╝  
+ ╚████╔╝ ██████╔╝██║ ╚═╝ ██║██╔╝ ██╗    ███████║   ██║   ╚██████╔╝██║     ██║     
+  ╚═══╝  ╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═╝    ╚══════╝   ╚═╝    ╚═════╝ ╚═╝     ╚═╝     
+******************************************************************************************/                                                                                               
+
+
+var send_video = function(done) {
+	var query = { blacklisted: false, file_present: true };
+	Video.findOne(query).sort({score: -1}).exec((err, doc) => {
+		if(err) return setTimeout(done, 100)
+
+		VDMX.send(doc.osc_address, () => {
+			doc.blacklisted = true;
+			doc.save((doc, err) => {
+				debug("waiting", doc.duration)
+				setTimeout(done, doc.duration);
+			});
+		});
+	});
+}
+async.forever(send_video);
+
+
+var textures = { anger: 4, disgust: 2, fear: 4, joy: 7, sadness: 6 };
+var next_texture = Date.now();
+var send_texture = function(done) {
+	var now = Date.now();
+	if(now > next_texture) {
+		storage.getItem("emotion", (err, value) => {
+			var e = "sadness";
+			if(value) e = value;
+			var n = Math.ceil(Math.random()*textures[e]);
+			var address = `/${emo}${n}`;
+			VDMX.send(address);
+			next_texture = now + 5000;
+		});
+	}
+	setTimeout(done, 50);
+}
+async.forever(send_texture);
 
 
 
@@ -805,7 +897,7 @@ app.use(function(err, req, res, next) {
 // Close function to be called from the graceful shutdown procedure in app/www
 app.close = function(done) {
 	debug("closing");
-	async.parallel([FootPedal.close, OnAirSign.close, cam0.close, cam1.close], done);
+	async.parallel([FootPedal.close, OnAirSign.close, VDMX.close, cam0.close, cam1.close], done);
 }
 
 module.exports = app;

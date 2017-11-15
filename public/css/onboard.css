@@ -439,7 +439,9 @@ body {
           text-decoration: underline;
           font-family: 'F37Bolton', helvetica, sans-serif;
           font-weight: bold; }
-  body #about_you .container .termsAndConditions.popup {
+        body #about_you .container .content .formContainer .check .label .newOrleansTourismPolicyLink a {
+          color: black; }
+  body #about_you .container .termsAndConditions.popup, body #about_you .container .privacyPolicy.popup {
     -moz-transform: translate(-50%, -50%);
     -o-transform: translate(-50%, -50%);
     -ms-transform: translate(-50%, -50%);
@@ -460,61 +462,74 @@ body {
     padding: 70rem 60rem;
     opacity: 0;
     overflow: hidden; }
-    body #about_you .container .termsAndConditions.popup.hidden {
+    body #about_you .container .termsAndConditions.popup.hidden, body #about_you .container .privacyPolicy.popup.hidden {
       display: none; }
-    body #about_you .container .termsAndConditions.popup.transitionIn {
+    body #about_you .container .termsAndConditions.popup.transitionIn, body #about_you .container .privacyPolicy.popup.transitionIn {
       opacity: 1; }
-    body #about_you .container .termsAndConditions.popup .title, body #about_you .container .termsAndConditions.popup .xBtn.round {
+    body #about_you .container .termsAndConditions.popup .title, body #about_you .container .termsAndConditions.popup .xBtn.round, body #about_you .container .privacyPolicy.popup .title, body #about_you .container .privacyPolicy.popup .xBtn.round {
       vertical-align: middle;
       margin: 0; }
-    body #about_you .container .termsAndConditions.popup h1.title {
+    body #about_you .container .termsAndConditions.popup a, body #about_you .container .privacyPolicy.popup a {
+      color: white; }
+    body #about_you .container .termsAndConditions.popup .title, body #about_you .container .privacyPolicy.popup .title {
       display: inline-block;
       float: left;
-      font-weight: bold;
-      font-size: 30rem;
-      letter-spacing: 1rem;
       overflow: visible; }
-      body #about_you .container .termsAndConditions.popup h1.title::after, body #about_you .container .termsAndConditions.popup h1.title :after {
-        content: "";
-        width: 100%;
-        background: white;
-        position: absolute;
-        bottom: 2rem;
-        left: 0;
-        height: 2px; }
-    body #about_you .container .termsAndConditions.popup .xBtn.round {
+      body #about_you .container .termsAndConditions.popup .title h1, body #about_you .container .privacyPolicy.popup .title h1 {
+        font-weight: bold;
+        font-size: 30rem;
+        letter-spacing: 1rem;
+        margin: 0; }
+        body #about_you .container .termsAndConditions.popup .title h1::after, body #about_you .container .termsAndConditions.popup .title h1 :after, body #about_you .container .privacyPolicy.popup .title h1::after, body #about_you .container .privacyPolicy.popup .title h1 :after {
+          content: "";
+          width: 100%;
+          background: white;
+          position: absolute;
+          bottom: 2rem;
+          left: 0;
+          height: 2px; }
+      body #about_you .container .termsAndConditions.popup .title .lastUpdate, body #about_you .container .privacyPolicy.popup .title .lastUpdate {
+        margin-top: 10rem;
+        font-size: 20rem;
+        font-style: italic; }
+    body #about_you .container .termsAndConditions.popup .xBtn.round, body #about_you .container .privacyPolicy.popup .xBtn.round {
       border: 2px solid white;
       border-radius: 100rem;
       width: 45rem;
       height: 45rem;
       float: right;
       margin-right: -17rem; }
-      body #about_you .container .termsAndConditions.popup .xBtn.round figure {
+      body #about_you .container .termsAndConditions.popup .xBtn.round figure, body #about_you .container .privacyPolicy.popup .xBtn.round figure {
         margin: 0;
         padding: 9rem; }
-    body #about_you .container .termsAndConditions.popup .floatCleaner {
+    body #about_you .container .termsAndConditions.popup .floatCleaner, body #about_you .container .privacyPolicy.popup .floatCleaner {
       clear: both; }
-    body #about_you .container .termsAndConditions.popup .termsContainer {
+    body #about_you .container .termsAndConditions.popup .termsContainer, body #about_you .container .privacyPolicy.popup .termsContainer {
       height: 85%;
       margin-top: 30rem;
       padding-right: 150rem;
       overflow-y: scroll; }
-      body #about_you .container .termsAndConditions.popup .termsContainer * {
+      body #about_you .container .termsAndConditions.popup .termsContainer *, body #about_you .container .privacyPolicy.popup .termsContainer * {
         font-size: 15rem;
         font-family: 'F37Bolton';
         font-weight: normal;
         line-height: 22rem; }
-      body #about_you .container .termsAndConditions.popup .termsContainer::-webkit-scrollbar {
+      body #about_you .container .termsAndConditions.popup .termsContainer::-webkit-scrollbar, body #about_you .container .privacyPolicy.popup .termsContainer::-webkit-scrollbar {
         width: 8rem;
         background-image: url("../assets/scrollbar_bg.svg");
         background-position-x: center;
         background-size: 100% 5%;
         background-repeat-x: no-repeat;
         background-repeat-y: repeat; }
-      body #about_you .container .termsAndConditions.popup .termsContainer::-webkit-scrollbar-thumb {
+      body #about_you .container .termsAndConditions.popup .termsContainer::-webkit-scrollbar-thumb, body #about_you .container .privacyPolicy.popup .termsContainer::-webkit-scrollbar-thumb {
         background-color: white;
         border-radius: 20rem; }
-    body #about_you .container .termsAndConditions.popup .goDownArrow figure {
+      body #about_you .container .termsAndConditions.popup .termsContainer h2, body #about_you .container .privacyPolicy.popup .termsContainer h2 {
+        font-weight: bold;
+        font-size: 20rem; }
+      body #about_you .container .termsAndConditions.popup .termsContainer h3, body #about_you .container .privacyPolicy.popup .termsContainer h3 {
+        font-size: 18rem; }
+    body #about_you .container .termsAndConditions.popup .goDownArrow figure, body #about_you .container .privacyPolicy.popup .goDownArrow figure {
       width: 40rem;
       margin: 0 auto;
       margin-top: 50rem; }

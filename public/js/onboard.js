@@ -27450,18 +27450,28 @@ console.log(output);
 
 function termsConditionsOverlay(){
     let termsOverlay = $('.termsAndConditions.popup')
-    
+    let privacyOverlay = $('.privacyPolicy.popup')
+    let popUp = $('.popup')
+
     $('.termsConditionsLink').click(()=>{
         termsOverlay.removeClass('hidden')
         setTimeout(()=>{
             termsOverlay.addClass('transitionIn')
         },10)
     })
-    //close overlay
-    termsOverlay.find('.xBtn').click(()=>{
-        termsOverlay.removeClass('transitionIn')
+
+    $('.newOrleansTourismPolicyLink').click(()=>{
+        privacyOverlay.removeClass('hidden')
         setTimeout(()=>{
-            termsOverlay.addClass('hidden')
+            privacyOverlay.addClass('transitionIn')
+        },10)
+    })
+
+    //close overlay
+    popUp.find('.xBtn').click(()=>{
+        popUp.removeClass('transitionIn')
+        setTimeout(()=>{
+            popUp.addClass('hidden')
         },290)
         
     })
@@ -27470,11 +27480,11 @@ function termsConditionsOverlay(){
 }
 
 function scrollTermsConditions(){
-    let termsOverlay = $('.termsAndConditions.popup')
-    termsOverlay.find('.goDownArrow figure').click(()=>{
-        let scrollAmount = termsOverlay.find('.termsContainer')[0].scrollTop
-        scrollAmount += termsOverlay.find('.termsContainer').height() - 50;
-        termsOverlay.find('.termsContainer').stop().animate({
+    let popUp = $('.popup')
+    popUp.find('.goDownArrow figure').click(()=>{
+        let scrollAmount = popUp.not(".hidden").find('.termsContainer')[0].scrollTop
+        scrollAmount += popUp.not(".hidden").find('.termsContainer').height() - 50;
+        popUp.not(".hidden").find('.termsContainer').stop().animate({
             'scrollTop': scrollAmount
         }, 600, 'swing', function () {
         });

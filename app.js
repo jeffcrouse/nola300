@@ -29,9 +29,13 @@ var VLCPlayer = require('./modules/VLCPlayer');
 var moment = require('moment');
 
 
+if(process.env.USE_MUSIC) {
+	var music = new VLCPlayer(process.env.MUSIC_PATH);
+	music.fadeIn();
+}
 
-music = new VLCPlayer(process.env.MUSIC_PATH);
-music.fadeIn();
+
+
 
 /****************************************************************************************
 ┌─┐┌┬┐┌─┐┌┬┐┌─┐  ┌┬┐┌─┐┌┬┐┌┬┐
@@ -52,18 +56,8 @@ const APPSTATES = {
 var state = new StateManager(APPSTATES.IDLE);
 state.on("state_change", (old_state, new_state) => {
 	debug("state_change", old_state, "=>", new_state);
-	
 	if(ui_socket)
 		ui_socket.emit("state", new_state);
-
-	// switch(new_state) {
-	// 	case APPSTATES.STARTING: 		 break;
-	// 	case APPSTATES.IDLE: 			  break;
-	// 	case APPSTATES.STOPPING:  		 break;
-	// 	case APPSTATES.IN_PROGRESS: 	break;
-	// 	case APPSTATES.SUBMITTED: 		break;
-	// 	default: debug("UNKNOWN STATE"); break;
-	// }
 });
 
 
@@ -221,8 +215,7 @@ app.get('/timer', function(req, res, next) {
 */
 app.get('/onboard', function(req, res, next) {
 	var data = { layout: false };
-	var template = "mobile";
-	res.render(template, data);
+	res.render(process.env.NOLA_LOCATION, data);
 });
 
 
@@ -259,6 +252,8 @@ app.post('/onboard', valid, function(req, res, next) {
 		var data = _.pick(req.body, ["firstName", "lastName", "zipCode", "email", "acceptTerms", "emailList"]);
 		var story = new Story(data);
 		story.active = true;
+		story.location = process.env.NOLA_LOCATION;
+		story.numCameras = process.env.NUM_CAMERAS;
 
 		story.save((err, doc) => {
 			if(err) {
@@ -462,18 +457,18 @@ This is a storytelling session. It is started by the foot pedal. It is possible 
 a session once a user has submitted the onboarding form.
 *****************************************************************************************/
 
+var cameras = [];
+for(var i=0; i<process.env.NUM_CAMERAS; i++) {
+	cameras.push( new CanonCamera(i.toString()) );
+}
 
-
-
-var cam0 = new CanonCamera("0");
-var cam1 = new CanonCamera("1");
 
 /**
 * 	Continually send the status of the 2 cameras to any ui socket that is listening
 */
 async.forever((done) => {
-	ui_socket.emit("cam_status", 0, cam0.getIsOpened());
-	ui_socket.emit("cam_status", 1, cam1.getIsOpened());
+	for(var i=0; i<cameras.length; i++)
+		ui_socket.emit("cam_status", i, cameras[i].getIsOpened());
 	setTimeout(done, 1000);
 }, err => {
 	debug("cam_status exited", err);
@@ -512,7 +507,7 @@ var start_session = function() {
 
 	debug("start_session");
 
-	music.fadeOut();
+	if(process.env.USE_MUSIC) music.fadeOut();
 	state.set(APPSTATES.STARTING);
 
 	var update_story = done => {
@@ -522,18 +517,17 @@ var start_session = function() {
 			
 			doc.sentences = [];	// reset the sentences in case this is a re-record
 			doc.startTime = Date.now();
-			doc.location = process.env.NOLA_LOCATION;
 			doc.save(done);
 		});
 	}
 
 	var start_devices = done => {
-		async.parallel([
-			cam0.record.bind(cam0, null), 
-			cam1.record.bind(cam1, null), 
-			SpeechToText.start, 
-			OnAirSign.on
-		], done); 
+		var tasks = [SpeechToText.start];
+		for(var i=0; i<cameras.length; i++) {
+			tasks.push(  cameras[i].record.bind(cameras[i], null) );
+		}
+		if(process.env.USE_ONAIR) tasks.push(OnAirSign.on);
+		async.parallel(tasks, done); 
 	}
 
 	// send_random_videos
@@ -572,11 +566,11 @@ var end_session = function(cancel) {
 		return;
 	}
 	
-	music.fadeIn();
+	if(process.env.USE_MUSIC) music.fadeIn();
+
 	timer.stop();
 	state.set(APPSTATES.STOPPING);
 	
-
 	var story = null;
 
 	var wait = done => {
@@ -602,14 +596,24 @@ var end_session = function(cancel) {
 	}
 
 	var cancel_devices = done => {
-		async.parallel([cam0.cancel, cam1.cancel, SpeechToText.stop, OnAirSign.off, VDMX.fadeOut], done);
+		var tasks = [SpeechToText.stop];
+		if(process.env.USE_ONAIR) tasks.push(OnAirSign.off);
+		for(var i=0; i<cameras.length; i++) {
+			tasks.push(cameras[i].cancel);
+		}
+		async.parallel(tasks, done);
 	}
 
 	var stop_devices = done => {
 		debug("stop_devices");
-		var stop_0 = (cb) => {  cam0.stop(`${story.directory}/vid_00.mp4`, cb); }
-		var stop_1 = (cb) => {  cam1.stop(`${story.directory}/vid_01.mp4`, cb); }
-		async.parallel([stop_0, stop_1, SpeechToText.stop, OnAirSign.off], done);
+		var tasks = [SpeechToText.stop];
+		for(var i=0; i<cameras.length; i++) {
+			tasks.push(cb => {
+				cam.stop(`${story.directory}/vid_0${i}.mp4`, cb);
+			});
+		}
+		if(process.env.USE_ONAIR) tasks.push(OnAirSign.off);
+		async.parallel(tasks, done);
 	}
 
 	var mark_ready = done => {
@@ -831,7 +835,16 @@ app.use(function(err, req, res, next) {
 // Close function to be called from the graceful shutdown procedure in app/www
 app.close = function(done) {
 	debug("closing");
-	async.parallel([FootPedal.close, OnAirSign.close, music.quit, cam0.close, cam1.close], done);
+	var tasks = [];
+	for(var i=0; i<cameras.length; i++) {
+		tasks.push(cameras[i].close);
+	}
+
+	if(process.env.USE_ONAIR) 		tasks.push(OnAirSign.close);
+	if(process.env.USE_MUSIC) 		tasks.push(music.quit);
+	if(process.env.USE_FOOTPEDAL) 	tasks.push(FootPedal.close);
+
+	async.parallel(tasks, done);
 }
 
 module.exports = app;

@@ -33,13 +33,13 @@ which('ffmpeg', function (err, resolvedPath) {
 	ffmpeg = resolvedPath;
 });
 
-var soundtracks = [];
+var songs = [];
 var pattern = path.join(__dirname, "resources", "Soundtracks", "*.wav");
 debug(pattern);
 glob(pattern, function (err, files) {
 	if(err) debug(err);
 	debug(files);
-	soundtracks = files;
+	songs = files;
 })
 
 
@@ -71,6 +71,7 @@ var StorySchema = Schema({
 	location: 		{ type: String, default: "mobile" },
 	startTime: 		{ type: Date },
 	endTime: 		{ type: Date },
+	numCameras: 	{ type: Number, default: 2 },
 	sentences: 		[ SentenceSchema ],
 	error: 			{ type: String, default: null },
 	readyForEdit: 	{ type: Boolean, default: false },
@@ -155,22 +156,46 @@ StorySchema.options.toJSON.transform = lean;
 ╚═╝     ╚═╝╚══════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚══════╝
 ****************************************************************************************/
 
+function getRandomInt(min, max) {
+	min = Math.ceil(min);
+	max = Math.floor(max);
+	return Math.floor(Math.random() * (max - min)) + min; 
+}
+
 
 /**
-*	Run the FFMPEG command that turns the 2 videos, intro overlays, and audio into a single 
-* 	edit. This is pretty gnarly, but that's how FFMPEG is.
+* 	
 */
-StorySchema.methods.do_edit = function(done) {
-	debug("do_edit", this.shortid);
+StorySchema.methods.get_1cam_edit_command  = function(done) {
+	var d = Math.min(this.duration/1000.0, 45);
+	var n = getRandomInt(0, songs.length);
+	var song = songs[n];
 
-	function getRandomInt(min, max) {
-		min = Math.ceil(min);
-		max = Math.floor(max);
-		return Math.floor(Math.random() * (max - min)) + min; 
-	}
+	var filters = [];
+	filters.push(`[0:v]scale=1920:1080,fps=24,format=yuva420p,setpts=PTS-STARTPTS[vedit1]`);
+	filters.push(`[1:v]scale=1920:1080,fps=24,format=yuva420p,setpts=PTS+2/TB[intro]`);
+	filters.push(`[2:v]scale=1920:1080,fps=24,format=yuva420p,setpts=PTS+${d-4}/TB[outro]`);
+	filters.push(`[vedit1][intro]overlay=0:0[vedit2]`);
+	filters.push(`[vedit2][outro]overlay=0:0[vedit3]`);
+	filters.push(`[vedit3]fade=in:0:30[vedit4]`);
+	filters.push(`[aedit1]afade=t=in:st=0:d=2, afade=t=out:st=${d-4}:d=4[aedit2]`);
+	filters.push(`[4:a]atrim=start=0:end=${d}, afade=t=out:st=${d-4}:d=4, volume=0.75[soundtrack]`);
+	filters.push(`[soundtrack][aedit2]amix[aedit3]`);
 
-	var n = getRandomInt(0, soundtracks.length);
-	var song = soundtracks[n];
+	var cmd = `${ffmpeg} -y -i "${this.vid_00.path}" -i "${INTRO}" -i "${OUTRO}" -i "${song}" `;
+    cmd += `-filter_complex "${filters.join(";")}" -map "[vedit4]" -map "[aedit3]" `;
+    cmd += `-threads 2 -c:v libx264 -crf 23 -preset fast -c:a aac -pix_fmt yuv420p "${this.edit.path}"`;
+    return cmd;
+}
+
+
+/**
+*	This is pretty gnarly, but that's how FFMPEG is.
+*/
+StorySchema.methods.get_edit_command = function() {
+
+	var n = getRandomInt(0, songs.length);
+	var song = songs[n];
 
 	var concat = [];
 	var filters = [];
@@ -187,7 +212,7 @@ StorySchema.methods.do_edit = function(done) {
 		filters.push(`[${cam}:a]atrim=start=${start}:end=${end}, asetpts=PTS-STARTPTS[a${label}]`);
 		concat.push(`[v${label}][a${label}]`);
 		label++;
-		cam = label % 2;
+		cam = label % this.numCameras;
 		start = end;
 	} while(start < d);
 	
@@ -204,6 +229,18 @@ StorySchema.methods.do_edit = function(done) {
 	var cmd = `${ffmpeg} -y -i "${this.vid_00.path}" -i "${this.vid_01.path}" -i "${INTRO}" -i "${OUTRO}" -i "${song}" `;
     cmd += `-filter_complex "${filters.join(";")}" -map "[vedit4]" -map "[aedit3]" `;
     cmd += `-threads 2 -c:v libx264 -crf 23 -preset fast -c:a aac -pix_fmt yuv420p "${this.edit.path}"`;
+
+    return cmd;
+}
+
+
+/**
+*	Run the FFMPEG command that turns all of the assets into a single edit. 
+*/
+StorySchema.methods.do_edit = function(done) {
+	debug("do_edit", this.shortid);
+
+    var cmd = this.get_edit_command();
     debug("command", cmd);
 
     var start = new Date();
@@ -226,6 +263,9 @@ StorySchema.methods.do_edit = function(done) {
 		});
 	});
 }
+
+
+
 
 
 /**

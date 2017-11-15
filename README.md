@@ -3,7 +3,7 @@ code repo for the Nola300 project
 
 
 #install instructions
-- Install SublimeText and ``ln -s "/Applications/Sublime Text 2.app/Contents/SharedSupport/bin/subl" ~/bin/subl``
+- Install SublimeText and ``ln -s "/Applications/Sublime Text 2.app/Contents/SharedSupport/bin/subl" /usr/local/bin/subl``
 - install git https://git-scm.com/download/mac
 - setup git names
 
@@ -28,10 +28,9 @@ git config --global user.email jeff@seethroughlab.com
 
 ### Homebrew stuff
 ```/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"```
+``sudo chown -R `whoami` /usr/local``
 ``brew update``
 ``brew install mongodb``
-
-``sudo chown -R `whoami` /usr/local``
 
 ```
 brew install ffmpeg \

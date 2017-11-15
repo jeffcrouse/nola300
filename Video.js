@@ -221,13 +221,16 @@ VideoSchema.statics.setScores = function(terms, callback) {
 	//});
 }
 
+
+
+
 // --------------------------------------------------------------------------------------
-VideoSchema.statics.getPlaylist = function(terms, blacklist, length, callback) {
+VideoSchema.statics.getPlaylist = function(terms, length, callback) {
 	this.setScores(terms, (err) => {
 		if(err) return callback(err);
 
 		var query = { 
-			_id: { "$nin": blacklist },
+			blacklisted: false,
 			file_present: true,
 			score: { "$gt": 0 }  
 		};

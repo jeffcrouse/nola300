@@ -9,7 +9,7 @@ var VDMX = function() {
 	var opacity = 0;
 	var targetOpacity = 0;
 	var closeRequested = false;
-
+	var textures = { anger: 4, disgust: 2, fear: 4, joy: 7, sadness: 6 };
 
 	this.fadeOut = function(done) {
 		done = done || function(){};
@@ -31,9 +31,17 @@ var VDMX = function() {
 		client.send(address, 1, done);
 	}
 
+
+	this.send_emotion = function(emo) {
+		var n = Math.ceil(Math.random()*textures[emo]);
+		var address = `/${emo}${n}`;
+		send(address);
+	}
+
 	this.close = function(done) {
 		done = done || function(){};
 		closeRequested = true;
+		done();
 	}
 
 	async.forever(done => {

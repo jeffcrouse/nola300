@@ -38,7 +38,6 @@ var pattern = path.join(__dirname, "resources", "Soundtracks", "*.wav");
 debug(pattern);
 glob(pattern, function (err, files) {
 	if(err) debug(err);
-	debug(files);
 	songs = files;
 })
 

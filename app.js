@@ -13,8 +13,6 @@ var _ = require('lodash');
 const exec = require("child_process").exec;
 var fs = require("fs");
 const mkdirp = require('mkdirp');
-var storage = require('node-persist');	
-storage.initSync();
 const { check, validationResult } = require('express-validator/check');
 var Video = require('./Video')
 var Story = require('./Story')
@@ -27,13 +25,13 @@ var CountdownTimer = require('./modules/CountdownTimer')
 var CanonCamera = require('./modules/CanonCamera')
 var OnAirSign = require('./modules/OnAirSign');				// Singleton
 var StateManager = require('./modules/StateManager');
-var VDMX = require('./modules/VDMX');						// Singleton
+var VLCPlayer = require('./modules/VLCPlayer');
 var moment = require('moment');
 
 
 
-
-
+music = new VLCPlayer(process.env.MUSIC_PATH);
+music.fadeIn();
 
 /****************************************************************************************
 ┌─┐┌┬┐┌─┐┌┬┐┌─┐  ┌┬┐┌─┐┌┬┐┌┬┐
@@ -112,10 +110,14 @@ mongoose.connect(db_url, {useMongoClient: true}, function(err){
 	});
 
 	Video.scan(function(err) { if(err) debug(err); });
+	clear_blacklist();
 });
 
 
-
+var clear_blacklist = done => {
+	done = done || function(err){ if(err) debug(err); }
+	Video.update({}, {$set: {'blacklisted' : false}}, {multi: true}, done);
+}
 
 
 
@@ -293,18 +295,17 @@ app.get('/videos', function(req, res, next) {
 /**
 *	Shows which videos were last sent by the "videos" socket
 */
-/*
 app.get('/playlist', function(req, res, next) {
 	var data = { layout: false };
 	res.render('playlist', data);
 });
-*/
+
 
 
 /**
 *	Open a browser window with the app status 
 */
-exec(`open http://127.0.0.1:3000`);
+//exec(`open http://127.0.0.1:3000`);
 
 
 
@@ -350,8 +351,8 @@ app.io = io;
 
 // Set up socket namespaces
 var ui_socket = io.of('/ui');	
-//var video_socket = io.of('/video');
-//var emotion_socket = io.of('/emotion')
+var video_socket = io.of('/video');
+var emotion_socket = io.of('/emotion')
 
 //-----------------------------------------------------------------------------------------
 ui_socket.on("connection", function( client ) {
@@ -361,12 +362,10 @@ ui_socket.on("connection", function( client ) {
 
 	Story.findOne({active:true}).exec((err, doc) => {
 		if(err) throw new Error(err);
-		if(doc) 
+		if(doc) {
 			client.emit("story", doc);
-	});
-
-	storage.getItem("emotion", (err, value) => {
-		client.emit("emotion", value);
+			client.emit("emotion", doc.value);
+		}
 	});
 
 	client.on("pedal", on_pedal);
@@ -381,9 +380,9 @@ ui_socket.on("connection", function( client ) {
 });
 
 
-/*
+
 var send_random_videos = done => {
-	var query = { file_present: true,  _id: { $nin: blacklist } };
+	var query = { file_present: true,  blacklisted: false };
 	Video.findRandom(query, {}, {limit: 40}, (err, docs) => {
 		if (err) return debug(results); // 5 elements
 
@@ -397,25 +396,22 @@ var send_random_videos = done => {
 video_socket.on("connection", function( client ) {
 	debug("/video client joined")
 	
-	client.emit("blacklist", blacklist);
 
 	client.on('disconnect', () => {
 		debug("/video client left")
 	});
 
-	client.on("blacklist", function(msg) {
-		debug("blacklist", msg)
-		if(blacklist.indexOf(msg) > -1) {
-			debug("warning: video is already blacklisted.")
-		} else {
-			blacklist.push(msg);
-			client.broadcast.emit("blacklist", blacklist); // broadcast it back out to any other listening clients
-			debug(blacklist); 
-		}
+	client.on("blacklist", function(id) {
+		Video.findById(id, function (err, doc) {
+			doc.blacklisted = true;
+			doc.save((err) => {
+				if(err) debug(err);
+			})
+		});
 	});
 
 	client.on("get_random", () => {
-		var query = { file_present: true,  _id: { $nin: blacklist } };
+		var query = { file_present: true,  blacklisted: false };
 		Video.findRandom(query, {}, {limit: 20}, (err, docs) => {
 			if (err) return debug(results); // 5 elements
 
@@ -434,7 +430,7 @@ emotion_socket.on("connection", function( client ) {
 		debug("/emotion client left")
 	});
 });
-*/
+
 
 
 
@@ -516,6 +512,7 @@ var start_session = function() {
 
 	debug("start_session");
 
+	music.fadeOut();
 	state.set(APPSTATES.STARTING);
 
 	var update_story = done => {
@@ -535,17 +532,14 @@ var start_session = function() {
 			cam0.record.bind(cam0, null), 
 			cam1.record.bind(cam1, null), 
 			SpeechToText.start, 
-			OnAirSign.on,
-			VDMX.fadeIn
+			OnAirSign.on
 		], done); 
 	}
 
-	async.series([update_story, send_random_videos, start_devices], err => {
+	// send_random_videos
+	async.series([update_story, send_random_videos, start_devices, clear_blacklist], err => {
 		if(err) return debug(err);
-
 		timer.begin(45000);
-		Video.update({}, {$set: {'blacklisted' : false}}, {multi: true});
-
 		state.set(APPSTATES.IN_PROGRESS);
 	});
 }
@@ -578,6 +572,7 @@ var end_session = function(cancel) {
 		return;
 	}
 	
+	music.fadeIn();
 	timer.stop();
 	state.set(APPSTATES.STOPPING);
 	
@@ -614,7 +609,7 @@ var end_session = function(cancel) {
 		debug("stop_devices");
 		var stop_0 = (cb) => {  cam0.stop(`${story.directory}/vid_00.mp4`, cb); }
 		var stop_1 = (cb) => {  cam1.stop(`${story.directory}/vid_01.mp4`, cb); }
-		async.parallel([stop_0, stop_1, SpeechToText.stop, OnAirSign.off, VDMX.fadeOut], done);
+		async.parallel([stop_0, stop_1, SpeechToText.stop, OnAirSign.off], done);
 	}
 
 	var mark_ready = done => {
@@ -627,20 +622,20 @@ var end_session = function(cancel) {
 		Story.update({}, {$set: {'active' : false}}, {multi: true}, done);
 	}
 
+	var clear_blacklist = done => {
+		Video.update({}, {$set: {'blacklisted' : false}}, {multi: true}, done);
+	}
+
 	var tasks = [];
 	if(cancel){
-		tasks = [cancel_devices, clear_active];
+		tasks = [cancel_devices, clear_active, clear_blacklist];
 	} else {
-		tasks = [wait, get_story, mkdir, stop_devices, mark_ready, clear_active];
+		tasks = [wait, get_story, mkdir, stop_devices, mark_ready, clear_active, clear_blacklist];
 	}
 
 	async.series(tasks, (err) => {
 		ending = false;
 		if(err) return debug(err);
-
-		// video_socket.emit("blacklist", []);
-		Video.update({}, {$set: {'blacklisted' : false}}, {multi: true});
-		storage.removeItem("emotion");
 		state.set(APPSTATES.IDLE);
 	});
 }
@@ -731,90 +726,26 @@ SpeechToText.on("sentence", (sentence) => {
 		if(!doc) return debug("Warning: SpeechToText result with no user to add to.")
 
 		doc.sentences.push( sentence.toJson() );
-		doc.save();
-	});
 
-	if(sentence.has_nlu()) {
+		if(sentence.has_nlu()) {
+			var terms = sentence.get_search_terms();
+			debug("search terms",  terms);
 
-		var terms = sentence.get_search_terms();
-		debug("search terms",  terms);
-		Video.setScores( terms );
-
+			Video.getPlaylist(terms, 20, (err, playlist) => {
+				if(err) return debug(err);
+				playlist = 	playlist.map(d => { return d.as_playlist(); });
+				video_socket.emit("playlist", playlist);
+			});
+		}
 
 		if(sentence.has_emotion()) {
 			var emo = sentence.get_top_emotion();
 			debug("emotion", emo);
-			storage.setItem('emotion', emo);
-			ui_socket.emmit('emotion', emo);
+			emotion_socket.emit('emotion', emo);
 		}
-
-		/*
-		// DO YOU FEEL THE EMOTION? if so, send it to the emotion_socket
-		video_socket.emit("query", terms);
-		Video.getPlaylist(terms, blacklist, 20, (err, playlist) => {
-			if(err) return debug(err);
-			playlist = 	playlist.map(d => { return d.as_playlist(); });
-			video_socket.emit("playlist", playlist);
-		});
-		*/
-	}
-});
-
-
-
-
-
-
-
-
-
-
-
-/******************************************************************************************
-██╗   ██╗██████╗ ███╗   ███╗██╗  ██╗    ███████╗████████╗██╗   ██╗███████╗███████╗
-██║   ██║██╔══██╗████╗ ████║╚██╗██╔╝    ██╔════╝╚══██╔══╝██║   ██║██╔════╝██╔════╝
-██║   ██║██║  ██║██╔████╔██║ ╚███╔╝     ███████╗   ██║   ██║   ██║█████╗  █████╗  
-╚██╗ ██╔╝██║  ██║██║╚██╔╝██║ ██╔██╗     ╚════██║   ██║   ██║   ██║██╔══╝  ██╔══╝  
- ╚████╔╝ ██████╔╝██║ ╚═╝ ██║██╔╝ ██╗    ███████║   ██║   ╚██████╔╝██║     ██║     
-  ╚═══╝  ╚═════╝ ╚═╝     ╚═╝╚═╝  ╚═╝    ╚══════╝   ╚═╝    ╚═════╝ ╚═╝     ╚═╝     
-******************************************************************************************/                                                                                               
-
-
-var send_video = function(done) {
-	var query = { blacklisted: false, file_present: true };
-	Video.findOne(query).sort({score: -1}).exec((err, doc) => {
-		if(err) return setTimeout(done, 100)
-
-		VDMX.send(doc.osc_address, () => {
-			doc.blacklisted = true;
-			doc.save((doc, err) => {
-				debug("waiting", doc.duration)
-				setTimeout(done, doc.duration);
-			});
-		});
+		doc.save();
 	});
-}
-async.forever(send_video);
-
-
-var textures = { anger: 4, disgust: 2, fear: 4, joy: 7, sadness: 6 };
-var next_texture = Date.now();
-var send_texture = function(done) {
-	var now = Date.now();
-	if(now > next_texture) {
-		storage.getItem("emotion", (err, value) => {
-			var e = "sadness";
-			if(value) e = value;
-			var n = Math.ceil(Math.random()*textures[e]);
-			var address = `/${emo}${n}`;
-			VDMX.send(address);
-			next_texture = now + 5000;
-		});
-	}
-	setTimeout(done, 50);
-}
-async.forever(send_texture);
-
+});
 
 
 
@@ -900,7 +831,7 @@ app.use(function(err, req, res, next) {
 // Close function to be called from the graceful shutdown procedure in app/www
 app.close = function(done) {
 	debug("closing");
-	async.parallel([FootPedal.close, OnAirSign.close, VDMX.close, cam0.close, cam1.close], done);
+	async.parallel([FootPedal.close, OnAirSign.close, music.quit, cam0.close, cam1.close], done);
 }
 
 module.exports = app;

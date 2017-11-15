@@ -243,7 +243,7 @@ VideoSchema.statics.getPlaylist = function(terms, length, callback) {
 				var limit = length - scored.length;				
 				var query = { 
 					file_present: true,  
-					_id: { "$nin": blacklist },
+					blacklisted: false,
 					_id: { "$nin": scored.map( doc => { return doc._id }) } 
 				};
 				this.findRandom(query, {}, {"limit": limit}, (err, random) => {

@@ -32,8 +32,15 @@ var ArduinoDevice = function(key, value, name) {
 	this.exit = function(callback) {
 		callback = callback || default_callback;
 		closeRequested=true;
-		if(port) port.close().then(callback)
+		if(port) port.close(callback);
 		else callback(null);
+	}
+
+	// ----------------------------------------------------------------------------------
+	this.write = function(data, callback) {
+		callback = callback || default_callback;
+		if(port) port.write(data, "utf8", callback);
+		else callback("not connected")
 	}
 
 	// ----------------------------------------------------------------------------------
@@ -50,9 +57,6 @@ var ArduinoDevice = function(key, value, name) {
 
 	// ----------------------------------------------------------------------------------
 	var loop = function(done) {
-		if(closeRequested) return;
-		setTimeout(done, 500);
-
 		if(isOpen)  {
 			var elapsed = Date.now() - heartbeat;
 			if(elapsed > timeout) {
@@ -77,6 +81,7 @@ var ArduinoDevice = function(key, value, name) {
 					});
 					port.on('error', (err) => {
 						isOpen=false;
+						port = null;
 						debug("serial error", err);
 					});
 					port.on('data', (buf) => {
@@ -89,7 +94,7 @@ var ArduinoDevice = function(key, value, name) {
 		}
 	}
 
-	async.forever(loop);
+	async.doUntil(loop, ()=>{ return closeRequested; } );
 }
 
 util.inherits(ArduinoDevice, EventEmitter);

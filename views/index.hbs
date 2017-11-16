@@ -56,12 +56,13 @@
 			var cancel_button = $("#cancel_button");
 			var pedal_button = $("#pedal_button");
 			var session_state = $("#session_state");
+			var heartbeat = {};
 
 			var socket_status = function() {
 				if(socket) {
 					var status = socket.connected ? "connected" : "disconnected";
 					var color = socket.connected ? "green" : "red";
-					$("#socket").html(`<span style="color: ${color}">Websocket status: ${status}</div>`);
+					$("#socket").html(`<span style="color: ${color}">Websocket Status: ${status}</div>`);
 				}
 				setTimeout(socket_status, 100);
 			};
@@ -75,10 +76,13 @@
 
 			socket.on('devices', (devices) => {
 				$("#devices").html("");
+				var spans = [];
 				devices.forEach( device => {
+					heartbeat[device.name] = Date.now();
 					var color = device.status ? "green" : "red";
-					$("#devices").append(`<span style="color: ${color};">${device.name}</span> `);
+					spans.push(`<span style="color: ${color};">${device.name}</span>`);
 				});
+				$("#devices").html(spans.join("&nbsp;&nbsp;|&nbsp;&nbsp;"));
 			});
 
 			socket.on('story', (story) => {

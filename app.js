@@ -24,17 +24,21 @@ var postprocess = require("./modules/PostProcess");
 var CountdownTimer = require('./modules/CountdownTimer')
 var CanonCamera = require('./modules/CanonCamera')
 var StateManager = require('./modules/StateManager');
-var VLCPlayer = require('./modules/VLCPlayer');
 var moment = require('moment');
 
 
 if(process.env.USE_ONAIR) var OnAirSign = require('./modules/OnAirSign');				// Singleton
 
 if(process.env.USE_MUSIC) {
+	var VLCPlayer = require('./modules/VLCPlayer');
 	var music = new VLCPlayer(process.env.MUSIC_PATH);
 	music.fadeIn();
 }
 
+
+if(process.env.USE_ONAIR) {
+	var OnAirSign = require('./modules/OnAirSign');
+}
 
 
 
@@ -512,7 +516,7 @@ var start_session = function() {
 	var start_devices = done => {
 		var tasks = [SpeechToText.start];
 		for(var i=0; i<cameras.length; i++) {
-			tasks.push(  cameras[i].record.bind(cameras[i], null) );
+			tasks.push(  cameras[i].record.bind(cameras[i]) );
 		}
 		if(process.env.USE_ONAIR) tasks.push(OnAirSign.on);
 		async.parallel(tasks, done); 
@@ -587,7 +591,8 @@ var end_session = function(cancel) {
 		var tasks = [SpeechToText.stop];
 		if(process.env.USE_ONAIR) tasks.push(OnAirSign.off);
 		for(var i=0; i<cameras.length; i++) {
-			tasks.push(cameras[i].cancel);
+			var camera = cameras[i];
+			tasks.push(camera.cancel.bind(camera));
 		}
 		async.parallel(tasks, done);
 	}
@@ -596,9 +601,9 @@ var end_session = function(cancel) {
 		debug("stop_devices");
 		var tasks = [SpeechToText.stop];
 		for(var i=0; i<cameras.length; i++) {
-			tasks.push(cb => {
-				cam.stop(`${story.directory}/vid_0${i}.mp4`, cb);
-			});
+			var camera = cameras[i];
+			var path = `${story.directory}/vid_0${i}.mp4`;
+			tasks.push( camera.stop.bind(camera, path) );
 		}
 		if(process.env.USE_ONAIR) tasks.push(OnAirSign.off);
 		async.parallel(tasks, done);
@@ -640,8 +645,6 @@ var end_session = function(cancel) {
 *	FootPedal fires a "press" event any time the pedal is pressed.
 * 	Depending on the current APPSTATE, do something...
 */
-
-var FootPedal = require('./modules/FootPedal');				// Singleton
 var on_pedal = function() {
 	debug("footpedal pressed");
 
@@ -662,8 +665,11 @@ var on_pedal = function() {
 		default: debug("UNKNOWN STATE"); break;
 	}
 }
-FootPedal.on("press", on_pedal);
 
+if(process.env.USE_FOOTPEDAL) {
+	var FootPedal = require('./modules/FootPedal');				// Singleton
+	FootPedal.on("press", on_pedal);
+}
 
 
 

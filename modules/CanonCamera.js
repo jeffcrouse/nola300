@@ -34,11 +34,10 @@ var CanonCamera = function(id) {
 	/**
 	* 	Tell the camera to start recording
 	*/
-	this.record = function(filename, callback){
+	this.record = function(callback){
 		callback = callback || function(){};
 		
 		var command = "record";
-		if(filename) command += " "+filename;
 		debug(command);
 		proc.send(command, err => {
 			callback(err)

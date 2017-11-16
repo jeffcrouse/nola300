@@ -27,14 +27,11 @@ var StateManager = require('./modules/StateManager');
 var moment = require('moment');
 
 
-if(process.env.USE_ONAIR) var OnAirSign = require('./modules/OnAirSign');				// Singleton
-
 if(process.env.USE_MUSIC) {
 	var VLCPlayer = require('./modules/VLCPlayer');
 	var music = new VLCPlayer(process.env.MUSIC_PATH);
 	music.fadeIn();
 }
-
 
 if(process.env.USE_ONAIR) {
 	var OnAirSign = require('./modules/OnAirSign');
@@ -690,15 +687,15 @@ if(process.env.USE_FOOTPEDAL) {
 /**
 * 	Continually send the status of the devices
 */
-async.forever((done) => {
+async.forever(done => {
 	var devices = [];
-	if(process.env.USE_ONAIR) devices.push({name: "onair", status: })
-
-
+	if(process.env.USE_ONAIR) devices.push({name: "onair", status: OnAirSign.getIsOpened() })
+	if(process.env.USE_FOOTPEDAL) devices.push({name: "footpedal", status: FootPedal.getIsOpened() })
 	for(var i=0; i<cameras.length; i++)
-		ui_socket.emit("devices", i, cameras[i].getIsOpened());
+		devices.push({name: `cam${i}`, status: cameras[i].getIsOpened()});
 
-
+	debug(devices);
+	ui_socket.emit("devices", devices);
 	setTimeout(done, 1000);
 }, err => {
 	debug("cam_status exited", err);

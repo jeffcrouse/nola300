@@ -13,7 +13,7 @@ void setup() {
 void loop() {
   unsigned long now = millis();
   if (now > nextHeartbeat) {
-    Serial.print('!');
+    Serial.print('.');
     nextHeartbeat = now + 1000;
   }
 

@@ -18,6 +18,9 @@ var OnAirSign = function(serial) {
 	var on = false;
 	var heartbeat = Date.now();
 	var isOpened = false;
+	var no_callback = function(err) {
+		if(err) debug(err);
+	}
 
 	/**
 	* Do we currently have an open connection to the pedal?
@@ -28,13 +31,15 @@ var OnAirSign = function(serial) {
 
 
 	// ---------------------------
-	this.toggle = function() {
-		if(on) this.off();
-		else this.on();
+	this.toggle = function(callback) {
+		if(on) this.off(callback);
+		else this.on(callback);
 	}
 
 	// ---------------------------
 	this.on = function(callback) {
+		callback = callback || no_callback;
+
 		if(!port) return callback("no port");
 		on = true;
 		debug("on")
@@ -43,14 +48,18 @@ var OnAirSign = function(serial) {
 
 	// ---------------------------
 	this.off = function(callback) {
+		ccallback = callback || no_callback;
+
 		if(!port) return callback("no port");
-		on = true;
+		on = false;
 		debug("off")
 		port.write("0", "utf8", callback);
 	}
 
 	// ---------------------------
 	this.close = function(callback) {
+		callback = callback || no_callback;
+
 		if(!port) return callback("no port");
 		closeRequested = true;
 
@@ -72,12 +81,8 @@ var OnAirSign = function(serial) {
 
 	var on_data = function(buf) {
 		var data = buf.toString('utf8');
-		debug("data", data);
-
-		if(data=="!") {
-			heartbeat = Date.now();
-		}
-
+		//debug("data", data);
+		if(data==".") heartbeat = Date.now();
 	}
 
 	var on_close = function(data) {
@@ -88,6 +93,12 @@ var OnAirSign = function(serial) {
 
 	var stay_connected = function() {
 		if(closeRequested) return;
+
+		var elapsed = Date.now() - heartbeat;
+		if(elapsed > 5000) {
+			debug("lost heartbeat signal. resetting")
+			port = null;
+		}
 
 		if(port==null)  {
 			debug("port closed. attemping to open")

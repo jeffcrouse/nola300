@@ -19,6 +19,9 @@ var FootPedal = function(mfg) {
 	var re =  new RegExp(mfg);
 	var key = "manufacturer"; 
 	var heartbeat = Date.now();
+	var no_callback = function(err) {
+		if(err) debug(err);
+	}
 
 	/**
 	* Do we currently have an open connection to the pedal?
@@ -38,15 +41,14 @@ var FootPedal = function(mfg) {
 	}
 
 	var on_data = function(buf) {
-		debug("on_data")
+		//debug("on_data")
 		var data = buf.toString('utf8');
 		if(data=="d") {
 			debug("press");
 			self.emit("press", Date.now() );
 		}
-		if(data=="!") {
-			heartbeat = Date.now();
-		}
+
+		if(data==".") heartbeat = Date.now();
 	}
 
 	var on_close = function(data) {
@@ -56,6 +58,8 @@ var FootPedal = function(mfg) {
 	}
 
 	this.close = function(callback) {
+		callback = callback || no_callback;
+
 		closeRequested = true;
 		if(!port) return callback(null);
 		
@@ -68,9 +72,10 @@ var FootPedal = function(mfg) {
 	var stay_connected = function() {
 		if(closeRequested) return;
 
-		var elapsed = Date.now() - lastHeartbeat;
-		if(elapsed > 5) {
-
+		var elapsed = Date.now() - heartbeat;
+		if(elapsed > 5000) {
+			debug("lost heartbeat signal. resetting")
+			port = null;
 		}
 
 

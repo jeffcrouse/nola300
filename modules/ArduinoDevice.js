@@ -1,37 +1,42 @@
+require('dotenv').config({ silent: true }); 
 const SerialPort = require('serialport');
 const util = require('util');
+const async = require('async');
 var EventEmitter = require('events').EventEmitter;
 
-
-
-SerialPort.list(function (err, ports) {
-	ports.forEach(function(_info) { console.log(util.inspect(_info)); });
-});
-
+// SerialPort.list(function (err, ports) {
+// 	ports.forEach(function(_info) { console.log(util.inspect(_info)); });
+// });
 
 var ArduinoDevice = function(key, value, name) {
+	EventEmitter.call(this);
 
+	var self = this;
 	var debug = require('debug')(name);
 	var options = { baudRate: 9600 };
+	var timeout = 5000;
 	var re =  new RegExp(value);
 	var isOpen = false;
 	var closeRequested = false;
 	var port = null;
 	var heartbeat = Date.now();
-
 	var default_callback = function(err) { if(err) debug(error); }
 
 
-
+	// ----------------------------------------------------------------------------------
 	this.getIsOpened = function() {
 		return isOpen;
 	}
 
-	this.close = function(callback) {
+	// ----------------------------------------------------------------------------------
+	this.exit = function(callback) {
 		callback = callback || default_callback;
-		if(port) port.close();
+		closeRequested=true;
+		if(port) port.close().then(callback)
+		else callback(null);
 	}
 
+	// ----------------------------------------------------------------------------------
 	var findComName = function(callback) {
 		SerialPort.list().then((ports) => {
 			var comName = null;
@@ -43,45 +48,50 @@ var ArduinoDevice = function(key, value, name) {
 		})
 	}
 
-	var loop = function() {
+	// ----------------------------------------------------------------------------------
+	var loop = function(done) {
 		if(closeRequested) return;
-		setTimeout(loop, 1000);
+		setTimeout(done, 500);
 
 		if(isOpen)  {
 			var elapsed = Date.now() - heartbeat;
-			if(elapsed > 5000) {
+			if(elapsed > timeout) {
 				debug("lost heartbeat signal")
+				port.close();
 			}
 		}
 
 		if(!isOpen) {
-
 			debug("port closed. attemping to open")
 			findComName((comName) => {
-				port = new SerialPort(comName, options);
-				port.on('open', () => {
-					isOpen=true;
-				});
-				port.on('close', () => {
-					isOpen=false;
-					port = null;
-				});
-				port.on('error', (err) => {
-					debug("serial error", err);
-				});
-				port.on('data', (buf) => {
-					var data = buf.toString('utf8');
-					if(data==".") heartbeat = Date.now();
-				});
+				if(comName!=null) {
+					port = new SerialPort(comName, options);
+					port.on('open', () => {
+						debug("open", comName)
+						heartbeat = Date.now();
+						isOpen=true;
+					});
+					port.on('close', () => {
+						isOpen=false;
+						port = null;
+					});
+					port.on('error', (err) => {
+						isOpen=false;
+						debug("serial error", err);
+					});
+					port.on('data', (buf) => {
+						var data = buf.toString('utf8');
+						if(data==".") heartbeat = Date.now();
+						else self.emit(data, Date.now());
+					});
+				}
 			});
 		}
-	};
+	}
 
-	loop();
+	async.forever(loop);
 }
 
 util.inherits(ArduinoDevice, EventEmitter);
-
-
-var footpedal = new ArduinoDevice("manufacturer", "Teensyduino", "footpedal");
+module.exports = ArduinoDevice;
 

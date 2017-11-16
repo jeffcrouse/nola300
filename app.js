@@ -34,7 +34,7 @@ if(process.env.USE_MUSIC) {
 }
 
 if(process.env.USE_ONAIR) {
-	var OnAirSign = require('./modules/OnAirSign');
+	var OnAirSign = new ArduinoDevice("serialNumber", "85438333935351A02251", "onair");
 }
 
 
@@ -642,8 +642,8 @@ var end_session = function(cancel) {
 *	FootPedal fires a "press" event any time the pedal is pressed.
 * 	Depending on the current APPSTATE, do something...
 */
-var on_pedal = function() {
-	debug("footpedal pressed");
+var on_pedal = function(date) {
+	debug("footpedal pressed", date);
 
 	switch(state.get()) {
 		case APPSTATES.STARTING:
@@ -664,13 +664,9 @@ var on_pedal = function() {
 }
 
 if(process.env.USE_FOOTPEDAL) {
-	var FootPedal = require('./modules/FootPedal');				// Singleton
-	FootPedal.on("press", on_pedal);
+	var FootPedal = new ArduinoDevice("manufacturer", "Teensyduino", "footpedal");
+	FootPedal.on("d", on_pedal);
 }
-
-
-
-
 
 
 
@@ -855,9 +851,9 @@ app.close = function(done) {
 		tasks.push(cameras[i].close);
 	}
 
-	if(process.env.USE_ONAIR) 		tasks.push(OnAirSign.close);
+	if(process.env.USE_ONAIR) 		tasks.push(OnAirSign.exit);
 	if(process.env.USE_MUSIC) 		tasks.push(music.quit);
-	if(process.env.USE_FOOTPEDAL) 	tasks.push(FootPedal.close);
+	if(process.env.USE_FOOTPEDAL) 	tasks.push(FootPedal.exit);
 
 	async.parallel(tasks, done);
 }

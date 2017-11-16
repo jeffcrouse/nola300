@@ -147,7 +147,16 @@ var CanonCamera = function(id) {
 		proc = null;
 	}
 
+	/**
+	*	CALLBACK: Called when the canon-cli process has an error
+	*	https://nodejs.org/api/child_process.html#child_process_event_error
+	*/
+	var on_error = function(error) { 
+		debug(error);
+	}
 
+	proc.stdin.setEncoding('utf-8');
+	proc.stdin.write("help\n")
 	/**
 	* 	NOT CURRENTLY USED - IGNORE
 	*/
@@ -184,6 +193,7 @@ var CanonCamera = function(id) {
 			proc.stdout.on('data', on_stdout_data);
 			proc.stderr.on('data', on_stderr_data);
 			proc.on('close', on_close);
+			prof.on('error', on_error);
 		}
 		if(!closeRequested) setTimeout(done, 2000);
 	}

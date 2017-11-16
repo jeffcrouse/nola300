@@ -13,13 +13,24 @@ var FootPedal = function(mfg) {
 
 	var self = this;
 	var port = null;
+	var isOpened = false;
 	var options = { baudRate: 9600 };
 	var closeRequested = false;					// this means INTENTIONALLY CLOSED by the user, not the default state of the port.
 	var re =  new RegExp(mfg);
 	var key = "manufacturer"; 
+	var heartbeat = Date.now();
+
+	/**
+	* Do we currently have an open connection to the pedal?
+	*/
+	this.getIsOpened = function() {
+		return isOpened;
+	}
+
 
 	var on_open = function() {
 		debug("opened");
+		isOpened = true;
 	}
 
 	var on_error = function(err) {
@@ -33,18 +44,20 @@ var FootPedal = function(mfg) {
 			debug("press");
 			self.emit("press", Date.now() );
 		}
+		if(data=="!") {
+			heartbeat = Date.now();
+		}
 	}
 
 	var on_close = function(data) {
 		debug("on_close");
-
+		isOpened = false;
 		port = null;
 	}
 
 	this.close = function(callback) {
 		closeRequested = true;
 		if(!port) return callback(null);
-
 		
 		debug("closing");
 		callback();
@@ -54,6 +67,12 @@ var FootPedal = function(mfg) {
 
 	var stay_connected = function() {
 		if(closeRequested) return;
+
+		var elapsed = Date.now() - lastHeartbeat;
+		if(elapsed > 5) {
+
+		}
+
 
 		if(port==null)  {
 			debug("port closed. attemping to open")

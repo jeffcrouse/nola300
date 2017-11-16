@@ -26,17 +26,19 @@
 			</p>
 			<p><a class="btn btn-lg btn-success disabled" href="#" role="button" id="cancel_button">Cancel</a></p>
 
-			<div>
-				<span id="cam0">cam0</span> | <span id="cam1">cam1</span>
+			<div id="devices">
+				
 			</div>
 		</div>
 		<div id="recent" class="container">
 		</div>
+
 		<!--			
 		<footer class="footer">
 			<p>May the force be with you</p>
 		</footer>
 		-->
+
    		</div> <!-- /container -->
 
 		<!-- Optional JavaScript -->
@@ -66,8 +68,10 @@
 				countdown.text( data.join(":") );
 			});
 
-			socket.on('cam_status', (num, opened) => {
-				$("#cam"+num).css('color', opened ? "green": "red");
+			socket.on('devices', (devices) => {
+
+
+				//$("#cam"+num).css('color', opened ? "green": "red");
 				//console.log(num, opened);
 			});
 
@@ -112,9 +116,7 @@
 
 			var load_recent = function() {
 				$("#recent").load("/recent", function(response, status, xhr){
-					if ( status == "error" ) {
-    					
-    				}
+					if ( status == "error" ) { }
 					setTimeout(load_recent, 2000);
 				});
 			}

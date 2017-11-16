@@ -1,13 +1,22 @@
 #define RELAY_PIN 12
 #define ONBOARD_LED 13
 
+unsigned long nextHeartbeat;
+
 void setup() {
   pinMode(ONBOARD_LED, OUTPUT);
   pinMode(RELAY_PIN, OUTPUT);
   Serial.begin(9600);
+  nextHeartbeat = millis() + 1000;
 }
 
 void loop() {
+  unsigned long now = millis();
+  if (now > nextHeartbeat) {
+    Serial.print('!');
+    nextHeartbeat = now + 1000;
+  }
+
   while (Serial.available()) {
     // get the new byte:
     char inChar = (char)Serial.read();

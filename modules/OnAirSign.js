@@ -12,10 +12,20 @@ var OnAirSign = function(serial) {
 	var self = this;
 	var port = null;
 	var options = { baudRate: 9600 };
-	var closed = false;
+	var closeRequested = false;
 	var re =  new RegExp(serial);
 	var key = "serialNumber";
 	var on = false;
+	var heartbeat = Date.now();
+	var isOpened = false;
+
+	/**
+	* Do we currently have an open connection to the pedal?
+	*/
+	this.getIsOpened = function() {
+		return isOpened;
+	}
+
 
 	// ---------------------------
 	this.toggle = function() {
@@ -42,14 +52,16 @@ var OnAirSign = function(serial) {
 	// ---------------------------
 	this.close = function(callback) {
 		if(!port) return callback("no port");
-		closed = true;
+		closeRequested = true;
 
+		isOpened = true;
 		debug("closing");
 		callback();
 		//port.close(callback);
 	}
 
 	var on_open = function() {
+		isOpened = true;
 		debug("opened");
 	}
 
@@ -61,6 +73,11 @@ var OnAirSign = function(serial) {
 	var on_data = function(buf) {
 		var data = buf.toString('utf8');
 		debug("data", data);
+
+		if(data=="!") {
+			heartbeat = Date.now();
+		}
+
 	}
 
 	var on_close = function(data) {
@@ -70,7 +87,7 @@ var OnAirSign = function(serial) {
 
 
 	var stay_connected = function() {
-		if(closed) return;
+		if(closeRequested) return;
 
 		if(port==null)  {
 			debug("port closed. attemping to open")
@@ -96,7 +113,7 @@ var OnAirSign = function(serial) {
 				port.on('close', on_close);
 			})
 		}
-		if(!closed) setTimeout( stay_connected, 1000 );
+		if(!closeRequested) setTimeout( stay_connected, 1000 );
 	};
 
 	stay_connected();

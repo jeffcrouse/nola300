@@ -23,11 +23,12 @@ var SpeechToText = require('./modules/SpeechToText');
 var postprocess = require("./modules/PostProcess");
 var CountdownTimer = require('./modules/CountdownTimer')
 var CanonCamera = require('./modules/CanonCamera')
-var OnAirSign = require('./modules/OnAirSign');				// Singleton
 var StateManager = require('./modules/StateManager');
 var VLCPlayer = require('./modules/VLCPlayer');
 var moment = require('moment');
 
+
+if(process.env.USE_ONAIR) var OnAirSign = require('./modules/OnAirSign');				// Singleton
 
 if(process.env.USE_MUSIC) {
 	var music = new VLCPlayer(process.env.MUSIC_PATH);
@@ -464,19 +465,6 @@ for(var i=0; i<process.env.NUM_CAMERAS; i++) {
 
 
 /**
-* 	Continually send the status of the 2 cameras to any ui socket that is listening
-*/
-async.forever((done) => {
-	for(var i=0; i<cameras.length; i++)
-		ui_socket.emit("cam_status", i, cameras[i].getIsOpened());
-	setTimeout(done, 1000);
-}, err => {
-	debug("cam_status exited", err);
-});
-
-
-
-/**
 *	Create a CountdownTimer object.  
 *	This object responds to  timer.begin(millis) and begins a countdown
 *   - "tick"  	Fired every 100 millis with the remaining time
@@ -684,6 +672,31 @@ FootPedal.on("press", on_pedal);
 
 
 
+/****************************************************************************************
+███████╗████████╗ █████╗ ████████╗██╗   ██╗███████╗
+██╔════╝╚══██╔══╝██╔══██╗╚══██╔══╝██║   ██║██╔════╝
+███████╗   ██║   ███████║   ██║   ██║   ██║███████╗
+╚════██║   ██║   ██╔══██║   ██║   ██║   ██║╚════██║
+███████║   ██║   ██║  ██║   ██║   ╚██████╔╝███████║
+╚══════╝   ╚═╝   ╚═╝  ╚═╝   ╚═╝    ╚═════╝ ╚══════╝
+****************************************************************************************/
+
+/**
+* 	Continually send the status of the devices
+*/
+async.forever((done) => {
+	var devices = [];
+	if(process.env.USE_ONAIR) devices.push({name: "onair", status: })
+
+
+	for(var i=0; i<cameras.length; i++)
+		ui_socket.emit("devices", i, cameras[i].getIsOpened());
+
+
+	setTimeout(done, 1000);
+}, err => {
+	debug("cam_status exited", err);
+});
 
 
 

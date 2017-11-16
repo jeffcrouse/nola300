@@ -29,7 +29,6 @@ var OnAirSign = function(serial) {
 		return isOpened;
 	}
 
-
 	// ---------------------------
 	this.toggle = function(callback) {
 		if(on) this.off(callback);
@@ -39,7 +38,6 @@ var OnAirSign = function(serial) {
 	// ---------------------------
 	this.on = function(callback) {
 		callback = callback || no_callback;
-
 		if(!port) return callback("no port");
 		on = true;
 		debug("on")
@@ -48,8 +46,7 @@ var OnAirSign = function(serial) {
 
 	// ---------------------------
 	this.off = function(callback) {
-		ccallback = callback || no_callback;
-
+		callback = callback || no_callback;
 		if(!port) return callback("no port");
 		on = false;
 		debug("off")
@@ -59,14 +56,10 @@ var OnAirSign = function(serial) {
 	// ---------------------------
 	this.close = function(callback) {
 		callback = callback || no_callback;
-
-		if(!port) return callback("no port");
 		closeRequested = true;
-
-		isOpened = true;
 		debug("closing");
+		if(port) port.close();
 		callback();
-		//port.close(callback);
 	}
 
 	var on_open = function() {
@@ -87,18 +80,12 @@ var OnAirSign = function(serial) {
 
 	var on_close = function(data) {
 		debug("on_close");
+		isOpened = false;
 		port = null;
 	}
 
-
 	var stay_connected = function() {
 		if(closeRequested) return;
-
-		var elapsed = Date.now() - heartbeat;
-		if(elapsed > 5000) {
-			debug("lost heartbeat signal. resetting")
-			port = null;
-		}
 
 		if(port==null)  {
 			debug("port closed. attemping to open")
@@ -115,15 +102,19 @@ var OnAirSign = function(serial) {
 				debug("opening", comName);
 
 				port = new SerialPort(comName, options);
-				//port.open();
-
-
 				port.on('open', on_open);
 				port.on('error', on_error);
 				port.on('data', on_data);
 				port.on('close', on_close);
 			})
+		} else {
+			var elapsed = Date.now() - heartbeat;
+			if(elapsed > 5000) {
+				debug("lost heartbeat signal. resetting")
+				port = null;
+			}
 		}
+
 		if(!closeRequested) setTimeout( stay_connected, 1000 );
 	};
 

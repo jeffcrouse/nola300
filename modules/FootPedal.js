@@ -3,9 +3,9 @@ const util = require('util');
 var EventEmitter = require('events').EventEmitter;
 var debug = require('debug')('footpedal');
 
-// SerialPort.list(function (err, ports) {
-// 	ports.forEach(function(_info) { console.log(util.inspect(_info)); });
-// });
+SerialPort.list(function (err, ports) {
+	ports.forEach(function(_info) { console.log(util.inspect(_info)); });
+});
 
 
 var FootPedal = function(mfg) {
@@ -59,25 +59,15 @@ var FootPedal = function(mfg) {
 
 	this.close = function(callback) {
 		callback = callback || no_callback;
-
 		closeRequested = true;
-		if(!port) return callback(null);
-		
 		debug("closing");
+		if(port) port.close();
 		callback();
-		//port.close(callback);
 	}
 
 
 	var stay_connected = function() {
 		if(closeRequested) return;
-
-		var elapsed = Date.now() - heartbeat;
-		if(elapsed > 5000) {
-			debug("lost heartbeat signal. resetting")
-			port = null;
-		}
-
 
 		if(port==null)  {
 			debug("port closed. attemping to open")
@@ -94,15 +84,19 @@ var FootPedal = function(mfg) {
 				debug("opening", comName);
 
 				port = new SerialPort(comName, options);
-				//port.open();
-
-
 				port.on('open', on_open);
 				port.on('error', on_error);
 				port.on('data', on_data);
 				port.on('close', on_close);
 			})
+		} else {
+			var elapsed = Date.now() - heartbeat;
+			if(elapsed > 5000) {
+				debug("lost heartbeat signal. resetting")
+				port = null;
+			}
 		}
+
 		if(!closeRequested) setTimeout( stay_connected, 1000 );
 	};
 

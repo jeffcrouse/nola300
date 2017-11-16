@@ -58,11 +58,15 @@
 			var session_state = $("#session_state");
 
 			var socket_status = function() {
-				var status = socket.socket.connected ? "connected" : "disconnected";
-				var color = socket.socket.connected ? "green" : "red";
-				$("#socket").html(`<span style="color: ${color}">Websocket status: ${status}</div>`);
+				if(socket) {
+					var status = socket.connected ? "connected" : "disconnected";
+					var color = socket.connected ? "green" : "red";
+					$("#socket").html(`<span style="color: ${color}">Websocket status: ${status}</div>`);
+				}
 				setTimeout(socket_status, 100);
-			}();
+			};
+			socket_status();
+
 
 			socket.on('countdown',  (data) => {
 				//console.log('countdown', data );
@@ -73,7 +77,7 @@
 				$("#devices").html("");
 				devices.forEach( device => {
 					var color = device.status ? "green" : "red";
-					$("#devices").append(`<div style="color: ${color};">${device.name}</div>`);
+					$("#devices").append(`<span style="color: ${color};">${device.name}</span> `);
 				});
 			});
 

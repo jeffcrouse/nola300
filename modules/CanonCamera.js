@@ -154,8 +154,7 @@ var CanonCamera = function(id) {
 		debug(error);
 	}
 
-	proc.stdin.setEncoding('utf-8');
-	proc.stdin.write("help\n")
+
 	/**
 	* 	NOT CURRENTLY USED - IGNORE
 	*/
@@ -192,7 +191,7 @@ var CanonCamera = function(id) {
 			proc.stdout.on('data', on_stdout_data);
 			proc.stderr.on('data', on_stderr_data);
 			proc.on('close', on_close);
-			prof.on('error', on_error);
+			proc.on('error', on_error);
 		}
 		if(!closeRequested) setTimeout(done, 2000);
 	}

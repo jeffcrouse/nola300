@@ -694,7 +694,6 @@ async.forever(done => {
 	for(var i=0; i<cameras.length; i++)
 		devices.push({name: `cam${i}`, status: cameras[i].getIsOpened()});
 
-	debug(devices);
 	ui_socket.emit("devices", devices);
 	setTimeout(done, 1000);
 }, err => {

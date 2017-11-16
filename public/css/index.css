@@ -1,9 +1,4 @@
 /* Space out content a bit */
-body {
-	padding-top: 1.5rem;
-	padding-bottom: 1.5rem;
-}
-
 
 /* Customize container */
 @media (min-width: 48em) {
@@ -20,11 +15,11 @@ body {
 	text-align: center;
 	border-bottom: .05rem solid #e5e5e5;
 	margin: 0.5rem;
+	padding-bottom: 2em;
 }
 .jumbotron .btn {
 	padding: .75rem 1.5rem;
 	font-size: 1.5rem;
-	padding-bottom: 2em;
 }
 
 /* Responsive: Portrait tablets and up */

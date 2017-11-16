@@ -1,39 +1,40 @@
 /* Space out content a bit */
 body {
-  padding-top: 1.5rem;
-  padding-bottom: 1.5rem;
+	padding-top: 1.5rem;
+	padding-bottom: 1.5rem;
 }
 
 
 /* Customize container */
 @media (min-width: 48em) {
-  .container {
-    max-width: 46rem;
-  }
+	.container {
+		max-width: 46rem;
+	}
 }
 .container-narrow > hr {
-  margin: 2rem 0;
+	margin: 2rem 0;
 }
 
 /* Main marketing message and sign up button */
 .jumbotron {
-  text-align: center;
-  border-bottom: .05rem solid #e5e5e5;
-  margin: 0.5rem;
+	text-align: center;
+	border-bottom: .05rem solid #e5e5e5;
+	margin: 0.5rem;
 }
 .jumbotron .btn {
-  padding: .75rem 1.5rem;
-  font-size: 1.5rem;
+	padding: .75rem 1.5rem;
+	font-size: 1.5rem;
+	padding-bottom: 2em;
 }
 
 /* Responsive: Portrait tablets and up */
 @media screen and (min-width: 48em) {
-  /* Remove the bottom border on the jumbotron for visual effect */
-  .jumbotron {
-    border-bottom: 0;
-  }
+	/* Remove the bottom border on the jumbotron for visual effect */
+	.jumbotron {
+		border-bottom: 0;
+	}
 }
 
 #recent {
-  font-size: 10pt;
+	font-size: 10pt;
 }

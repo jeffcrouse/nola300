@@ -26,20 +26,14 @@
 			</p>
 			<p><a class="btn btn-lg btn-success disabled" href="#" role="button" id="cancel_button">Cancel</a></p>
 
-			<div id="devices">
-				
-			</div>
-		</div>
-		<div id="recent" class="container">
-		</div>
+			<div id="socket"></div>
+			<div id="devices"></div>
+		</div>  <!-- /jumbotron -->
 
-		<!--			
-		<footer class="footer">
-			<p>May the force be with you</p>
-		</footer>
-		-->
+		
+		<div id="recent" class="jumbotron">
+		</div> <!-- /container -->
 
-   		</div> <!-- /container -->
 
 		<!-- Optional JavaScript -->
 		<!-- jQuery first, then Popper.js, then Bootstrap JS -->
@@ -63,16 +57,24 @@
 			var pedal_button = $("#pedal_button");
 			var session_state = $("#session_state");
 
+			var socket_status = function() {
+				var status = socket.socket.connected ? "connected" : "disconnected";
+				var color = socket.socket.connected ? "green" : "red";
+				$("#socket").html(`<span style="color: ${color}">Websocket status: ${status}</div>`);
+				setTimeout(socket_status, 100);
+			}();
+
 			socket.on('countdown',  (data) => {
 				//console.log('countdown', data );
 				countdown.text( data.join(":") );
 			});
 
 			socket.on('devices', (devices) => {
-
-
-				//$("#cam"+num).css('color', opened ? "green": "red");
-				//console.log(num, opened);
+				$("#devices").html("");
+				devices.forEach( device => {
+					var color = device.status ? "green" : "red";
+					$("#devices").append(`<div style="color: ${color};">${device.name}</div>`);
+				});
 			});
 
 			socket.on('story', (story) => {

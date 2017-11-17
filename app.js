@@ -30,7 +30,7 @@ var moment = require('moment');
 
 if(process.env.USE_MUSIC) {
 	var VLCPlayer = require('./modules/VLCPlayer');
-	var music = new VLCPlayer(process.env.MUSIC_PATH);
+	var music = new VLCPlayer(process.env.MUSIC_ROOT);
 	music.fadeIn();
 }
 

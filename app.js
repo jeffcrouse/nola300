@@ -424,6 +424,16 @@ video_socket.on("connection", function( client ) {
 emotion_socket.on("connection", function( client ) {
 	debug("/emotion client joined")
 
+	var init = {
+		"intro": path.join(process.env.TEXTURE_ROOT, "INTRO"),
+		"anger": path.join(process.env.TEXTURE_ROOT, "ANGER"),
+		"disgust": path.join(process.env.TEXTURE_ROOT, "DISGUST"),
+		"fear": path.join(process.env.TEXTURE_ROOT, "FEAR"),
+		"joy": path.join(process.env.TEXTURE_ROOT, "JOY"),
+		"sadness": path.join(process.env.TEXTURE_ROOT, "SADNESS")
+	}
+	client.emit("init", init);
+
 	client.on('disconnect', () => {
 		debug("/emotion client left")
 	});

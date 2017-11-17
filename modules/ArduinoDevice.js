@@ -30,9 +30,10 @@ var ArduinoDevice = function(key, value, name) {
 
 	// ----------------------------------------------------------------------------------
 	this.exit = function(callback) {
+		debug("exit");
 		callback = callback || default_callback;
 		closeRequested=true;
-		if(port) port.close(callback);
+		if(port && port.isOpen) port.close(callback);
 		else callback(null);
 	}
 

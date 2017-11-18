@@ -27496,9 +27496,9 @@ function scrollTermsConditions(){
 function recordingControl(){
     //let control
     $('.startRecording').click(()=>{
-        $('.timmerContainer .lineCircle').removeClass("paused")
-        $('.go.hidden').removeClass('hidden')
-        socket.emit("pedal");
+        //$('.timmerContainer .lineCircle').removeClass("paused")
+        //$('.go.hidden').removeClass('hidden')
+        // socket.emit("pedal");
         // control = setInterval(()=>{
         //     time++;
         //     if(time<10){
@@ -27507,8 +27507,8 @@ function recordingControl(){
         //         $('.time')[0].innerHTML="00:"+time;
         //     }
         // },1000);
-
     })
+    
     $('.stopRecording').click(()=>{
         $('.timmerContainer .lineCircle').addClass("paused")
         socket.emit("pedal");
@@ -27615,8 +27615,14 @@ function submitData(){
     }).done(function(data){
         console.log(data);
         if(data.status == "OK") {
-
-
+            if(airport) {
+                $('.timmerContainer .lineCircle').removeClass("paused")
+                $('.go.hidden').removeClass('hidden')
+                socket.emit("pedal");
+            }
+            else {
+                setTimeout(reset, 3000);
+            }
         } else {
             alert(data.messages.join("\n"));
             console.log(data.messages)
@@ -27676,7 +27682,6 @@ socket.on('state', function(new_state){
 
         case "submitted":
         	waiting_room(false, false, true);
-            if(!airport) setTimeout(reset, 3000);
             break;
 
         case "starting":
@@ -27684,6 +27689,7 @@ socket.on('state', function(new_state){
         case "in progress":
             break;
         case "stopping":
+            if(airport) setTimeout(reset, 2000);
             break;
     }
 });
@@ -27693,7 +27699,8 @@ socket.on('user', function(user) {
 });
 
 socket.on("countdown", function(data){
-    $('.time')[0].innerHTML= data.join(":");
+    console.log(data.join(":"));
+    $('.time')[0].innerHTML = data.join(":");
 });
 
 

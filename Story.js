@@ -165,24 +165,23 @@ function getRandomInt(min, max) {
 /**
 * 	
 */
-StorySchema.methods.get_1cam_edit_command  = function(done) {
+StorySchema.methods.edit_command_single  = function(done) {
 	var d = Math.min(this.duration/1000.0, 45);
 	var n = getRandomInt(0, songs.length);
 	var song = songs[n];
 
 	var filters = [];
-	filters.push(`[0:v]scale=1920:1080,fps=24,format=yuva420p,setpts=PTS-STARTPTS[vedit1]`);
 	filters.push(`[1:v]scale=1920:1080,fps=24,format=yuva420p,setpts=PTS+2/TB[intro]`);
 	filters.push(`[2:v]scale=1920:1080,fps=24,format=yuva420p,setpts=PTS+${d-4}/TB[outro]`);
-	filters.push(`[vedit1][intro]overlay=0:0[vedit2]`);
-	filters.push(`[vedit2][outro]overlay=0:0[vedit3]`);
-	filters.push(`[vedit3]fade=in:0:30[vedit4]`);
+	filters.push(`[0:v][intro]overlay=0:0[vedit1]`);
+	filters.push(`[vedit1][outro]overlay=0:0[vedit2]`);
+	filters.push(`[vedit2]fade=in:0:30[vedit3]`);
 	filters.push(`[aedit1]afade=t=in:st=0:d=2, afade=t=out:st=${d-4}:d=4[aedit2]`);
-	filters.push(`[4:a]atrim=start=0:end=${d}, afade=t=out:st=${d-4}:d=4, volume=0.75[soundtrack]`);
+	filters.push(`[3:a]atrim=start=0:end=${d}, afade=t=out:st=${d-4}:d=4,volume=0.75[soundtrack]`);
 	filters.push(`[soundtrack][aedit2]amix[aedit3]`);
 
 	var cmd = `${ffmpeg} -y -i "${this.vid_00.path}" -i "${INTRO}" -i "${OUTRO}" -i "${song}" `;
-    cmd += `-filter_complex "${filters.join(";")}" -map "[vedit4]" -map "[aedit3]" `;
+    cmd += `-filter_complex "${filters.join(";")}" -map "[vedit3]" -map "[aedit3]" `;
     cmd += `-threads 2 -c:v libx264 -crf 23 -preset fast -c:a aac -pix_fmt yuv420p "${this.edit.path}"`;
     return cmd;
 }
@@ -191,7 +190,7 @@ StorySchema.methods.get_1cam_edit_command  = function(done) {
 /**
 *	This is pretty gnarly, but that's how FFMPEG is.
 */
-StorySchema.methods.get_edit_command = function() {
+StorySchema.methods.edit_command_double = function() {
 
 	var n = getRandomInt(0, songs.length);
 	var song = songs[n];
@@ -211,7 +210,7 @@ StorySchema.methods.get_edit_command = function() {
 		filters.push(`[${cam}:a]atrim=start=${start}:end=${end}, asetpts=PTS-STARTPTS[a${label}]`);
 		concat.push(`[v${label}][a${label}]`);
 		label++;
-		cam = label % this.numCameras;
+		cam = label % 2;
 		start = end;
 	} while(start < d);
 	
@@ -239,14 +238,26 @@ StorySchema.methods.get_edit_command = function() {
 StorySchema.methods.do_edit = function(done) {
 	debug("do_edit", this.shortid);
 
-    var cmd = this.get_edit_command();
+    var cmd = null;
+
+    if(this.numCameras==1) {
+    	cmd = this.edit_command_single();
+    } else if(this.numCameras==2) { 
+    	cmd = this.edit_command_double();
+    } else {
+    	done("can't find appropriate edit command")
+    }
+
     debug("command", cmd);
 
     var start = new Date();
 	exec(cmd, {cwd: this.directory}, (error, stdout, stderr) => {
-		if(error) return done(error);
-		// console.log("stdout", stdout);
-		// console.log("stderr", stderr);
+		if(error) {
+			debug(error);
+			return done(error);
+		}
+		debug("stdout", stdout);
+		debug("stderr", stderr);
 
 		fs.stat(this.edit.path, (err, stat) => {
 			if(err == null) {

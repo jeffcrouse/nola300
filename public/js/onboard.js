@@ -27386,6 +27386,8 @@ var navElements = []
 var form;
 var formIsValid=false;
 var time= 1;
+var airport = true;
+
 
 $(document).ready(function(){
 
@@ -27393,7 +27395,7 @@ $(document).ready(function(){
 	form = $('.formContainer form');
 	
 	submitForm();
-    recordingControl();
+    if(airport) recordingControl();
     termsConditionsOverlay();
     waiting_room(false, true, false);
     
@@ -27492,23 +27494,25 @@ function scrollTermsConditions(){
 }
 
 function recordingControl(){
-    let control
+    //let control
     $('.startRecording').click(()=>{
         $('.timmerContainer .lineCircle').removeClass("paused")
         $('.go.hidden').removeClass('hidden')
-        control = setInterval(()=>{
-            time++;
-            if(time<10){
-                $('.time')[0].innerHTML="00:0"+time;
-            }else{
-                $('.time')[0].innerHTML="00:"+time;
-            }
-        },1000);
+        socket.emit("pedal");
+        // control = setInterval(()=>{
+        //     time++;
+        //     if(time<10){
+        //         $('.time')[0].innerHTML="00:0"+time;
+        //     }else{
+        //         $('.time')[0].innerHTML="00:"+time;
+        //     }
+        // },1000);
 
     })
     $('.stopRecording').click(()=>{
         $('.timmerContainer .lineCircle').addClass("paused")
-        clearInterval(control);
+        socket.emit("pedal");
+        //clearInterval(control);
         //to do, stop recording
     })
 }
@@ -27610,7 +27614,10 @@ function submitData(){
         data: data
     }).done(function(data){
         console.log(data);
-        if(data.status != "OK") {
+        if(data.status == "OK") {
+
+
+        } else {
             alert(data.messages.join("\n"));
             console.log(data.messages)
         }
@@ -27651,7 +27658,12 @@ function waiting_room(wait, ready, go) {
 //     $('#waiting_room .ready').toggleClass('hidden')
 // }
 
-
+function reset() {
+    navIndex = 0;
+    navTransition();
+    waiting_room(true, false, false);
+    form[0].reset();
+}
 
 var socket = io.connect("/ui");
 socket.on('state', function(new_state){
@@ -27664,12 +27676,7 @@ socket.on('state', function(new_state){
 
         case "submitted":
         	waiting_room(false, false, true);
-        	setTimeout(function(){
-                navIndex = 0;
-                navTransition();
-                waiting_room(true, false, false);
-                form[0].reset();
-            }, 3000);
+            if(!airport) setTimeout(reset, 3000);
             break;
 
         case "starting":
@@ -27684,6 +27691,11 @@ socket.on('state', function(new_state){
 socket.on('user', function(user) {
     console.log(user);
 });
+
+socket.on("countdown", function(data){
+    $('.time')[0].innerHTML= data.join(":");
+});
+
 
 
 },{"email-validator":1,"jquery":2,"lodash":3}]},{},[4]);

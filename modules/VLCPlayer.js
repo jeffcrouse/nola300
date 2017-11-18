@@ -21,7 +21,7 @@ var VLCPlayer = function(folder) {
 
 	proc.stderr.on('data', data => {
 		data = data.toString().trim();
-		debug("on_stderr_data", data);
+		//debug("on_stderr_data", data);
 	});
 
 	proc.on('close', code => {

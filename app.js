@@ -24,12 +24,13 @@ var postprocess = require("./modules/PostProcess");
 var CountdownTimer = require('./modules/CountdownTimer')
 var CanonCamera = require('./modules/CanonCamera')
 var StateManager = require('./modules/StateManager');
+var ArduinoDevice = require('./modules/ArduinoDevice')
 var moment = require('moment');
 
 
 if(process.env.USE_MUSIC) {
 	var VLCPlayer = require('./modules/VLCPlayer');
-	var music = new VLCPlayer(process.env.MUSIC_PATH);
+	var music = new VLCPlayer(process.env.MUSIC_ROOT);
 	music.fadeIn();
 }
 
@@ -423,6 +424,16 @@ video_socket.on("connection", function( client ) {
 emotion_socket.on("connection", function( client ) {
 	debug("/emotion client joined")
 
+	var init = {
+		"intro": path.join(process.env.TEXTURE_ROOT, "INTRO"),
+		"anger": path.join(process.env.TEXTURE_ROOT, "ANGER"),
+		"disgust": path.join(process.env.TEXTURE_ROOT, "DISGUST"),
+		"fear": path.join(process.env.TEXTURE_ROOT, "FEAR"),
+		"joy": path.join(process.env.TEXTURE_ROOT, "JOY"),
+		"sadness": path.join(process.env.TEXTURE_ROOT, "SADNESS")
+	}
+	client.emit("init", init);
+
 	client.on('disconnect', () => {
 		debug("/emotion client left")
 	});
@@ -515,7 +526,9 @@ var start_session = function() {
 		for(var i=0; i<cameras.length; i++) {
 			tasks.push(  cameras[i].record.bind(cameras[i]) );
 		}
-		if(process.env.USE_ONAIR) tasks.push(OnAirSign.on);
+		if(process.env.USE_ONAIR) 
+			tasks.push( cb => { OnAirSign.write("1", cb); } );
+
 		async.parallel(tasks, done); 
 	}
 
@@ -586,7 +599,9 @@ var end_session = function(cancel) {
 
 	var cancel_devices = done => {
 		var tasks = [SpeechToText.stop];
-		if(process.env.USE_ONAIR) tasks.push(OnAirSign.off);
+		if(process.env.USE_ONAIR) 
+			tasks.push( cb => { OnAirSign.write("0", cb); } );
+
 		for(var i=0; i<cameras.length; i++) {
 			var camera = cameras[i];
 			tasks.push(camera.cancel.bind(camera));
@@ -602,7 +617,8 @@ var end_session = function(cancel) {
 			var path = `${story.directory}/vid_0${i}.mp4`;
 			tasks.push( camera.stop.bind(camera, path) );
 		}
-		if(process.env.USE_ONAIR) tasks.push(OnAirSign.off);
+		if(process.env.USE_ONAIR) 
+			tasks.push( cb => { OnAirSign.write("0", cb); } );
 		async.parallel(tasks, done);
 	}
 
@@ -643,7 +659,7 @@ var end_session = function(cancel) {
 * 	Depending on the current APPSTATE, do something...
 */
 var on_pedal = function(date) {
-	debug("footpedal pressed", date);
+	debug("on_pedal", date);
 
 	switch(state.get()) {
 		case APPSTATES.STARTING:

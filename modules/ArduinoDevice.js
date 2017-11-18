@@ -16,7 +16,7 @@ var ArduinoDevice = function(key, value, name) {
 	var options = { baudRate: 9600 };
 	var timeout = 5000;
 	var re =  new RegExp(value);
-	var isOpen = false;
+	//var isOpen = false;
 	var closeRequested = false;
 	var port = null;
 	var heartbeat = Date.now();
@@ -25,15 +25,23 @@ var ArduinoDevice = function(key, value, name) {
 
 	// ----------------------------------------------------------------------------------
 	this.getIsOpened = function() {
-		return isOpen;
+		return (port && port.isOpen);
 	}
 
 	// ----------------------------------------------------------------------------------
 	this.exit = function(callback) {
+		debug("exit");
 		callback = callback || default_callback;
 		closeRequested=true;
-		if(port) port.close().then(callback)
+		if(self.getIsOpened()) port.close(callback);
 		else callback(null);
+	}
+
+	// ----------------------------------------------------------------------------------
+	this.write = function(data, callback) {
+		callback = callback || default_callback;
+		if(selfself.getIsOpened()) port.write(data, "utf8", callback);
+		else callback("not connected")
 	}
 
 	// ----------------------------------------------------------------------------------
@@ -50,10 +58,8 @@ var ArduinoDevice = function(key, value, name) {
 
 	// ----------------------------------------------------------------------------------
 	var loop = function(done) {
-		if(closeRequested) return;
-		setTimeout(done, 500);
 
-		if(isOpen)  {
+		if(self.getIsOpened()) {
 			var elapsed = Date.now() - heartbeat;
 			if(elapsed > timeout) {
 				debug("lost heartbeat signal")
@@ -61,7 +67,7 @@ var ArduinoDevice = function(key, value, name) {
 			}
 		}
 
-		if(!isOpen) {
+		else {
 			debug("port closed. attemping to open")
 			findComName((comName) => {
 				if(comName!=null) {
@@ -69,14 +75,15 @@ var ArduinoDevice = function(key, value, name) {
 					port.on('open', () => {
 						debug("open", comName)
 						heartbeat = Date.now();
-						isOpen=true;
+						//isOpen=true;
 					});
 					port.on('close', () => {
-						isOpen=false;
+						//isOpen=false;
 						port = null;
 					});
 					port.on('error', (err) => {
-						isOpen=false;
+						//isOpen=false;
+						port = null;
 						debug("serial error", err);
 					});
 					port.on('data', (buf) => {
@@ -89,7 +96,7 @@ var ArduinoDevice = function(key, value, name) {
 		}
 	}
 
-	async.forever(loop);
+	async.doUntil(loop, ()=>{ return closeRequested; } );
 }
 
 util.inherits(ArduinoDevice, EventEmitter);

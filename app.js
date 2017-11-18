@@ -164,6 +164,10 @@ hbs.registerHelper("firstLetter", function( str ) {
     return str.charAt(0);
 });
 
+hbs.registerHelper("trunc", function( str, len ) {
+    if(str.length > len) return str.substring(0, len)+"...";
+    return str;
+});
 
 
 
@@ -574,6 +578,7 @@ var end_session = function(cancel) {
 	state.set(APPSTATES.STOPPING);
 	
 	var story = null;
+	var start = new Date();
 
 	var wait = done => {
 		setTimeout(done, 2000);
@@ -610,7 +615,8 @@ var end_session = function(cancel) {
 	}
 
 	var stop_devices = done => {
-		debug("stop_devices");
+		
+		var start = new Date();
 		var tasks = [SpeechToText.stop];
 		for(var i=0; i<cameras.length; i++) {
 			var camera = cameras[i];
@@ -619,7 +625,11 @@ var end_session = function(cancel) {
 		}
 		if(process.env.USE_ONAIR) 
 			tasks.push( cb => { OnAirSign.write("0", cb); } );
-		async.parallel(tasks, done);
+		async.parallel(tasks, function(err){
+			var elapsed = new Date()-start;
+			debug("download time:", elapsed);
+			done(err);
+		});
 	}
 
 	var mark_ready = done => {
@@ -645,6 +655,8 @@ var end_session = function(cancel) {
 
 	async.series(tasks, (err) => {
 		ending = false;
+		var elapsed = new Date()-start;
+
 		if(err) return debug(err);
 		state.set(APPSTATES.IDLE);
 	});

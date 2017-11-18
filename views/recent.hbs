@@ -5,7 +5,7 @@
 		<td>{{this.shortid}}</td>
 		<td>{{firstLetter this.firstName}}. {{this.lastName}}</td>
 		<td >{{dateFormat this.endTime "MM/DD h:mma"}}</td> 
-		<td>{{this.status}}</td>
+		<td>{{trunc this.status 21}}</td>
 	</tr>
 	{{/each}}
 </table>

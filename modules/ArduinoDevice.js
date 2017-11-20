@@ -4,9 +4,9 @@ const util = require('util');
 const async = require('async');
 var EventEmitter = require('events').EventEmitter;
 
-// SerialPort.list(function (err, ports) {
-// 	ports.forEach(function(_info) { console.log(util.inspect(_info)); });
-// });
+SerialPort.list(function (err, ports) {
+	ports.forEach(function(_info) { console.log(util.inspect(_info)); });
+});
 
 var ArduinoDevice = function(key, value, name) {
 	EventEmitter.call(this);
@@ -40,7 +40,7 @@ var ArduinoDevice = function(key, value, name) {
 	// ----------------------------------------------------------------------------------
 	this.write = function(data, callback) {
 		callback = callback || default_callback;
-		if(selfself.getIsOpened()) port.write(data, "utf8", callback);
+		if(self.getIsOpened()) port.write(data, "utf8", callback);
 		else callback("not connected")
 	}
 
@@ -66,7 +66,6 @@ var ArduinoDevice = function(key, value, name) {
 				port.close();
 			}
 		}
-
 		else {
 			debug("port closed. attemping to open")
 			findComName((comName) => {
@@ -88,6 +87,7 @@ var ArduinoDevice = function(key, value, name) {
 					});
 					port.on('data', (buf) => {
 						var data = buf.toString('utf8');
+						
 						if(data==".") heartbeat = Date.now();
 						else self.emit(data, Date.now());
 					});

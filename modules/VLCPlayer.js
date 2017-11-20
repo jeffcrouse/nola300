@@ -48,7 +48,6 @@ var VLCPlayer = function(folder) {
 	}
 
 	async.forever((done) => {
-		var lastVolume = volume;
 		volume += (targetVolume-volume) * 0.05;
 
 		if(proc) {

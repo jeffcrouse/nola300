@@ -71,6 +71,7 @@ var StorySchema = Schema({
 	startTime: 		{ type: Date },
 	endTime: 		{ type: Date },
 	numCameras: 	{ type: Number, default: 2 },
+	cameras: 		[  String ],
 	sentences: 		[ SentenceSchema ],
 	error: 			{ type: String, default: null },
 	readyForEdit: 	{ type: Boolean, default: false },
@@ -198,10 +199,17 @@ StorySchema.methods.edit_command_double = function() {
 	var concat = [];
 	var filters = [];
 	var d = Math.min(this.duration/1000.0, 45);
-	var cam = 0;
 	var label = 0;
 	var start = 0;
-	
+	var cam = 0;
+
+	// If the first camera is the wrong camera, start with second camera
+	var firstCam = "";
+	var secondCam = "";
+	if(this.cameras[0]==secondCam) {
+		cam = 1;
+	}
+
 	do {
 		var clip_length = 5 + (Math.random()*4);
 		var end = Math.min(start+clip_length, d);

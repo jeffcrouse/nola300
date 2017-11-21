@@ -26,6 +26,8 @@ var CanonCamera = require('./modules/CanonCamera')
 var StateManager = require('./modules/StateManager');
 var ArduinoDevice = require('./modules/ArduinoDevice')
 var moment = require('moment');
+//var diskspace = require('diskspace');
+
 
 
 if(process.env.USE_MUSIC) {
@@ -519,8 +521,12 @@ var start_session = function() {
 			if(err) return done(err);
 			if(!doc) return done("no user present. ignoring.");
 			
-			doc.sentences = [];	// reset the sentences in case this is a re-record
 			doc.startTime = Date.now();
+			doc.sentences = [];	// reset the sentences in case this is a re-record
+			doc.cameras = [];
+			for(var i=0; i<cameras.length; i++) {
+				doc.cameras.push( cameras[i].getSerial() );
+			}
 			doc.save(done);
 		});
 	}
@@ -826,6 +832,40 @@ async.forever((done) => {
 		setTimeout(done, 5000);
 	})
 }, debug);
+
+
+
+
+
+
+/******************************************************************************************
+██████╗ ██╗███████╗██╗  ██╗    ███████╗██████╗  █████╗  ██████╗███████╗
+██╔══██╗██║██╔════╝██║ ██╔╝    ██╔════╝██╔══██╗██╔══██╗██╔════╝██╔════╝
+██║  ██║██║███████╗█████╔╝     ███████╗██████╔╝███████║██║     █████╗  
+██║  ██║██║╚════██║██╔═██╗     ╚════██║██╔═══╝ ██╔══██║██║     ██╔══╝  
+██████╔╝██║███████║██║  ██╗    ███████║██║     ██║  ██║╚██████╗███████╗
+╚═════╝ ╚═╝╚══════╝╚═╝  ╚═╝    ╚══════╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝
+******************************************************************************************/
+
+
+// async.forever((done)=>{
+// 	diskspace.check('/',  (err, result) => {
+// 		if(err) debug(err);
+// 		var gb = result.free / 1000000000;
+// 		if(gb < 20) {
+// 			// text someone?
+// 		}
+// 		debug("diskspace", gb);
+// 		setTimeout(done, 10000);
+// 	});
+// }, debug);
+
+
+
+
+
+
+
 
 
 

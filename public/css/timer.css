@@ -56,14 +56,14 @@ body {
 	display: none;
 }
 #welcome {
-	height: 60vw;
-	margin-top:-30vw;
+	height: 50vw;
+	margin-top:-25vw;
 	display: none;
 }
 #welcome .header {
 	font-family: 'F37Bolton-Bold';
-	font-size: 15vw;
-	line-height: 15vw;
+	font-size: 10vw;
+	line-height: 10vw;
 	margin-bottom: 2vw;
 }
 #welcome .footer {

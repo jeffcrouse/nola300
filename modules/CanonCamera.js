@@ -37,6 +37,11 @@ var CanonCamera = function(id) {
 	this.record = function(callback){
 		callback = callback || function(){};
 		
+		if(!proc) {
+			debug("not connected. cannot stop.")
+			return callback();
+		}
+		
 		var command = "record";
 		debug(command);
 		proc.send(command, err => {
@@ -50,6 +55,11 @@ var CanonCamera = function(id) {
 	*/
 	this.stop = function(filename, callback){
 		callback = callback || function(){};
+
+		if(!proc) {
+			debug("not connected. cannot stop.")
+			return callback();
+		}
 
 		var command = "stop";
 		if(filename) command += " "+filename;

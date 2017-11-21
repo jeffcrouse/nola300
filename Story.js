@@ -204,9 +204,7 @@ StorySchema.methods.edit_command_double = function() {
 	var cam = 0;
 
 	// If the first camera is the wrong camera, start with second camera
-	var firstCam = "";
-	var secondCam = "";
-	if(this.cameras[0]==secondCam) {
+	if(this.cameras[0]==process.env.CAM2) {
 		cam = 1;
 	}
 

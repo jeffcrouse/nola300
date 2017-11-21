@@ -26,6 +26,8 @@ var CanonCamera = require('./modules/CanonCamera')
 var StateManager = require('./modules/StateManager');
 var ArduinoDevice = require('./modules/ArduinoDevice')
 var moment = require('moment');
+//var diskspace = require('diskspace');
+
 
 
 if(process.env.USE_MUSIC) {
@@ -826,6 +828,40 @@ async.forever((done) => {
 		setTimeout(done, 5000);
 	})
 }, debug);
+
+
+
+
+
+
+/******************************************************************************************
+██████╗ ██╗███████╗██╗  ██╗    ███████╗██████╗  █████╗  ██████╗███████╗
+██╔══██╗██║██╔════╝██║ ██╔╝    ██╔════╝██╔══██╗██╔══██╗██╔════╝██╔════╝
+██║  ██║██║███████╗█████╔╝     ███████╗██████╔╝███████║██║     █████╗  
+██║  ██║██║╚════██║██╔═██╗     ╚════██║██╔═══╝ ██╔══██║██║     ██╔══╝  
+██████╔╝██║███████║██║  ██╗    ███████║██║     ██║  ██║╚██████╗███████╗
+╚═════╝ ╚═╝╚══════╝╚═╝  ╚═╝    ╚══════╝╚═╝     ╚═╝  ╚═╝ ╚═════╝╚══════╝
+******************************************************************************************/
+
+
+// async.forever((done)=>{
+// 	diskspace.check('/',  (err, result) => {
+// 		if(err) debug(err);
+// 		var gb = result.free / 1000000000;
+// 		if(gb < 20) {
+// 			// text someone?
+// 		}
+// 		debug("diskspace", gb);
+// 		setTimeout(done, 10000);
+// 	});
+// }, debug);
+
+
+
+
+
+
+
 
 
 

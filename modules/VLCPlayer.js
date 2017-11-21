@@ -8,7 +8,7 @@ const exec = require('child_process').exec;
 
 var VLCPlayer = function(folder) {
 	var vlc = "/Applications/VLC.app/Contents/MacOS/VLC";
-	var args = ['-I', "rc", '-Z', folder];
+	var args = ['-I', "rc", "-L", '-Z', folder];
 	
 	var volume = 0;
 	var targetVolume = 0;
@@ -34,7 +34,7 @@ var VLCPlayer = function(folder) {
 
 	this.fadeIn = function() {
 		debug("fadeIn");
-		targetVolume = 100;
+		targetVolume = 200;
 	}
 
 	this.fadeOut = function() {
@@ -48,7 +48,6 @@ var VLCPlayer = function(folder) {
 	}
 
 	async.forever((done) => {
-		var lastVolume = volume;
 		volume += (targetVolume-volume) * 0.05;
 
 		if(proc) {

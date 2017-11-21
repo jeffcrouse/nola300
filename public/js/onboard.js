@@ -27386,7 +27386,7 @@ var navElements = []
 var form;
 var formIsValid=false;
 var time= 1;
-var airport = true;
+var airport = false;
 
 
 $(document).ready(function(){
@@ -27519,7 +27519,7 @@ function recordingControl(){
 
 
 function navTransition () {
-    console.log("this is navIndex", navElements.length)
+    console.log("this is navIndex", navIndex);
     for( var i = 0; i< navElements.length; i++){
         if(i>navIndex){
             $(navElements[i]).removeClass('selected')
@@ -27596,6 +27596,14 @@ function submitForm(){
     })
 }
 
+function reset() {
+	console.log("!!RESET!");
+    navIndex = 0;
+    navTransition();
+    waiting_room(true, false, false);
+    form[0].reset();
+}
+
 function submitData(){
 
     var data = {
@@ -27619,9 +27627,6 @@ function submitData(){
                 $('.timmerContainer .lineCircle').removeClass("paused")
                 $('.go.hidden').removeClass('hidden')
                 socket.emit("pedal");
-            }
-            else {
-                setTimeout(reset, 3000);
             }
         } else {
             alert(data.messages.join("\n"));
@@ -27664,12 +27669,7 @@ function waiting_room(wait, ready, go) {
 //     $('#waiting_room .ready').toggleClass('hidden')
 // }
 
-function reset() {
-    navIndex = 0;
-    navTransition();
-    waiting_room(true, false, false);
-    form[0].reset();
-}
+
 
 var socket = io.connect("/ui");
 socket.on('state', function(new_state){
@@ -27682,6 +27682,7 @@ socket.on('state', function(new_state){
 
         case "submitted":
         	waiting_room(false, false, true);
+        	if(!airport) setTimeout(reset, 3000);
             break;
 
         case "starting":
@@ -27700,7 +27701,8 @@ socket.on('user', function(user) {
 
 socket.on("countdown", function(data){
     console.log(data.join(":"));
-    $('.time')[0].innerHTML = data.join(":");
+    if($('.time').length) 
+    	$('.time')[0].innerHTML = data.join(":");
 });
 
 

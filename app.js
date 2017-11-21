@@ -521,8 +521,12 @@ var start_session = function() {
 			if(err) return done(err);
 			if(!doc) return done("no user present. ignoring.");
 			
-			doc.sentences = [];	// reset the sentences in case this is a re-record
 			doc.startTime = Date.now();
+			doc.sentences = [];	// reset the sentences in case this is a re-record
+			doc.cameras = [];
+			for(var i=0; i<cameras.length; i++) {
+				doc.cameras.push( cameras[i].getSerial() );
+			}
 			doc.save(done);
 		});
 	}

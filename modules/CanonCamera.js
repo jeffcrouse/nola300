@@ -32,6 +32,14 @@ var CanonCamera = function(id) {
 
 
 	/**
+	*	Get the serial number of the camera
+	*/
+	this.getSerial = function() {
+		return serial;
+	}
+
+
+	/**
 	* 	Tell the camera to start recording
 	*/
 	this.record = function(callback){

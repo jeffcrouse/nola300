@@ -309,7 +309,11 @@ app.get('/playlist', function(req, res, next) {
 /**
 *	Open a browser window with the app status 
 */
-exec(`open http://127.0.0.1:3000`);
+require('dns').lookup(require('os').hostname(), function (err, add, fam) {
+	debug('addr: '+add);
+	exec(`open http://${add}:3000`);
+})
+
 
 
 

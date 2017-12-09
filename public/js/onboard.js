@@ -27378,15 +27378,12 @@ const lodash = require('lodash');
 const $ = require('jquery');
 const validator = require("email-validator");
 
-var output = lodash.without([1, 2, 3], 1);
-
 //var endpoint = "/submitEndPoint.php"
 var navIndex=0;
 var navElements = []
 var form;
 var formIsValid=false;
 var time= 1;
-var airport = false;
 
 
 $(document).ready(function(){
@@ -27395,9 +27392,9 @@ $(document).ready(function(){
 	form = $('.formContainer form');
 	
 	submitForm();
-    if(airport) recordingControl();
+    if(LOCATION=="airport") recordingControl();
     termsConditionsOverlay();
-    waiting_room(false, true, false);
+    waiting_room(false, true, false, false);
     
 	$('.submitForm').on('click',function (e) {
 		form.trigger("submit");
@@ -27413,18 +27410,20 @@ $(document).ready(function(){
         if(!formIsValid)
             return
         
-        navIndex++
+        navIndex = 2
         navTransition()
     })
 
     $('.btnContainer .btn').on('click',function (e) {
     	if($(this).hasClass('disable')||$(this).hasClass('validateForm'))
     		return
-    	if($(this).hasClass('next')){
+    	
+        if($(this).hasClass('next')){
     		navIndex++
     	}else if($(this).hasClass('back')){
     		navIndex--
     	}
+        
         navTransition()
     });
 
@@ -27437,18 +27436,8 @@ $(document).ready(function(){
 
 });
 
-//Placeholder navigation
-function navScroll(){
-	$target = $(navElements[navIndex])
-    console.log($target)
-    $('html, body').stop().animate({
-        'scrollTop':  $target.offset().top //no need of parseInt here
-    }, 600, 'swing', function () {
-        //window.location.hash = target;
-    });
-}
 
-console.log(output);
+//---Terms popup funcitons---//
 
 function termsConditionsOverlay(){
     let termsOverlay = $('.termsAndConditions.popup')
@@ -27493,6 +27482,7 @@ function scrollTermsConditions(){
     })
 }
 
+
 function recordingControl(){
     //let control
     $('.startRecording').click(()=>{
@@ -27508,7 +27498,7 @@ function recordingControl(){
         //     }
         // },1000);
     })
-    
+
     $('.stopRecording').click(()=>{
         $('.timmerContainer .lineCircle').addClass("paused")
         socket.emit("pedal");
@@ -27519,7 +27509,7 @@ function recordingControl(){
 
 
 function navTransition () {
-    console.log("this is navIndex", navIndex);
+    console.log("this is navIndex", navIndex)
     for( var i = 0; i< navElements.length; i++){
         if(i>navIndex){
             $(navElements[i]).removeClass('selected')
@@ -27537,6 +27527,8 @@ function navTransition () {
     },600)
 }
 
+
+//---Form functions---//
 function validateForm(){
     //validate fields
     var fail = false;
@@ -27596,14 +27588,6 @@ function submitForm(){
     })
 }
 
-function reset() {
-	console.log("!!RESET!");
-    navIndex = 0;
-    navTransition();
-    waiting_room(true, false, false);
-    form[0].reset();
-}
-
 function submitData(){
 
     var data = {
@@ -27623,10 +27607,13 @@ function submitData(){
     }).done(function(data){
         console.log(data);
         if(data.status == "OK") {
-            if(airport) {
+            if(LOCATION=="airport") {
                 $('.timmerContainer .lineCircle').removeClass("paused")
                 $('.go.hidden').removeClass('hidden')
                 socket.emit("pedal");
+            }
+            else {
+                setTimeout(reset, 3000);
             }
         } else {
             alert(data.messages.join("\n"));
@@ -27639,7 +27626,9 @@ function submitData(){
 }
 
 
-function waiting_room(wait, ready, go) {
+//---Conection and states functions---//
+
+function waiting_room(wait, ready, go, thankyou) {
     if(wait)  	$('#waiting_room .waiting').removeClass('hidden')
     else  		$('#waiting_room .waiting').addClass('hidden')
 
@@ -27648,28 +27637,20 @@ function waiting_room(wait, ready, go) {
 
     if(go) 		$('#waiting_room .go').removeClass('hidden')
     else  		$('#waiting_room .go').addClass('hidden')
+
+    if(LOCATION=="mobile") return
+
+    if(thankyou) $('#waiting_room .thankyou').removeClass('hidden')
+    else         $('#waiting_room .thankyou').addClass('hidden')
 }
 
-//send a post request to check if room is ready, if there is no errors show the button.
-// function checkForRoomReady(){
-//     $.ajax({
-//         method: "POST",
-//         url: "/checkRoomReady.php",
-//         timeout: 0,
-//         crossDomain: true
-//     })
-//     .done(function( msg ) {
-//         waitingDone();
-//     });
-// }
-
-//toggle the waiting room from waiting to ready and ready to waiting.
-// function waitingDone(){
-//     $('#waiting_room .waiting').toggleClass('hidden')
-//     $('#waiting_room .ready').toggleClass('hidden')
-// }
-
-
+function reset() {
+    console.log("!!! RESET !!!")
+    navIndex = 0;
+    navTransition();
+    waiting_room(true, false, false, false);
+    form[0].reset();
+}
 
 var socket = io.connect("/ui");
 socket.on('state', function(new_state){
@@ -27677,20 +27658,26 @@ socket.on('state', function(new_state){
     switch(new_state) {
 
         case "idle":
-        	waiting_room(false, true, false);
+        	waiting_room(false, true, false, false);
             break;
 
         case "submitted":
-        	waiting_room(false, false, true);
-        	if(!airport) setTimeout(reset, 3000);
+        	waiting_room(false, false, true, false);
+            if(LOCATION=="mobile") {
+            	setTimeout(reset, 3000);
+            }
             break;
 
         case "starting":
             break;
         case "in progress":
             break;
+
         case "stopping":
-            if(airport) setTimeout(reset, 2000);
+            if(LOCATION=="airport"){
+                waiting_room(false, false, false, true); 
+                setTimeout(reset, 3000);
+            } 
             break;
     }
 });
@@ -27700,9 +27687,9 @@ socket.on('user', function(user) {
 });
 
 socket.on("countdown", function(data){
-    console.log(data.join(":"));
+    //console.log(data.join(":"));
     if($('.time').length) 
-    	$('.time')[0].innerHTML = data.join(":");
+        $('.time')[0].innerHTML = data.join(":");
 });
 
 

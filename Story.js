@@ -24,7 +24,7 @@ Various paths that are needed for a Story, mostly for the video edit.
 ****************************************************************************************/                                                                    
 
 var INTRO = path.join(__dirname, "resources", "Intro_Card_ALT_Audio.mov");
-var OUTRO = path.join(__dirname, "resources", "End_Card.mov");
+var OUTRO = path.join(__dirname, "resources", "End_Card02.mov");
 var LUT = path.join(__dirname, "resources", "Testing_Color_1_3.C0046.cube");
 
 var ffmpeg = "ffmpeg";
@@ -172,9 +172,9 @@ StorySchema.methods.edit_command_single  = function(done) {
 	var song = songs[n];
 
 	var filters = [];
-	filters.push(`[1:v]scale=1920:1080,fps=24,format=yuva420p,setpts=PTS/TB[intro]`);
+	filters.push(`[1:v]scale=1920:1080,fps=24,format=yuva420p,setpts=PTS-STARTPTS[intro]`);
 	filters.push(`[2:v]scale=1920:1080,fps=24,format=yuva420p,setpts=PTS+${d-4}/TB[outro]`);
-	filters.push(`[0:v][intro]overlay=0:0[vedit1]`);
+	filters.push(`[0:v][intro]overlay=eof_action=pass[vedit1]`);
 	filters.push(`[vedit1][outro]overlay=0:0[vedit2]`);
 	filters.push(`[vedit2]fade=in:0:30[vedit3]`);
 	filters.push(`[aedit1]afade=t=in:st=0:d=2, afade=t=out:st=${d-4}:d=4[aedit2]`);
@@ -182,9 +182,9 @@ StorySchema.methods.edit_command_single  = function(done) {
 	filters.push(`[soundtrack][aedit2]amix[aedit3]`);
 
 	var cmd = `${ffmpeg} -y -i "${this.vid_00.path}" -i "${INTRO}" -i "${OUTRO}" -i "${song}" `;
-    cmd += `-filter_complex "${filters.join(";")}" -map "[vedit3]" -map "[aedit3]" `;
-    cmd += `-threads 2 -c:v libx264 -crf 23 -preset fast -c:a aac -pix_fmt yuv420p "${this.edit.path}"`;
-    return cmd;
+	cmd += `-filter_complex "${filters.join(";")}" -map "[vedit3]" -map "[aedit3]" `;
+	cmd += `-threads 2 -c:v libx264 -crf 23 -preset fast -c:a aac -pix_fmt yuv420p "${this.edit.path}"`;
+	return cmd;
 }
 
 
@@ -227,8 +227,8 @@ StorySchema.methods.edit_command_double = function() {
 	filters.push(`[vedit2][outro]overlay=0:0[vedit3]`);
 	//filters.push(`[vedit3]fade=in:0:30[vedit4]`);
 	filters.push(`[aedit1]afade=t=in:st=0:d=2, afade=t=out:st=${d-4}:d=4[aedit2]`);
-	// , volume=0.75
-	filters.push(`[4:a]atrim=start=0:end=${d}, afade=t=out:st=${d-4}:d=4[soundtrack]`);
+	// 
+	filters.push(`[4:a]atrim=start=0:end=${d}, volume=0.8, afade=t=out:st=${d-4}:d=4[soundtrack]`);
 	filters.push(`[soundtrack][aedit2]amix[aedit3]`);
 
 	var cmd = `${ffmpeg} -y -i "${this.vid_00.path}" -i "${this.vid_01.path}" -i "${INTRO}" -i "${OUTRO}" -i "${song}" `;

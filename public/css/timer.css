@@ -47,7 +47,7 @@ body {
 	top: 50%;
 	width: 100%;
 }
-#timer {
+#timer .header {
 	font-family: 'F37Bolton-Thin';
 	font-size: 50vw;
 	line-height: 50vw;
@@ -55,6 +55,13 @@ body {
 	margin-top:-30vw;
 	display: none;
 }
+
+#timer .footer {
+	font-family: 'F37Bolton-Regular';
+	font-size: 4vw;
+	margin-top: 3vw;
+}
+
 #welcome {
 	height: 50vw;
 	margin-top:-25vw;

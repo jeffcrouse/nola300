@@ -26,6 +26,7 @@ var CanonCamera = require('./modules/CanonCamera')
 var StateManager = require('./modules/StateManager');
 var ArduinoDevice = require('./modules/ArduinoDevice')
 var moment = require('moment');
+const glob = require('glob');
 //var diskspace = require('diskspace');
 
 
@@ -434,6 +435,8 @@ video_socket.on("connection", function( client ) {
 emotion_socket.on("connection", function( client ) {
 	debug("/emotion client joined")
 
+
+	/*
 	var init = {
 		"intro": path.join(process.env.TEXTURE_ROOT, "INTRO"),
 		"anger": path.join(process.env.TEXTURE_ROOT, "ANGER"),
@@ -443,6 +446,19 @@ emotion_socket.on("connection", function( client ) {
 		"sadness": path.join(process.env.TEXTURE_ROOT, "SADNESS")
 	}
 	client.emit("init", init);
+	*/
+
+	var textures = {};
+	var emotions = ["anger", "disgust", "fear", "intro", "joy", "sadness"];
+	async.each(emotions, (item, done) => {
+		var pattern = process.env.TEXTURE_ROOT + "/" + item.toUpperCase() + "*.mp4";
+		glob(pattern, (err, files) => {
+			textures[item] = files;
+			done(null);
+		});
+	}, (err) => {
+		client.emit("init", textures);
+	});
 
 	client.on('disconnect', () => {
 		debug("/emotion client left")

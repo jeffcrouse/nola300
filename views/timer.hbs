@@ -15,7 +15,12 @@
 			
 			<div id="main" class="valign">
 
-				<div id="timer">:00</div>
+				<div id="timer">
+					<div class="header">:00</div>
+					<div class="footer">
+						Or tap foot pedal to stop.
+					</div>
+				</div>
 
 				<div id="thanks">
 					<div class="header">Thanks!</div>
@@ -47,11 +52,12 @@
 		<script>
 			var socket = io.connect("/ui");
 			var timer = $("#timer");
+			var countdown = $("#countdown");
 			var welcome = $("#welcome");
 			var thanks = $("#thanks");
 
 			socket.on('countdown', function (data) {
-				timer.text( ":"+data[2] );
+				countdown.text( ":"+data[2] );
 				welcome.hide();
 				thanks.hide();
 				timer.show();

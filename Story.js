@@ -78,7 +78,7 @@ var StorySchema = Schema({
 	edited: 		{ type: Boolean, default: false },
 	uploaded: 		{ type: Boolean, default: false },
 	infoed: 		{ type: Boolean, default: false }
-});
+}, {usePushEach: true });
 
 
 StorySchema.path('email').validate = function(email) {

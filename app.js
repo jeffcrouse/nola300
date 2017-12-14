@@ -783,6 +783,7 @@ SpeechToText.on("sentence", (sentence) => {
 		if(!doc) return debug("Warning: SpeechToText result with no user to add to.")
 
 		doc.sentences.push( sentence.toJson() );
+		doc.save();
 
 		if(sentence.has_nlu()) {
 			var terms = sentence.get_search_terms();
@@ -800,7 +801,7 @@ SpeechToText.on("sentence", (sentence) => {
 			debug("emotion", emo);
 			emotion_socket.emit('emotion', emo);
 		}
-		doc.save();
+		
 	});
 });
 

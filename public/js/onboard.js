@@ -27386,13 +27386,26 @@ var formIsValid=false;
 var time= 1;
 
 
+var timeoutDuration = 5 * 60 * 1000; // 5 minutes
+var timeout = null;
+function resetTimeout() {
+    clearTimeout(timeout);
+    timeout = setTimeout(reset, timeoutDuration)
+}
+
+
 $(document).ready(function(){
 
 	navElements = $('.view');
 	form = $('.formContainer form');
 	
 	submitForm();
-    if(LOCATION=="airport") recordingControl();
+    
+    if(LOCATION=="airport"){
+        recordingControl();
+        $('.mobileBooth').css("display", "none");
+    }
+
     termsConditionsOverlay();
     waiting_room(false, true, false, false);
     
@@ -27434,6 +27447,7 @@ $(document).ready(function(){
         videos[i].play();
     }
 
+    resetTimeout();
 });
 
 
@@ -27525,6 +27539,8 @@ function navTransition () {
         $(navElements[navIndex]).find('.container').addClass('selected')
         $(navElements[navIndex]).find('.bg .color').addClass('selected')
     },600)
+
+    resetTimeout();
 }
 
 
@@ -27652,6 +27668,9 @@ function reset() {
     form[0].reset();
 }
 
+
+
+
 var socket = io.connect("/ui");
 socket.on('state', function(new_state){
     console.log("new_state", new_state);
@@ -27664,7 +27683,7 @@ socket.on('state', function(new_state){
         case "submitted":
         	waiting_room(false, false, true, false);
             if(LOCATION=="mobile") {
-            	setTimeout(reset, 3000);
+                setTimeout(reset, 3000);
             }
             break;
 

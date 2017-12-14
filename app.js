@@ -38,7 +38,7 @@ if(process.env.USE_MUSIC) {
 }
 
 if(process.env.USE_ONAIR) {
-	var OnAirSign = new ArduinoDevice("serialNumber", "75230313833351619112", "onair");
+	var OnAirSign = new ArduinoDevice("serialNumber", "856323139383513081A0", "onair");
 }
 
 
@@ -305,15 +305,6 @@ app.get('/playlist', function(req, res, next) {
 	res.render('playlist', data);
 });
 
-
-
-/**
-*	Open a browser window with the app status 
-*/
-require('dns').lookup(require('os').hostname(), function (err, add, fam) {
-	debug('addr: '+add);
-	exec(`open http://${add}:3000`);
-})
 
 
 

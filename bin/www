@@ -8,6 +8,8 @@ require('dotenv').config({ silent: true });
 var app = require('../app');
 var debug = require('debug')('express:server');
 var http = require('http');
+var exec = require('child_process').exec;
+var ip = require("ip");
 
 /**
  * Get port from environment and store in Express.
@@ -100,6 +102,9 @@ function onListening() {
     ? 'pipe ' + addr
     : 'port ' + addr.port;
   debug('Listening on ' + bind);
+
+  var addr =  ip.address();
+  exec(`open http:/${addr}:3000`);
 }
 
 

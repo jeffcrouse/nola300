@@ -28,9 +28,12 @@ git config --global user.email jeff@seethroughlab.com
 
 ### Homebrew stuff
 ```/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"```
+
 ``sudo chown -R `whoami` /usr/local``
+
 ``brew update``
-``brew install mongodb``
+
+``brew install mongodb@3.4``
 
 ```
 brew install ffmpeg \

@@ -41,7 +41,7 @@ var ArduinoDevice = function(key, value, name) {
 	this.write = function(data, callback) {
 		callback = callback || default_callback;
 		if(self.getIsOpened()) port.write(data, "utf8", callback);
-		else callback("not connected")
+		else callback("Arduino not connected")
 	}
 
 	// ----------------------------------------------------------------------------------

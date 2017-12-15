@@ -510,6 +510,18 @@ timer.on("tick", (t) => {
 });
 
 
+var cancel_devices = done => {
+	var tasks = [SpeechToText.stop];
+	if(process.env.USE_ONAIR) 
+		tasks.push( cb => { OnAirSign.write("0", cb); } );
+
+	for(var i=0; i<cameras.length; i++) {
+		var camera = cameras[i];
+		tasks.push(camera.cancel.bind(camera));
+	}
+	async.parallel(tasks, done);
+}
+
 
 /**
 * 	A storytelling session is started by pressing the  Footpedal. When you start a session, 
@@ -552,7 +564,10 @@ var start_session = function() {
 
 	// send_random_videos
 	async.series([update_story, send_random_videos, start_devices, clear_blacklist], err => {
-		if(err) return debug(err);
+		if(err) {
+			cancel_devices();
+			return debug("Error starting session!", err);
+		}
 		timer.begin(45000);
 		state.set(APPSTATES.IN_PROGRESS);
 	});
@@ -616,17 +631,6 @@ var end_session = function(cancel) {
 		mkdirp(story.directory, done);
 	}
 
-	var cancel_devices = done => {
-		var tasks = [SpeechToText.stop];
-		if(process.env.USE_ONAIR) 
-			tasks.push( cb => { OnAirSign.write("0", cb); } );
-
-		for(var i=0; i<cameras.length; i++) {
-			var camera = cameras[i];
-			tasks.push(camera.cancel.bind(camera));
-		}
-		async.parallel(tasks, done);
-	}
 
 	var stop_devices = done => {
 		

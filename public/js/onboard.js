@@ -27386,14 +27386,19 @@ var formIsValid=false;
 var time= 1;
 
 
-var timeoutDuration = 5 * 60 * 1000; // 5 minutes
+var timeoutDuration = 5* 60 * 1000; // 5 minutes
 var timeout = null;
+
 function resetTimeout() {
-    clearTimeout(timeout);
+    console.log('reseting timeout')
+    if(timeout) clearTimeout(timeout);
     timeout = setTimeout(reset, timeoutDuration)
 }
 
-
+function resetTimeoutOnTouch(){
+    var docBody = document.getElementsByTagName("body")[0];
+    docBody.addEventListener("touchstart", resetTimeout, false);
+}
 $(document).ready(function(){
 
 	navElements = $('.view');
@@ -27448,6 +27453,7 @@ $(document).ready(function(){
     }
 
     resetTimeout();
+    resetTimeoutOnTouch();
 });
 
 
@@ -27660,12 +27666,18 @@ function waiting_room(wait, ready, go, thankyou) {
     else         $('#waiting_room .thankyou').addClass('hidden')
 }
 
+
+
 function reset() {
     console.log("!!! RESET !!!")
-    navIndex = 0;
-    navTransition();
-    waiting_room(true, false, false, false);
+    if(navIndex > 0) {
+        navIndex = 0;
+        navTransition();
+    }
+    //waiting_room(true, false, false, false);
+    waiting_room(false, true, false, false);
     form[0].reset();
+    //resetTimeout();
 }
 
 

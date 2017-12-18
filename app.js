@@ -38,7 +38,7 @@ if(process.env.USE_MUSIC) {
 }
 
 if(process.env.USE_ONAIR) {
-	var OnAirSign = new ArduinoDevice("serialNumber", "856323139383513081A0", "onair");
+	var OnAirSign = new ArduinoDevice("serialNumber", process.env.ONAIR_SERIAL, "onair");
 }
 
 
